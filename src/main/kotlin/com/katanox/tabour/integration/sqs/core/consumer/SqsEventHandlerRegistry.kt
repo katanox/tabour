@@ -1,0 +1,84 @@
+package com.katanox.tabour.integration.sqs.core.consumer
+
+import com.katanox.tabour.config.EventHandlerProperties
+import com.katanox.tabour.config.EventPollerProperties
+import com.katanox.tabour.thread.ThreadPools
+import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
+
+private val logger = KotlinLogging.logger {}
+
+
+class SqsEventHandlerRegistry(
+    eventHandlers: List<SqsEventHandler>,
+) {
+    @Autowired
+    private lateinit var eventHandlerProperties: EventHandlerProperties
+
+    private var pollers: Set<SqsEventPoller>? = null
+
+    init {
+        pollers = initializePollers(eventHandlers)
+    }
+
+    private fun initializePollers(
+        registrations: List<SqsEventHandler>
+    ): Set<SqsEventPoller> {
+        val pollers: MutableSet<SqsEventPoller> = HashSet()
+        for (registration in registrations) {
+            pollers.add(createPollerForHandler(registration))
+            logger.info("initialized SqsMessagePoller '{}'", registration.javaClass::getCanonicalName)
+        }
+        return pollers
+    }
+
+    private fun createPollerForHandler(
+        registration: SqsEventHandler
+    ): SqsEventPoller {
+        return SqsEventPoller(
+            registration.javaClass::getCanonicalName.name,
+            registration,
+            createFetcherForHandler(registration),
+            createPollingThreadPool(registration),
+            createHandlerThreadPool(registration),
+        )
+    }
+
+    private fun createFetcherForHandler(registration: SqsEventHandler): SqsEventFetcher {
+        return SqsEventFetcher(registration.sqsQueueUrl)
+    }
+
+    private fun createPollingThreadPool(
+        registration: SqsEventHandler
+    ): ScheduledThreadPoolExecutor {
+        return ThreadPools.blockingScheduledThreadPool(
+            EventPollerProperties().pollingThreads,
+            String.format("%s-poller", registration.javaClass::getCanonicalName.name)
+        )
+    }
+
+    private fun createHandlerThreadPool(
+        registration: SqsEventHandler
+    ): ThreadPoolExecutor {
+        return ThreadPools.blockingThreadPool(
+            eventHandlerProperties.threadPoolSize,
+            eventHandlerProperties.queueSize,
+            String.format("%s-handler", registration.javaClass::getCanonicalName.name)
+        )
+    }
+
+    fun start() {
+        for (poller in pollers!!) {
+            poller.start()
+        }
+    }
+
+    fun stop() {
+        for (poller in pollers!!) {
+            poller.stop()
+        }
+    }
+
+}
