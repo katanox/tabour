@@ -28,7 +28,4 @@ data class EventHandlerProperties(
      * The default is empty string.
      */
     var threadNamePrefix: String = ""
-) {
-
-
-}
+)

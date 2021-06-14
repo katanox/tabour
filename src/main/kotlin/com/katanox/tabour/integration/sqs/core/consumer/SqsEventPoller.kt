@@ -23,18 +23,10 @@ class SqsEventPoller(
     private val eventFetcher: SqsEventFetcher,
     private val pollerThreadPool: ScheduledThreadPoolExecutor,
     private val handlerThreadPool: ThreadPoolExecutor,
+    private val pollingProperties: EventPollerProperties,
+    private val sqsConfiguration: SqsConfiguration,
+    private val exceptionHandler: ExceptionHandler
 ) {
-
-    @Autowired
-    private lateinit var pollingProperties: EventPollerProperties
-
-    @Autowired
-    private lateinit var sqsConfiguration: SqsConfiguration
-
-    @Autowired
-    private lateinit var exceptionHandler: ExceptionHandler
-
-
     fun start() {
         logger.info("starting SqsMessagePoller")
         for (i in 0 until pollerThreadPool.corePoolSize) {

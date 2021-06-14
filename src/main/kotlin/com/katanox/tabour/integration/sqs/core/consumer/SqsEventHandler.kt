@@ -5,20 +5,19 @@ import com.katanox.tabour.config.TabourAutoConfigs
 import com.katanox.tabour.extentions.ConsumeAction
 import io.github.resilience4j.retry.event.RetryOnErrorEvent
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Scope
+import org.springframework.context.annotation.ScopedProxyMode
+import org.springframework.stereotype.Component
 
 private val logger = KotlinLogging.logger {}
 
-class SqsEventHandler : IEventConsumerBase {
-
-    lateinit var sqsQueueUrl: String
-
-    lateinit var consumerAction: ConsumeAction
-
-    @Autowired
-    private lateinit var tabourConfigs: TabourAutoConfigs
-
-
+@Component
+@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS, scopeName = "prototype")
+class SqsEventHandler(
+    val sqsQueueUrl: String = "",
+    val consumerAction: ConsumeAction = {},
+    val tabourConfigs: TabourAutoConfigs
+) : IEventConsumerBase {
     /**
      * Called just before the handle() method is being called. You can implement this method to
      * initialize the thread handling the message with [ThreadLocal]s or add an MDC context for
@@ -28,7 +27,8 @@ class SqsEventHandler : IEventConsumerBase {
      *
      * The default implementation does nothing.
      */
-    fun onBeforeHandle(message: ByteArray) {}
+    fun onBeforeHandle(message: ByteArray) {
+    }
 
     /**
      * Called after a message has been handled, irrespective of the success. In case of an exception
@@ -53,15 +53,6 @@ class SqsEventHandler : IEventConsumerBase {
                 )
             }
         retry.executeRunnable { consumerAction(message) }
-    }
-
-    override fun setBusUrl(busUrl: String) {
-        sqsQueueUrl = busUrl
-    }
-
-
-    override fun setAction(action: ConsumeAction) {
-        consumerAction = action
     }
 
 

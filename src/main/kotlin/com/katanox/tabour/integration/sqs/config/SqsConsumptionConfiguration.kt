@@ -1,6 +1,10 @@
 package com.katanox.tabour.integration.sqs.config
 
 import com.amazonaws.services.sqs.AmazonSQSAsync
+import com.katanox.tabour.config.EventHandlerProperties
+import com.katanox.tabour.config.EventPollerProperties
+import com.katanox.tabour.factory.BusType
+import com.katanox.tabour.factory.EventConsumeFactory
 import com.katanox.tabour.integration.sqs.core.consumer.SqsEventHandler
 import com.katanox.tabour.integration.sqs.core.consumer.SqsEventHandlerRegistry
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,7 +31,7 @@ class SqsConsumptionConfiguration(@Autowired val sqsProperties: SqsProperties) {
         return factory
     }
 
-    protected fun createDefaultTaskExecutor(): AsyncTaskExecutor? {
+    protected fun createDefaultTaskExecutor(): AsyncTaskExecutor {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.setThreadNamePrefix("SQS-")
         threadPoolTaskExecutor.corePoolSize = sqsProperties.corePoolSize
@@ -37,11 +41,20 @@ class SqsConsumptionConfiguration(@Autowired val sqsProperties: SqsProperties) {
         return threadPoolTaskExecutor
     }
 
+
     @Bean
     fun sqsMessageHandlerRegistry(
-        registrations: List<SqsEventHandler>
+        eventConsumeFactory: EventConsumeFactory,
+        eventHandlerProperties: EventHandlerProperties,
+        eventPollerProperties: EventPollerProperties,
+        sqsConfiguration: SqsConfiguration
     ): SqsEventHandlerRegistry {
-        return SqsEventHandlerRegistry(registrations)
+        return SqsEventHandlerRegistry(
+            eventConsumeFactory.getEventConsumers(BusType.SQS) as List<SqsEventHandler>,
+            eventHandlerProperties,
+            eventPollerProperties,
+            sqsConfiguration
+        )
     }
 
     @Bean

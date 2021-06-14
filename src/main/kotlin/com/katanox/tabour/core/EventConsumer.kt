@@ -21,9 +21,7 @@ abstract class EventConsumer {
 
     @PostConstruct
     private fun setUp() {
-        eventConsumer = eventConsumerFactory.getEventConsumer(getBusType())
-        eventConsumer.setBusUrl(getBusName())
-        eventConsumer.setAction { consume(it) }
+        eventConsumer = eventConsumerFactory.getEventConsumer(getBusType(),getBusName()) { consume(it as ByteArray) }
     }
 
 }

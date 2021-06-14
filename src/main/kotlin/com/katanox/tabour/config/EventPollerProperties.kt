@@ -17,8 +17,9 @@ data class EventPollerProperties(
      */
     var pollDelay: Duration = Duration.of(1, ChronoUnit.SECONDS),
     /**
-     * The duration the should wait for messages before closing the connection.
-     *
+     * The duration (in seconds) for which the call waits for a message to arrive in the queue before returning.
+     * If a message is available, the call returns sooner than WaitTimeSeconds.
+     * If no messages are available and the wait time expires, the call returns successfully with an empty list of messages.
      *
      * The default is 20 second.
      */

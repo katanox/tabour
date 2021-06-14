@@ -31,7 +31,7 @@ class SqsConfiguration(@Autowired val sqsProperties: SqsProperties) {
     }
 
     @Bean
-    fun queueMessagingTemplate(): QueueMessagingTemplate? {
+    fun queueMessagingTemplate(): QueueMessagingTemplate {
         return QueueMessagingTemplate(amazonSQSAsync())
     }
 

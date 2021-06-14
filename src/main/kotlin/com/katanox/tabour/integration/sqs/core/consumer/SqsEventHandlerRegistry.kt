@@ -2,9 +2,10 @@ package com.katanox.tabour.integration.sqs.core.consumer
 
 import com.katanox.tabour.config.EventHandlerProperties
 import com.katanox.tabour.config.EventPollerProperties
+import com.katanox.tabour.exception.ExceptionHandler
+import com.katanox.tabour.integration.sqs.config.SqsConfiguration
 import com.katanox.tabour.thread.ThreadPools
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 
@@ -13,10 +14,10 @@ private val logger = KotlinLogging.logger {}
 
 class SqsEventHandlerRegistry(
     eventHandlers: List<SqsEventHandler>,
+    var eventHandlerProperties: EventHandlerProperties,
+    var eventPollerProperties: EventPollerProperties,
+    var sqsConfiguration: SqsConfiguration
 ) {
-    @Autowired
-    private lateinit var eventHandlerProperties: EventHandlerProperties
-
     private var pollers: Set<SqsEventPoller>? = null
 
     init {
@@ -38,16 +39,19 @@ class SqsEventHandlerRegistry(
         registration: SqsEventHandler
     ): SqsEventPoller {
         return SqsEventPoller(
-            registration.javaClass::getCanonicalName.name,
-            registration,
-            createFetcherForHandler(registration),
-            createPollingThreadPool(registration),
-            createHandlerThreadPool(registration),
+            name = registration.javaClass::getCanonicalName.name,
+            eventHandler = registration,
+            eventFetcher = createFetcherForHandler(registration),
+            pollerThreadPool = createPollingThreadPool(registration),
+            handlerThreadPool = createHandlerThreadPool(registration),
+            pollingProperties = eventPollerProperties,
+            sqsConfiguration = sqsConfiguration,
+            exceptionHandler = ExceptionHandler.defaultExceptionHandler()
         )
     }
 
     private fun createFetcherForHandler(registration: SqsEventHandler): SqsEventFetcher {
-        return SqsEventFetcher(registration.sqsQueueUrl)
+        return SqsEventFetcher(registration.sqsQueueUrl,sqsConfiguration,eventPollerProperties)
     }
 
     private fun createPollingThreadPool(

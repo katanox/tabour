@@ -67,12 +67,9 @@ data class SqsProperties(
      */
     var queueCapacity: Int = 100,
     /**
-     * Set the capacity for the ThreadPoolExecutor's BlockingQueue, that is being used by SQS
-     * Any positive value will lead to a LinkedBlockingQueue instance;
-     * Any other value will lead to a SynchronousQueue instance
+     * Configures if this the sqs listeners should be starting
      *
-     *
-     * Default is Integer.MAX_VALUE.
+     * The default is false
      */
     var enableConsumption: Boolean = false,
 

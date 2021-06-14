@@ -10,14 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired
 private val logger = KotlinLogging.logger {}
 
 class SqsEventFetcher(
-    private val queueUrl: String
+    private val queueUrl: String,
+    private val sqsConfiguration: SqsConfiguration,
+    private val properties: EventPollerProperties,
 ) {
-
-    @Autowired
-    private lateinit var sqsConfiguration: SqsConfiguration
-
-    @Autowired
-    private lateinit var properties: EventPollerProperties
 
     fun fetchMessages(): List<Message> {
         val request = ReceiveMessageRequest()
