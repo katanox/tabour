@@ -5,8 +5,28 @@
     <groupId>com.katanox</groupId>
     <artifactId>tabour</artifactId>
     <version>0.0.1</version>
-    <name>integration</name>
-    <description>integration Micro-service</description>
+    <name>Tabour</name>
+    <description>Kotlin's library to make working with queues/topics much easier.</description>
+    <repositories>
+        <repository>
+            <id>jcenter</id>
+            <name>jcenter</name>
+            <url>https://jcenter.bintray.com</url>
+        </repository>
+    </repositories>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/katanox/tabour</url>
+        </repository>
+    </distributionManagement>
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
     <properties>
         <skipTests>false</skipTests>
         <skipITs>${skipTests}</skipITs>
@@ -21,82 +41,68 @@
         <sunfire.plugin.version>3.0.0-M5</sunfire.plugin.version>
         <jacoco.plugin.version>0.8.5</jacoco.plugin.version>
         <failsafe.plugin.version>2.22.1</failsafe.plugin.version>
-        <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
 
         <!-- third party dependencies -->
-        <!-- gRPC -->
-        <grpc.version>1.36.0</grpc.version>
-        <grpc.kotlin.version>1.0.0</grpc.kotlin.version>
-        <protobuf.version>3.14.0</protobuf.version>
-        <grpc.starter.version>2.11.0.RELEASE</grpc.starter.version>
-        <grpc.testing.version>1.35.0</grpc.testing.version>
-
         <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
         <gson.version>2.8.6</gson.version>
-        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
-        <mysql.connector.version>8.0.19</mysql.connector.version>
         <!-- https://mvnrepository.com/artifact/io.kotest/kotest-assertions-core-jvm -->
         <kotest.version>4.4.3</kotest.version>
         <!-- https://mvnrepository.com/artifact/org.testcontainers/testcontainers -->
         <testcontainers.version>1.15.2</testcontainers.version>
         <!-- https://mvnrepository.com/artifact/org.testcontainers/junit-jupiter -->
         <testcontainers.jupiter.version>1.15.2</testcontainers.jupiter.version>
-        <!-- https://mvnrepository.com/artifact/org.testcontainers/mysql -->
-        <testcontainers.mariadb.version>1.15.2</testcontainers.mariadb.version>
-        <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
-        <mariadb-java-client.version>2.7.2</mariadb-java-client.version>
         <!-- https://mvnrepository.com/artifact/io.github.microutils/kotlin-logging-jvm -->
         <kotlin-jvm-logging.version>2.0.6</kotlin-jvm-logging.version>
-        <!-- https://mvnrepository.com/artifact/io.sentry/sentry -->
-        <sentry.version>4.3.0</sentry.version>
         <!-- https://mvnrepository.com/artifact/io.mockk/mockk -->
         <mockk.version>1.11.0</mockk.version>
-        <!-- https://mvnrepository.com/artifact/au.com.console/kotlin-jpa-specification-dsl?repo=jcenter -->
-        <kotlin-jpa-dsl.version>2.0.0</kotlin-jpa-dsl.version>
-        <!-- https://mvnrepository.com/artifact/org.hashids/hashids -->
-        <hashids.version>1.0.3</hashids.version>
+        <spring.boot.version>2.5.0</spring.boot.version>
+        <spring.cloud.version>2.1.4.RELEASE</spring.cloud.version>
+        <javax.annotation.version>1.3.2</javax.annotation.version>
+        <resilience4j.retry.version>1.6.1</resilience4j.retry.version>
+        <jetbrains.kotlin.version>1.5.10</jetbrains.kotlin.version>
+        <kotlin.coroutines.version>1.5.0</kotlin.coroutines.version>
     </properties>
     <dependencies>
         <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-autoconfigure -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
-            <version>2.5.0</version>
+            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
-            <version>2.5.0</version>
+            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
-            <version>1.3.2</version>
+            <version>${javax.annotation.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-aws-messaging</artifactId>
-            <version>2.1.4.RELEASE</version>
+            <version>${spring.cloud.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-retry</artifactId>
-            <version>1.6.1</version>
+            <version>${resilience4j.retry.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-reflect</artifactId>
-            <version>1.5.10</version>
+            <version>${jetbrains.kotlin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>1.5.10</version>
+            <version>${jetbrains.kotlin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-core</artifactId>
-            <version>1.5.0</version>
+            <version>${kotlin.coroutines.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -132,18 +138,6 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${testcontainers.jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>mariadb</artifactId>
-            <version>${testcontainers.mariadb.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-testing</artifactId>
-            <version>${grpc.testing.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -218,9 +212,6 @@
                                 <sourceDir>
                                     ${basedir}/src/integration-test/kotlin
                                 </sourceDir>
-                                <sourceDir>
-                                    ${basedir}/src/test/kotlin/com/katanox/shared
-                                </sourceDir>
                             </sourceDirs>
                         </configuration>
                     </execution>
@@ -232,8 +223,6 @@
                         </goals>
                         <configuration>
                             <sourceDirs>
-                                <source>target/generated-sources/protobuf/java</source>
-                                <source>target/generated-sources/protobuf/grpc-java</source>
                                 <source>src/main/kotlin</source>
                             </sourceDirs>
                         </configuration>
@@ -298,7 +287,6 @@
                 <configuration>
                     <excludes>
                         <exclude>**/model/**</exclude>
-                        <exclude>**/com/katanox/booking/interfaces/grpc/service/**</exclude>
                     </excludes>
                     <destFile>${basedir}/target/coverage-reports/jacoco.exec</destFile>
                     <dataFile>${basedir}/target/coverage-reports/jacoco.exec</dataFile>
@@ -349,7 +337,6 @@
                             <outputDirectory>${project.reporting.outputDirectory}/jacoco-it</outputDirectory>
                         </configuration>
                     </execution>
-
                     <execution>
                         <id>jacoco-site</id>
                         <phase>package</phase>
@@ -358,7 +345,6 @@
                         </goals>
                     </execution>
                 </executions>
-
             </plugin>
 
             <plugin>
@@ -399,19 +385,32 @@
                     </execution>
                 </executions>
             </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>3.2.1</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -436,19 +435,5 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>jcenter</id>
-            <name>jcenter</name>
-            <url>https://jcenter.bintray.com</url>
-        </repository>
-    </repositories>
 
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/katanox/tabour</url>
-        </repository>
-    </distributionManagement>
 </project>
