@@ -57,7 +57,6 @@ class SqsEventPublisher : IEventPublisherBase {
         val request = preConfiguredRequest
             .withQueueUrl(busUrl)
             .withMessageBody(message.toString())
-            .withMessageGroupId("Booking")
         val result = sqsConfiguration.amazonSQSAsync().sendMessage(request)
         if (result.sdkHttpMetadata.httpStatusCode != 200) {
             throw RuntimeException(
