@@ -59,7 +59,7 @@ class BookingEventConsumer : EventConsumer() {
         logger.info { booking }
     }
 
-    override fun getBusName(): String {
+    override fun getBusURL(): String {
         return "BUS_URL"
     }
 
@@ -112,8 +112,10 @@ class BookingEventConsumer : EventConsumer() {
 <tr>
 <td><pre>tabour.poller.batch-size</pre></td>
 <td><pre>10</pre></td>
-<td>The maximum number of messages to pull from the even bus each poll
-     *  SQSl: SQS allows is maximum 10</td>
+<td>The maximum number of messages to pull from the even bus each poll:
+
+     *  event bus:
+        - SQS allows is maximum 10</td>
 </tr>
 <tr>
 <td><pre>tabour.poller.polling-threads</pre></td>
@@ -143,7 +145,7 @@ class BookingEventConsumer : EventConsumer() {
 <tr>
 <td><pre>tabour.sqs.max-number-of-messages</pre></td>
 <td><pre>10</pre></td>
-<td>Configure the maximum number of messages that should be retrieved during one poll to the Amazon SQS system. This number must be a positive, non-zero number that has a maximum number of 10. Values higher then 10 are currently not supported by the queueing system. the maximum number of messages (between 1-10)</td>
+<td>Configure the maximum number of messages that should be retrieved during one poll to the Amazon SQS system. This number must be a positive, non-zero number that has a maximum number of 10. Values higher then 10 are currently not supported by the queueing system.</td>
 </tr>
 <tr>
 <td><pre>tabour.sqs.core-pool-size</pre></td>

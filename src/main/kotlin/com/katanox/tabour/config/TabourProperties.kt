@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component
 @ConfigurationProperties(prefix = "tabour")
 @Component
 data class TabourProperties(
+
     /**
      *
      * Number of times that is gonna retry to publish  or consume an event

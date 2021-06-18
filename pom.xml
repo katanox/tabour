@@ -27,6 +27,14 @@
             <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
+    <developers>
+        <developer>
+            <name>Ahmad Shabib</name>
+            <email>a.shabib@katanox.com</email>
+            <organization>Katanox</organization>
+            <organizationUrl>http://www.katanox.com</organizationUrl>
+        </developer>
+    </developers>
     <properties>
         <skipTests>false</skipTests>
         <skipITs>${skipTests}</skipITs>

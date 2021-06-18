@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 @ConfigurationProperties(prefix = "tabour.handler")
 @Component
 data class EventHandlerProperties(
+
     /**
      *
      * Size of the thread pool the the handler actors will use to consume the messages
@@ -21,6 +22,7 @@ data class EventHandlerProperties(
      * The default is 10.
      */
     var queueSize: Int = 10,
+
     /**
      * The prefix of the threads that are created by the thread pool
      *

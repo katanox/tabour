@@ -2,7 +2,7 @@ package com.katanox.tabour.integration.sqs.core.consumer
 
 import com.katanox.tabour.base.IEventConsumerBase
 import com.katanox.tabour.config.TabourAutoConfigs
-import com.katanox.tabour.extentions.ConsumeAction
+import com.katanox.tabour.extentions.ConsumerAction
 import io.github.resilience4j.retry.event.RetryOnErrorEvent
 import mu.KotlinLogging
 import org.springframework.context.annotation.Scope
@@ -15,7 +15,7 @@ private val logger = KotlinLogging.logger {}
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS, scopeName = "prototype")
 class SqsEventHandler(
     val sqsQueueUrl: String = "",
-    val consumerAction: ConsumeAction = {},
+    val consumerAction: ConsumerAction = {},
     val tabourConfigs: TabourAutoConfigs
 ) : IEventConsumerBase {
     /**

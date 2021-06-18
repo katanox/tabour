@@ -8,17 +8,17 @@ import java.util.*
 @Component
 class EventPublisherFactory @Autowired constructor(services: List<IEventPublisherBase>) {
 
-    private val busTypeEventPublisherHashMap: MutableMap<BusType, IEventPublisherBase> =
+    private val eventPublishers: MutableMap<BusType, IEventPublisherBase> =
         EnumMap(BusType::class.java)
 
     init {
         for (service in services) {
-            busTypeEventPublisherHashMap[service.getType()] = service
+            eventPublishers[service.getType()] = service
         }
     }
 
     fun getEventPublisher(type: BusType): IEventPublisherBase {
-        return busTypeEventPublisherHashMap[type]
+        return eventPublishers[type]
             ?: throw RuntimeException("Unknown service type: $type")
     }
 }

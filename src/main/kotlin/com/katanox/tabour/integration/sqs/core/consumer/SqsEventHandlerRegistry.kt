@@ -18,7 +18,7 @@ class SqsEventHandlerRegistry(
     var eventPollerProperties: EventPollerProperties,
     var sqsConfiguration: SqsConfiguration
 ) {
-    private var pollers: Set<SqsEventPoller>? = null
+    private var pollers: Set<SqsEventPoller> = setOf()
 
     init {
         pollers = initializePollers(eventHandlers)
@@ -30,7 +30,7 @@ class SqsEventHandlerRegistry(
         val pollers: MutableSet<SqsEventPoller> = HashSet()
         for (registration in registrations) {
             pollers.add(createPollerForHandler(registration))
-            logger.info("initialized SqsMessagePoller '{}'", registration.javaClass::getCanonicalName)
+            logger.info("initialized SqsMessagePoller '{}'", registration.javaClass::getCanonicalName.name)
         }
         return pollers
     }
@@ -51,7 +51,7 @@ class SqsEventHandlerRegistry(
     }
 
     private fun createFetcherForHandler(registration: SqsEventHandler): SqsEventFetcher {
-        return SqsEventFetcher(registration.sqsQueueUrl,sqsConfiguration,eventPollerProperties)
+        return SqsEventFetcher(registration.sqsQueueUrl, sqsConfiguration, eventPollerProperties)
     }
 
     private fun createPollingThreadPool(

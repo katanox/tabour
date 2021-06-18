@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
-class EventConsumeFactory {
+class EventConsumerFactory {
 
     private val eventConsumers = EnumMap<BusType, List<IEventConsumerBase>>(BusType::class.java)
 
@@ -32,7 +32,7 @@ class EventConsumeFactory {
     fun getEventConsumers(type: BusType): List<IEventConsumerBase> {
         return when (type) {
             BusType.SQS -> {
-                eventConsumers[type]!!
+                eventConsumers[type] ?: listOf()
             }
         }
 

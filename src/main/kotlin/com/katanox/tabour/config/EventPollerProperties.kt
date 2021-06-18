@@ -10,12 +10,14 @@ import java.time.temporal.ChronoUnit
 @ConfigurationProperties(prefix = "tabour.poller")
 @Component
 data class EventPollerProperties(
+
     /**
      * The delay the poller should wait for the next poll after the previous poll has finished
      *
-     * The default is 1 threads.
+     * The default is 1 second.
      */
     var pollDelay: Duration = Duration.of(1, ChronoUnit.SECONDS),
+
     /**
      * The duration (in seconds) for which the call waits for a message to arrive in the queue before returning.
      * If a message is available, the call returns sooner than WaitTimeSeconds.
@@ -24,22 +26,25 @@ data class EventPollerProperties(
      * The default is 20 second.
      */
     var waitTime: Duration = Duration.ofSeconds(20),
+
     /**
-     * Visibility timeout is the time-period or duration you specify for the queue item which when is fetched
-     * and processed by the consumer is made hidden from the queue and other consumers.
+     * Visibility timeout is the time-period for which the queue item is hidden from other consumers after being fetched
      *
      *
      * The default is 360 second.
      */
     var visibilityTimeout: Duration = Duration.ofSeconds(360),
+
     /**
      * The maximum number of messages to pull from the even bus each poll
-     *  SQSl: SQS allows is maximum 10
+     *  event bus:
+     *      - SQS allows a maximum of 10
      *
      *
      * The default is 10.
      */
     var batchSize: Int = 10,
+
     /**
      * The number of threads that should poll for new messages. Each of those threads will poll a
      * batch of batchSize messages and then wait for the pollDelay interval until polling the next
