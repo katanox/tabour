@@ -21,7 +21,7 @@ abstract class EventPublisher<T : Serializable> {
         eventPublisher = eventPublisherFactory.getEventPublisher(getBusType())
     }
 
-    open fun publish(message: T, busUrl: String) {
-        eventPublisher.publish(message, busUrl)
+    open fun publish(message: T, busUrl: String, messageGroupId: String? = null) {
+        eventPublisher.publish(message, busUrl,messageGroupId)
     }
 }
