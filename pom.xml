@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.katanox</groupId>
     <artifactId>tabour</artifactId>
-    <version>0.0.1</version>
+    <version>XXX.XXX</version>
     <name>Tabour</name>
     <url>https://github.com/katanox/tabour</url>
     <description>Kotlin's library to make working with queues/topics much easier.</description>
@@ -137,6 +137,11 @@
             <groupId>io.github.microutils</groupId>
             <artifactId>kotlin-logging-jvm</artifactId>
             <version>${kotlin-jvm-logging.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>3.17.3</version>
         </dependency>
 
         <!-- Testing -->
