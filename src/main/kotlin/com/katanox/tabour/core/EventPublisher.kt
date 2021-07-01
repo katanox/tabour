@@ -4,10 +4,9 @@ import com.katanox.tabour.base.IEventPublisherBase
 import com.katanox.tabour.factory.EventPublisherFactory
 import com.katanox.tabour.factory.BusType
 import org.springframework.beans.factory.annotation.Autowired
-import java.io.Serializable
 import javax.annotation.PostConstruct
 
-abstract class EventPublisher<T : Serializable> {
+abstract class EventPublisher {
 
     private lateinit var eventPublisher: IEventPublisherBase
 
@@ -21,7 +20,7 @@ abstract class EventPublisher<T : Serializable> {
         eventPublisher = eventPublisherFactory.getEventPublisher(getBusType())
     }
 
-    open fun publish(message: T, busUrl: String, messageGroupId: String? = null) {
+    open fun publish(message: String, busUrl: String, messageGroupId: String? = null) {
         eventPublisher.publish(message, busUrl,messageGroupId)
     }
 }

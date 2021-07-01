@@ -6,8 +6,8 @@ Kotlin's library to make working with queues/topics much easier.
 
 ## Installation
 
-First you need to get started is to add a dependency to `Tabour` library.
-Then adding these to the main application of spring:
+To get started is to add a dependency to `Tabour` library.
+Then add this to the main application of spring:
 ```kotlin
     @ConfigurationPropertiesScan
     @ComponentScan(basePackages = ["com.katanox.tabour"])
@@ -32,31 +32,34 @@ Then adding these to the main application of spring:
 ## Supported Types
 - SQS
 
-## Publisher example
+## Working with self-defined serialization
+If you have self-defined methods of serializing objects to string representations (or even want to publish plain-text messages), you can use the base EventPublisher/EventConsumer classes.
+
+### Publisher example
+Define a publisher class for a certain queue.
 ```kotlin
-class BookingEventPublisher: EventPublisher<Booking>() {
+class BookingEventPublisher: EventPublisher() {
     
     override fun getBusType(): BusType {
         return BusType.SQS
     }
 }
 ```
-Then
+
+Then simply call
 ```kotlin
-    bookingEventPublisher.publish(createBookingRequest.booking, "BUS_URL")
+    bookingEventPublisher.publish(message, "BUS_URL")
 ```
 
-## Consumer example
-In this example a protobuf message has been used.
+### Consumer example
+Extend the EventConsumer, set enableConsumption parameter to true, and it will automatically
+start consuming messages using your consume method.
 ```kotlin
 class BookingEventConsumer : EventConsumer() {
 
-    override fun consume(message: ByteArray) {
-        val input = ByteArrayInputStream(message)
-        val bookingBuilder = Booking.newBuilder()
-        TextFormat.merge(input.reader(), bookingBuilder)
-        val booking = bookingBuilder.build()
-        logger.info { booking }
+    override fun consume(message: String) {
+        logger.info { "received new booking: $booking"  }
+        // ... deserialize and perform your business logic ...
     }
 
     override fun getBusURL(): String {
@@ -69,6 +72,42 @@ class BookingEventConsumer : EventConsumer() {
     }
 }
 ```
+
+## Working with Protobuf
+If you're publishing proto messages, you can use the ProtoEventPublisher/ProtoEventConsumer classes 
+which do all serialization and deserialization for you.
+
+### Publishing Example
+Simply swap the base class your publisher is extending to ProtoEventPublisher
+```kotlin
+@Component
+class BookingEventPublisher: ProtoEventPublisher() {
+    override fun getBusType(): BusType {
+        return BusType.SQS
+    }
+}
+```
+
+Now you're free to call the publisher directly with any proto object
+```kotlin
+    bookingEventPublisher.publish(bookingEvent, "BUS_URL")
+```
+
+### Consumer example
+For consumption, you can extend the ProtoEventConsumer, which implements a helper function 
+deserializing JSON to your protobuf as such
+
+```kotlin
+class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
+    
+    override fun consume(message: String) {
+        val event = parseMessageToEvent(message, BookingEvent.newBuilder()).build()
+        logger.debug { "consumed event: $event" }
+        // ... perform business logic on your proto event ...
+    }
+}
+```
+
 
 ## Configurations
 <table>

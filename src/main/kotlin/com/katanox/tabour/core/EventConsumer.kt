@@ -17,11 +17,11 @@ abstract class EventConsumer {
 
     abstract fun getBusType(): BusType
 
-    abstract fun consume(message: ByteArray)
+    abstract fun consume(message: String)
 
     @PostConstruct
     private fun setUp() {
-        eventConsumer = eventConsumerFactory.getEventConsumer(getBusType(),getBusURL()) { consume(it as ByteArray) }
+        eventConsumer = eventConsumerFactory.getEventConsumer(getBusType(),getBusURL()) { consume(it as String) }
     }
 
 }
