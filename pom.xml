@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.katanox</groupId>
     <artifactId>tabour</artifactId>
-    <version>0.1.0</version>
+    <version>0.0.1</version>
     <name>Tabour</name>
     <url>https://github.com/katanox/tabour</url>
     <description>Kotlin's library to make working with queues/topics much easier.</description>
@@ -73,6 +73,7 @@
         <jetbrains.kotlin.version>1.5.10</jetbrains.kotlin.version>
         <kotlin.coroutines.version>1.5.0</kotlin.coroutines.version>
         <aws-java-sdk.version>1.12.11</aws-java-sdk.version>
+        <protobuf-java-util.version>3.17.3</protobuf-java-util.version>
     </properties>
 
     <dependencyManagement>
@@ -141,7 +142,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
-            <version>3.17.3</version>
+            <version>${protobuf-java-util.version}</version>
         </dependency>
 
         <!-- Testing -->
