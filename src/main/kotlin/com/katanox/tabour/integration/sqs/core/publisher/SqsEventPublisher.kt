@@ -26,7 +26,7 @@ class SqsEventPublisher : IEventPublisherBase {
         return BusType.SQS
     }
 
-    override fun <T : Serializable> publish(message: T, busUrl: String, messageGroupId: String?) {
+    override fun publish(message: String, busUrl: String, messageGroupId: String?) {
         publish(message, busUrl, SendMessageRequest(), messageGroupId)
     }
 
@@ -36,7 +36,7 @@ class SqsEventPublisher : IEventPublisherBase {
      * must not be set because they will be set by the this publisher.
      */
     private fun <T : Serializable> publish(
-        message: T,
+        message: String,
         busUrl: String,
         preConfiguredRequest: SendMessageRequest,
         messageGroupId: String?
@@ -55,18 +55,18 @@ class SqsEventPublisher : IEventPublisherBase {
         retry.executeRunnable { doPublish(message, busUrl, preConfiguredRequest, messageGroupId) }
     }
 
-    private fun <T : Serializable> doPublish(
-        message: T,
+    private fun doPublish(
+        message: String,
         busUrl: String,
         preConfiguredRequest: SendMessageRequest,
         messageGroupId: String?
     ) {
         logger.debug(
-            "sending message {} to SQS queue {}", message.toString(), busUrl
+            "sending message {} to SQS queue {}", message, busUrl
         )
         val request = preConfiguredRequest
             .withQueueUrl(busUrl)
-            .withMessageBody(message.toString())
+            .withMessageBody(message)
         messageGroupId?.let { request.withMessageGroupId(it) }
         val result = sqsConfiguration.amazonSQSAsync().sendMessage(request)
         if (result.sdkHttpMetadata.httpStatusCode != 200) {
