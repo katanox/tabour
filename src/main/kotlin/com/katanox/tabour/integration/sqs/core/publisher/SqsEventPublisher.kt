@@ -26,8 +26,8 @@ class SqsEventPublisher : IEventPublisherBase {
         return BusType.SQS
     }
 
-    override fun <T : Serializable> publish(message: T, busUrl: String) {
-        publish(message, busUrl, SendMessageRequest())
+    override fun <T : Serializable> publish(message: T, busUrl: String, messageGroupId: String?) {
+        publish(message, busUrl, SendMessageRequest(), messageGroupId)
     }
 
     /**
@@ -35,7 +35,12 @@ class SqsEventPublisher : IEventPublisherBase {
      * options you may need from the underlying SQS client. Note that the `queueUrl` and `messageBody`
      * must not be set because they will be set by the this publisher.
      */
-    private fun <T : Serializable> publish(message: T, busUrl: String, preConfiguredRequest: SendMessageRequest) {
+    private fun <T : Serializable> publish(
+        message: T,
+        busUrl: String,
+        preConfiguredRequest: SendMessageRequest,
+        messageGroupId: String?
+    ) {
         require(preConfiguredRequest.queueUrl == null) { "attribute queueUrl of pre-configured request must not be set!" }
         require(preConfiguredRequest.messageBody == null) { "message body of pre-configured request must not be set!" }
         val retry = tabourConfigs.retryRegistry().retry("publish")
@@ -47,16 +52,22 @@ class SqsEventPublisher : IEventPublisherBase {
                     busUrl
                 )
             }
-        retry.executeRunnable { doPublish(message, busUrl, preConfiguredRequest) }
+        retry.executeRunnable { doPublish(message, busUrl, preConfiguredRequest, messageGroupId) }
     }
 
-    private fun <T : Serializable> doPublish(message: T, busUrl: String, preConfiguredRequest: SendMessageRequest) {
+    private fun <T : Serializable> doPublish(
+        message: T,
+        busUrl: String,
+        preConfiguredRequest: SendMessageRequest,
+        messageGroupId: String?
+    ) {
         logger.debug(
             "sending message {} to SQS queue {}", message.toString(), busUrl
         )
         val request = preConfiguredRequest
             .withQueueUrl(busUrl)
             .withMessageBody(message.toString())
+        messageGroupId?.let { request.withMessageGroupId(it) }
         val result = sqsConfiguration.amazonSQSAsync().sendMessage(request)
         if (result.sdkHttpMetadata.httpStatusCode != 200) {
             throw RuntimeException(

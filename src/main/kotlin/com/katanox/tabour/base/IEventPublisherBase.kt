@@ -5,5 +5,5 @@ import java.io.Serializable
 
 interface IEventPublisherBase {
     fun getType(): BusType
-    fun <T: Serializable> publish(message: T, busUrl: String)
+    fun <T : Serializable> publish(message: T, busUrl: String, messageGroupId: String?)
 }
