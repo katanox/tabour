@@ -35,7 +35,7 @@ class SqsEventPublisher : IEventPublisherBase {
      * options you may need from the underlying SQS client. Note that the `queueUrl` and `messageBody`
      * must not be set because they will be set by the this publisher.
      */
-    private fun <T : Serializable> publish(
+    private fun publish(
         message: String,
         busUrl: String,
         preConfiguredRequest: SendMessageRequest,
