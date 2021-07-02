@@ -39,7 +39,7 @@ class SqsEventHandler(
      *
      * The default implementation does nothing.
      */
-    fun onAfterHandle(message: ByteArray) {}
+    fun onAfterHandle(message: String) {}
 
     fun handle(message: String) {
         val retry = tabourConfigs.retryRegistry().retry("handler")

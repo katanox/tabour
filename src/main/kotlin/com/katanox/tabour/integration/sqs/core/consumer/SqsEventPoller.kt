@@ -76,7 +76,7 @@ class SqsEventPoller(
                     ExceptionHandler.ExceptionHandlerDecision.DELETE -> acknowledgeMessage(sqsMessage)
                 }
             } finally {
-                eventHandler.onAfterHandle(message.toByteArray())
+                eventHandler.onAfterHandle(message)
             }
         }
     }
