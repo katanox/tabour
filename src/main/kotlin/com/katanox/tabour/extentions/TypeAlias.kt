@@ -1,3 +1,3 @@
 package com.katanox.tabour.extentions
 
-typealias ConsumerAction = (ByteArray) -> Unit
+typealias ConsumerAction = (String) -> Unit

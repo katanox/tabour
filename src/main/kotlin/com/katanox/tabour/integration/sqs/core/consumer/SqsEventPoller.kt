@@ -62,8 +62,8 @@ class SqsEventPoller(
         val message = sqsMessage.body
         handlerThreadPool.submit {
             try {
-                eventHandler.onBeforeHandle(message.toByteArray())
-                eventHandler.handle(message.toByteArray())
+                eventHandler.onBeforeHandle(message)
+                eventHandler.handle(message)
                 acknowledgeMessage(sqsMessage)
                 logger.debug(
                     "message {} processed successfully - message has been deleted from SQS",
