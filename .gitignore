@@ -3,6 +3,7 @@ HELP.md
 !**/src/test/**
 **/application.yml
 **.DS_Store
+settings.xml
 
 ### MVN ###
 target/
