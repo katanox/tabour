@@ -30,7 +30,7 @@ class SqsEventHandlerRegistry(
         val pollers: MutableSet<SqsEventPoller> = HashSet()
         for (registration in registrations) {
             pollers.add(createPollerForHandler(registration))
-            logger.info("initialized SqsMessagePoller '{}'", registration.javaClass::getCanonicalName.name)
+            logger.info("initialized SqsMessagePoller '{}'", registration.javaClass.canonicalName)
         }
         return pollers
     }
@@ -39,7 +39,7 @@ class SqsEventHandlerRegistry(
         registration: SqsEventHandler
     ): SqsEventPoller {
         return SqsEventPoller(
-            name = registration.javaClass::getCanonicalName.name,
+            name = registration.javaClass.canonicalName,
             eventHandler = registration,
             eventFetcher = createFetcherForHandler(registration),
             pollerThreadPool = createPollingThreadPool(registration),
@@ -58,8 +58,8 @@ class SqsEventHandlerRegistry(
         registration: SqsEventHandler
     ): ScheduledThreadPoolExecutor {
         return ThreadPools.blockingScheduledThreadPool(
-            EventPollerProperties().pollingThreads,
-            String.format("%s-poller", registration.javaClass::getCanonicalName.name)
+            eventPollerProperties.pollingThreads,
+            String.format("%s-poller", registration.javaClass.canonicalName)
         )
     }
 
@@ -69,18 +69,18 @@ class SqsEventHandlerRegistry(
         return ThreadPools.blockingThreadPool(
             eventHandlerProperties.threadPoolSize,
             eventHandlerProperties.queueSize,
-            String.format("%s-handler", registration.javaClass::getCanonicalName.name)
+            String.format("%s-handler", registration.javaClass.canonicalName)
         )
     }
 
     fun start() {
-        for (poller in pollers!!) {
+        for (poller in pollers) {
             poller.start()
         }
     }
 
     fun stop() {
-        for (poller in pollers!!) {
+        for (poller in pollers) {
             poller.stop()
         }
     }
