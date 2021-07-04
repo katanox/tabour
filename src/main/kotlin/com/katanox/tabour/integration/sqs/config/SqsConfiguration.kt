@@ -27,13 +27,13 @@ class SqsConfiguration(@Autowired val sqsProperties: SqsProperties) {
 
     @Bean
     fun credentialsProvider(): AWSCredentialsProvider {
-        return AWSStaticCredentialsProvider(BasicAWSCredentials(sqsProperties.accessKey, sqsProperties.secretKey))
+        return AWSStaticCredentialsProvider(
+            BasicAWSCredentials(sqsProperties.accessKey, sqsProperties.secretKey)
+        )
     }
 
     @Bean
     fun queueMessagingTemplate(): QueueMessagingTemplate {
         return QueueMessagingTemplate(amazonSQSAsync())
     }
-
-
 }

@@ -31,7 +31,7 @@ class SqsConsumptionConfiguration(@Autowired val sqsProperties: SqsProperties) {
         return factory
     }
 
-    protected fun createDefaultTaskExecutor(): AsyncTaskExecutor {
+    internal fun createDefaultTaskExecutor(): AsyncTaskExecutor {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.setThreadNamePrefix("SQS-")
         threadPoolTaskExecutor.corePoolSize = sqsProperties.corePoolSize
@@ -40,7 +40,6 @@ class SqsConsumptionConfiguration(@Autowired val sqsProperties: SqsProperties) {
         threadPoolTaskExecutor.afterPropertiesSet()
         return threadPoolTaskExecutor
     }
-
 
     @Bean
     fun sqsMessageHandlerRegistry(

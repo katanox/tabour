@@ -9,9 +9,9 @@ Kotlin's library to make working with queues/topics much easier.
 To get started is to add a dependency to `Tabour` library.
 Then add this to the main application of spring:
 ```kotlin
-    @ConfigurationPropertiesScan
-    @ComponentScan(basePackages = ["com.katanox.tabour"])
-    class RandomApplication
+	@ConfigurationPropertiesScan
+	@ComponentScan(basePackages = ["com.katanox.tabour"])
+	class RandomApplication
 ```
 
 #### Gradle/maven dependency
@@ -21,11 +21,11 @@ Then add this to the main application of spring:
 <td><img src="docs/maven.png" alt="Maven"/></td>
 <td>
 <pre>&lt;dependency&gt;
-    &lt;groupId&gt;com.katanox&lt;/groupId&gt;
-    &lt;artifactId&gt;tabour&lt;/artifactId&gt;
-    &lt;version&gt;{version}&lt;/version&gt;
+	&lt;groupId&gt;com.katanox&lt;/groupId&gt;
+	&lt;artifactId&gt;tabour&lt;/artifactId&gt;
+	&lt;version&gt;{version}&lt;/version&gt;
 &lt;/dependency&gt;</pre>
-    </td>
+	</td>
 </tr>
 </table>
 
@@ -39,16 +39,16 @@ If you have self-defined methods of serializing objects to string representation
 Define a publisher class for a certain queue.
 ```kotlin
 class BookingEventPublisher: EventPublisher() {
-    
-    override fun getBusType(): BusType {
-        return BusType.SQS
-    }
+
+	override fun getBusType(): BusType {
+		return BusType.SQS
+	}
 }
 ```
 
 Then simply call
 ```kotlin
-    bookingEventPublisher.publish(message, "BUS_URL")
+	bookingEventPublisher.publish(message, "BUS_URL")
 ```
 
 ### Consumer example
@@ -57,24 +57,24 @@ start consuming messages using your consume method.
 ```kotlin
 class BookingEventConsumer : EventConsumer() {
 
-    override fun consume(message: String) {
-        logger.info { "received new booking: $booking"  }
-        // ... deserialize and perform your business logic ...
-    }
+	override fun consume(message: String) {
+		logger.info { "received new booking: $booking"  }
+		// ... deserialize and perform your business logic ...
+	}
 
-    override fun getBusURL(): String {
-        return "BUS_URL"
-    }
+	override fun getBusURL(): String {
+		return "BUS_URL"
+	}
 
-    override fun getBusType(): BusType {
-        return BusType.SQS
+	override fun getBusType(): BusType {
+		return BusType.SQS
 
-    }
+	}
 }
 ```
 
 ## Working with Protobuf
-If you're publishing proto messages, you can use the ProtoEventPublisher/ProtoEventConsumer classes 
+If you're publishing proto messages, you can use the ProtoEventPublisher/ProtoEventConsumer classes
 which do all serialization and deserialization for you.
 
 ### Publishing Example
@@ -82,29 +82,29 @@ Simply swap the base class your publisher is extending to ProtoEventPublisher
 ```kotlin
 @Component
 class BookingEventPublisher: ProtoEventPublisher() {
-    override fun getBusType(): BusType {
-        return BusType.SQS
-    }
+	override fun getBusType(): BusType {
+		return BusType.SQS
+	}
 }
 ```
 
 Now you're free to call the publisher directly with any proto object
 ```kotlin
-    bookingEventPublisher.publish(bookingEvent, "BUS_URL")
+	bookingEventPublisher.publish(bookingEvent, "BUS_URL")
 ```
 
 ### Consumer example
-For consumption, you can extend the ProtoEventConsumer, which implements a helper function 
+For consumption, you can extend the ProtoEventConsumer, which implements a helper function
 deserializing JSON to your protobuf as such
 
 ```kotlin
 class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
-    
-    override fun consume(message: String) {
-        val event = parseMessageToEvent(message, BookingEvent.newBuilder()).build()
-        logger.debug { "consumed event: $event" }
-        // ... perform business logic on your proto event ...
-    }
+
+	override fun consume(message: String) {
+		val event = parseMessageToEvent(message, BookingEvent.newBuilder()).build()
+		logger.debug { "consumed event: $event" }
+		// ... perform business logic on your proto event ...
+	}
 }
 ```
 
@@ -153,8 +153,8 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 <td><pre>10</pre></td>
 <td>The maximum number of messages to pull from the even bus each poll:
 
-     *  event bus:
-        - SQS allows is maximum 10</td>
+	*  event bus:
+		- SQS allows is maximum 10</td>
 </tr>
 <tr>
 <td><pre>tabour.poller.polling-threads</pre></td>
