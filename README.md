@@ -1,115 +1,166 @@
 # Tabour
 
-Kotlin's library to make working with queues/topics much easier.
+Tabour is a Kotlin library which makes working with queues/topics much easier.
 
-### Usage:
+[![Build Status](https://github.com/katanox/tabour/workflows/Build/badge.svg)](https://github.com/katanox/tabour)
+[![Maven Central](https://img.shields.io/maven-central/v/com.katanox/tabour.svg?label=Maven&logo=apache-maven)](https://search.maven.org/search?q=g:%22com.katanox%22%20AND%20a:%22tabour%22)
+[![Gradle Plugin](https://img.shields.io/maven-central/v/com.katanox/tabour.svg?label=Gradle&?label=Gradle&logo=gradle)](https://search.maven.org/search?q=g:%22com.katanox%22%20AND%20a:%22tabour%22)
+[![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 
-## Installation
+[<img src="https://img.shields.io/badge/slack-@katanox/tabour-red.svg?logo=slack">](https://katanox.slack.com/archives/C027DN2EEBT)
+![Language](https://img.shields.io/badge/Language-Kotlin-blue?style=flat&logo=kotlin)
+[![Awesome Kotlin Badge](https://kotlin.link/awesome-kotlin.svg)](https://github.com/KotlinBy/awesome-kotlin)
 
-To get started is to add a dependency to `Tabour` library.
-Then add this to the main application of spring:
+
+## Usage
+
+### Installation
+
+The first thing you need to do to get started is to add a dependency to `Tabour` library. Then adding these to the main
+application of spring:
+
 ```kotlin
-	@ConfigurationPropertiesScan
-	@ComponentScan(basePackages = ["com.katanox.tabour"])
-	class RandomApplication
+@ConfigurationPropertiesScan
+@ComponentScan(basePackages = ["com.katanox.tabour", "your.package"])
+class RandomApplication
+```
+
+and if you are willing to use the consumers don't forget to enable the consumption based on the queue/topic type
+
+```yaml
+tabour:
+  sqs:
+    enable-consumption: true
 ```
 
 #### Gradle/maven dependency
+
 <table>
 <thead><tr><th>Approach</th><th>Instruction</th></tr></thead>
 <tr>
 <td><img src="docs/maven.png" alt="Maven"/></td>
 <td>
 <pre>&lt;dependency&gt;
-	&lt;groupId&gt;com.katanox&lt;/groupId&gt;
-	&lt;artifactId&gt;tabour&lt;/artifactId&gt;
-	&lt;version&gt;{version}&lt;/version&gt;
+    &lt;groupId&gt;com.katanox&lt;/groupId&gt;
+    &lt;artifactId&gt;tabour&lt;/artifactId&gt;
+    &lt;version&gt;{version}&lt;/version&gt;
 &lt;/dependency&gt;</pre>
-	</td>
+</td>
+</tr>
+<tr>
+<td><img src="docs/gradle_groovy.png" alt="Gradle Groovy DSL"/></td>
+<td>
+<pre>implementation 'com.katanox:tabour:{version}'</pre>
+</td>
+</tr>
+<tr>
+<td><img src="docs/gradle_kotlin.png" alt="Gradle Kotlin DSL"/></td>
+<td>
+<pre>implementation("com.katanox:tabour:{version}")</pre>
+</td>
+</tr>
+<tr>
+<td><img src="docs/sbt.png" alt="Scala SBT"/></td>
+<td>
+<pre>libraryDependencies += "com.katanox" % "tabour" % "{version}"</pre>
+</td>
 </tr>
 </table>
 
 ## Supported Types
+
 - SQS
 
 ## Working with self-defined serialization
-If you have self-defined methods of serializing objects to string representations (or even want to publish plain-text messages), you can use the base EventPublisher/EventConsumer classes.
+
+If you have self-defined methods of serializing objects to string representations (or even want to publish plain-text
+messages), you can use the base EventPublisher/EventConsumer classes.
 
 ### Publisher example
-Define a publisher class for a certain queue.
-```kotlin
-class BookingEventPublisher: EventPublisher() {
 
-	override fun getBusType(): BusType {
-		return BusType.SQS
-	}
+Define a publisher class for a certain queue.
+
+```kotlin
+class BookingEventPublisher : EventPublisher() {
+
+    override fun getBusType(): BusType {
+        return BusType.SQS
+    }
 }
 ```
 
 Then simply call
+
 ```kotlin
-	bookingEventPublisher.publish(message, "BUS_URL")
+    bookingEventPublisher.publish(message, "BUS_URL")
 ```
 
 ### Consumer example
-Extend the EventConsumer, set enableConsumption parameter to true, and it will automatically
-start consuming messages using your consume method.
+
+Extend the EventConsumer, set enableConsumption parameter to true, and it will automatically start consuming messages
+using your consume method.
+
 ```kotlin
 class BookingEventConsumer : EventConsumer() {
 
-	override fun consume(message: String) {
-		logger.info { "received new booking: $booking"  }
-		// ... deserialize and perform your business logic ...
-	}
+    override fun consume(message: String) {
+        logger.info { "received new booking: $booking" }
+        // ... deserialize and perform your business logic ...
+    }
 
-	override fun getBusURL(): String {
-		return "BUS_URL"
-	}
+    override fun getBusURL(): String {
+        return "BUS_URL"
+    }
 
-	override fun getBusType(): BusType {
-		return BusType.SQS
+    override fun getBusType(): BusType {
+        return BusType.SQS
 
-	}
+    }
 }
 ```
 
 ## Working with Protobuf
-If you're publishing proto messages, you can use the ProtoEventPublisher/ProtoEventConsumer classes
-which do all serialization and deserialization for you.
+
+If you're publishing proto messages, you can use the ProtoEventPublisher/ProtoEventConsumer classes which do all
+serialization and deserialization for you.
 
 ### Publishing Example
+
 Simply swap the base class your publisher is extending to ProtoEventPublisher
+
 ```kotlin
 @Component
-class BookingEventPublisher: ProtoEventPublisher() {
-	override fun getBusType(): BusType {
-		return BusType.SQS
-	}
+class BookingEventPublisher : ProtoEventPublisher() {
+    override fun getBusType(): BusType {
+        return BusType.SQS
+    }
 }
 ```
 
 Now you're free to call the publisher directly with any proto object
+
 ```kotlin
-	bookingEventPublisher.publish(bookingEvent, "BUS_URL")
+    bookingEventPublisher.publish(bookingEvent, "BUS_URL")
 ```
 
 ### Consumer example
-For consumption, you can extend the ProtoEventConsumer, which implements a helper function
-deserializing JSON to your protobuf as such
+
+For consumption, you can extend the ProtoEventConsumer, which implements a helper function deserializing JSON to your
+protobuf as such
 
 ```kotlin
 class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 
-	override fun consume(message: String) {
-		val event = parseMessageToEvent(message, BookingEvent.newBuilder()).build()
-		logger.debug { "consumed event: $event" }
-		// ... perform business logic on your proto event ...
-	}
+    override fun consume(message: String) {
+        val event = parseMessageToEvent(message, BookingEvent.newBuilder()).build()
+        logger.debug { "consumed event: $event" }
+        // ... perform business logic on your proto event ...
+    }
 }
 ```
 
-
 ## Configurations
+
 <table>
 <thead><tr><th>path</th><th>default value</th><th>explanation</th></tr></thead>
 <tr>
@@ -153,8 +204,9 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 <td><pre>10</pre></td>
 <td>The maximum number of messages to pull from the even bus each poll:
 
-	*  event bus:
-		- SQS allows is maximum 10</td>
+     *  event bus:
+        - SQS allows is maximum 10</td>
+
 </tr>
 <tr>
 <td><pre>tabour.poller.polling-threads</pre></td>
