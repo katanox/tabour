@@ -14,7 +14,8 @@ class DefaultExceptionHandler : ExceptionHandler {
         e: Exception
     ): ExceptionHandler.ExceptionHandlerDecision {
         logger.warn(
-            "error while processing message ${message.messageId} - message has not been deleted from SQS and will be retried:  $e",
+            "error while processing message ${message.messageId}" +
+                " - message has not been deleted from SQS and will be retried: $e",
         )
         return ExceptionHandler.ExceptionHandlerDecision.RETRY
     }
