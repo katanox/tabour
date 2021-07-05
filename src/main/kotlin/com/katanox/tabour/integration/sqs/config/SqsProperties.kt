@@ -9,22 +9,20 @@ data class SqsProperties(
     /**
      *
      * The AWS access key.
-     *
      */
     var accessKey: String = "",
 
     /**
      *
      * The AWS secret access key.
-     *
      */
     var secretKey: String = "",
 
     /**
      *
-     * Sets the region to be used by the client. This will be used to determine both the service endpoint (eg: https://sns.us-west-1.amazonaws.com)
-     * and signing region (eg: us-west-1) for requests.
-     *
+     * Sets the region to be used by the client. This will be used to determine both the service
+     * endpoint (eg: https://sns.us-west-1.amazonaws.com) and signing region (eg: us-west-1) for
+     * requests.
      */
     var region: String = "",
 
@@ -37,20 +35,17 @@ data class SqsProperties(
     var autoStartup: Boolean = true,
 
     /**
-     * Configure the maximum number of messages that should be retrieved during one poll to the Amazon SQS system.
-     * This number must be a positive, non-zero number that has a maximum number of 10.
-     * Values higher then 10 are currently not supported by the queueing system.
-     * the maximum number of messages (between 1-10)
+     * Configure the maximum number of messages that should be retrieved during one poll to the
+     * Amazon SQS system. This number must be a positive, non-zero number that has a maximum number
+     * of 10. Values higher then 10 are currently not supported by the queueing system. the maximum
+     * number of messages (between 1-10)
      *
-     *
-     *  The default is 10
-     *
+     * The default is 10
      */
     var maxNumberOfMessages: Int = 10,
 
     /**
      * Set the ThreadPoolExecutor's core pool size, that is being used by SQS
-     *
      *
      * Default is 1.
      */
@@ -59,16 +54,14 @@ data class SqsProperties(
     /**
      * Set the ThreadPoolExecutor's maximum pool size, that is being used by SQS
      *
-     *
      * Default is Integer.MAX_VALUE.
      */
     var maxPoolSize: Int = Int.MAX_VALUE,
 
     /**
-     * Set the capacity for the ThreadPoolExecutor's BlockingQueue, that is being used by SQS
-     * Any positive value will lead to a LinkedBlockingQueue instance;
-     * Any other value will lead to a SynchronousQueue instance
-     *
+     * Set the capacity for the ThreadPoolExecutor's BlockingQueue, that is being used by SQS Any
+     * positive value will lead to a LinkedBlockingQueue instance; Any other value will lead to a
+     * SynchronousQueue instance
      *
      * Default is Integer.MAX_VALUE.
      */

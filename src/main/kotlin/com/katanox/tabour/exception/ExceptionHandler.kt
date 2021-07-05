@@ -4,7 +4,7 @@ import com.amazonaws.services.sqs.model.Message
 
 interface ExceptionHandler {
     enum class ExceptionHandlerDecision {
-        /** Delete the message from SQS. It will not be retried.  */
+        /** Delete the message from SQS. It will not be retried. */
         DELETE,
 
         /**
@@ -14,9 +14,7 @@ interface ExceptionHandler {
         RETRY
     }
 
-    /**
-     * Handles any exception that is thrown during message processing by an [SqsMessageHandler].
-     */
+    /** Handles any exception that is thrown during message processing by an [SqsMessageHandler]. */
     fun handleException(message: Message, e: Exception): ExceptionHandlerDecision
 
     companion object {

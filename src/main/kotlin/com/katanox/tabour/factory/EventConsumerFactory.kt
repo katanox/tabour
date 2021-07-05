@@ -5,7 +5,7 @@ import com.katanox.tabour.config.TabourAutoConfigs
 import com.katanox.tabour.integration.sqs.core.consumer.SqsEventHandler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import java.util.*
+import java.util.EnumMap
 
 @Component
 class EventConsumerFactory {
@@ -35,6 +35,5 @@ class EventConsumerFactory {
                 eventConsumers[type] ?: listOf()
             }
         }
-
     }
 }

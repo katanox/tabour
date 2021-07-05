@@ -8,7 +8,6 @@ class NamedThreadFactory(
     private val threadNamePrefix: String
 ) : ThreadFactory {
 
-
     override fun newThread(runnable: Runnable?): Thread {
         val threadNumber = currentThreadCount.incrementAndGet()
         val threadName = String.format("%s-%d", threadNamePrefix, threadNumber)

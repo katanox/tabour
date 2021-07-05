@@ -26,7 +26,6 @@ data class EventHandlerProperties(
     /**
      * The prefix of the threads that are created by the thread pool
      *
-     *
      * The default is empty string.
      */
     var threadNamePrefix: String = ""

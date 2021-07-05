@@ -4,7 +4,7 @@ import com.google.protobuf.MessageOrBuilder
 import com.google.protobuf.util.JsonFormat
 import com.katanox.tabour.core.EventPublisher
 
-abstract class ProtoEventPublisher: EventPublisher() {
+abstract class ProtoEventPublisher : EventPublisher() {
     fun publish(event: MessageOrBuilder, busUrl: String, messageGroupId: String? = null) {
         val json: String = JsonFormat.printer().print(event)
         this.publish(json, busUrl, messageGroupId)

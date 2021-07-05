@@ -52,6 +52,7 @@
         <source.plugin.version>3.2.1</source.plugin.version>
         <helper.plugin.version>3.2.0</helper.plugin.version>
         <directory.plugin.version>0.3.1</directory.plugin.version>
+        <spotless.version>2.12.1</spotless.version>
 
         <!-- third party dependencies -->
         <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
@@ -74,6 +75,7 @@
         <kotlin.coroutines.version>1.5.0</kotlin.coroutines.version>
         <aws-java-sdk.version>1.12.11</aws-java-sdk.version>
         <protobuf-java-util.version>3.17.3</protobuf-java-util.version>
+        <klint.version>0.41.0</klint.version>
     </properties>
 
     <dependencyManagement>
@@ -144,6 +146,11 @@
             <artifactId>protobuf-java-util</artifactId>
             <version>${protobuf-java-util.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.pinterest</groupId>
+            <artifactId>ktlint</artifactId>
+            <version>${klint.version}</version>
+        </dependency>
 
         <!-- Testing -->
         <dependency>
@@ -188,6 +195,7 @@
                 <version>1.7.0</version>
             </extension>
         </extensions>
+
         <plugins>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -487,6 +495,51 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>ktlint</id>
+                        <phase>verify</phase>
+                        <configuration>
+                            <target name="ktlint">
+                                <java taskname="ktlint" dir="${basedir}" fork="true" failonerror="true"
+                                      classpathref="maven.plugin.classpath" classname="com.pinterest.ktlint.Main">
+                                    <arg value="src/**/*.kt"/>
+                                </java>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>ktlint-format</id>
+                        <configuration>
+                            <target name="ktlint">
+                                <java taskname="ktlint" dir="${basedir}" fork="true" failonerror="true"
+                                      classpathref="maven.plugin.classpath" classname="com.pinterest.ktlint.Main">
+                                    <arg value="-F"/>
+                                    <arg value="src/**/*.kt"/>
+                                </java>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.pinterest</groupId>
+                        <artifactId>ktlint</artifactId>
+                        <version>${klint.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

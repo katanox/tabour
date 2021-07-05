@@ -5,7 +5,6 @@ import com.katanox.tabour.config.EventPollerProperties
 import com.katanox.tabour.exception.ExceptionHandler
 import com.katanox.tabour.integration.sqs.config.SqsConfiguration
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -71,8 +70,7 @@ class SqsEventPoller(
                 )
             } catch (e: Exception) {
                 when (exceptionHandler.handleException(sqsMessage, e)) {
-                    ExceptionHandler.ExceptionHandlerDecision.RETRY -> {
-                    }
+                    ExceptionHandler.ExceptionHandlerDecision.RETRY -> {}
                     ExceptionHandler.ExceptionHandlerDecision.DELETE -> acknowledgeMessage(sqsMessage)
                 }
             } finally {
