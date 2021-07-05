@@ -2,8 +2,6 @@ package com.katanox.tabour.factory
 
 import com.katanox.tabour.base.IEventPublisherBase
 import com.katanox.tabour.exception.PublisherNotFoundException
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import java.util.EnumMap
 
 class EventPublisherFactory(services: List<IEventPublisherBase>) {

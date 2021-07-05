@@ -1,6 +1,5 @@
 package com.katanox.tabour.config
 
-
 import com.katanox.tabour.base.IEventPublisherBase
 import com.katanox.tabour.factory.EventConsumerFactory
 import com.katanox.tabour.factory.EventPublisherFactory
@@ -37,5 +36,4 @@ class TabourAutoConfigs(
     fun eventPublisherFactory(@Autowired services: List<IEventPublisherBase>): EventPublisherFactory {
         return EventPublisherFactory(services)
     }
-
 }
