@@ -11,6 +11,16 @@ Tabour is a Kotlin library which makes working with queues/topics much easier.
 ![Language](https://img.shields.io/badge/Language-Kotlin-blue?style=flat&logo=kotlin)
 [![Awesome Kotlin Badge](https://kotlin.link/awesome-kotlin.svg)](https://github.com/KotlinBy/awesome-kotlin)
 
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=bugs)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=code_smells)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=coverage)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Duplicated Lines Density](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=ncloc)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Reliability](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Security](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=security_rating)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Technical Dept](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=sqale_index)](https://sonarcloud.io/dashboard?id=katanox_tabour)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=katanox_tabour)
 
 ## Usage
 
@@ -259,3 +269,15 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 <td>Configures if this the sqs listeners should be starting</td>
 </tr>
 </table>
+
+## Contributing
+
+Please see [CONTRIBUTING](CONTRIBUTING.md) and [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) for details.
+
+## Security
+
+If you discover any security related issues, please email developers@katanox.com instead of using the issue tracker.
+
+## License
+
+Apache License. Please see [License File](LICENSE) for more information.
