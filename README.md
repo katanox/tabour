@@ -26,16 +26,9 @@ Tabour is a Kotlin library which makes working with queues/topics much easier.
 
 ### Installation
 
-The first thing you need to do to get started is to add a dependency to `Tabour` library. Then adding these to the main
-application of spring:
+The first thing you need to do to get started is to add a dependency to `Tabour` library.
 
-```kotlin
-@ConfigurationPropertiesScan
-@ComponentScan(basePackages = ["com.katanox.tabour", "your.package"])
-class RandomApplication
-```
-
-and if you are willing to use the consumers don't forget to enable the consumption based on the queue/topic type
+And if you are willing to use the consumers don't forget to enable the consumption based on the queue/topic type
 
 ```yaml
 tabour:
