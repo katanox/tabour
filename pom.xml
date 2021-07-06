@@ -47,7 +47,7 @@
         <resources.plugin.version>3.0.2</resources.plugin.version>
         <sunfire.plugin.version>3.0.0-M5</sunfire.plugin.version>
         <jacoco.plugin.version>0.8.5</jacoco.plugin.version>
-        <failsafe.plugin.version>2.22.1</failsafe.plugin.version>
+        <failsafe.plugin.version>2.22.2</failsafe.plugin.version>
         <compiler.plugin.version>3.8.1</compiler.plugin.version>
         <source.plugin.version>3.2.1</source.plugin.version>
         <helper.plugin.version>3.2.0</helper.plugin.version>
