@@ -73,7 +73,7 @@
         <resilience4j.retry.version>1.6.1</resilience4j.retry.version>
         <jetbrains.kotlin.version>1.5.10</jetbrains.kotlin.version>
         <kotlin.coroutines.version>1.5.0</kotlin.coroutines.version>
-        <aws-java-sdk.version>1.12.11</aws-java-sdk.version>
+        <aws-java-sdk.version>1.12.18</aws-java-sdk.version>
         <protobuf-java-util.version>3.17.3</protobuf-java-util.version>
         <klint.version>0.41.0</klint.version>
     </properties>
