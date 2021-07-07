@@ -70,7 +70,7 @@
         <spring.boot.version>2.5.0</spring.boot.version>
         <spring.cloud.version>2.2.6.RELEASE</spring.cloud.version>
         <javax.annotation.version>1.3.2</javax.annotation.version>
-        <resilience4j.retry.version>1.6.1</resilience4j.retry.version>
+        <resilience4j.retry.version>1.7.1</resilience4j.retry.version>
         <jetbrains.kotlin.version>1.5.10</jetbrains.kotlin.version>
         <kotlin.coroutines.version>1.5.0</kotlin.coroutines.version>
         <aws-java-sdk.version>1.12.18</aws-java-sdk.version>
