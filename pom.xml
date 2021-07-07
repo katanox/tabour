@@ -46,7 +46,7 @@
         <!-- plugins -->
         <resources.plugin.version>3.0.2</resources.plugin.version>
         <sunfire.plugin.version>3.0.0-M5</sunfire.plugin.version>
-        <jacoco.plugin.version>0.8.5</jacoco.plugin.version>
+        <jacoco.plugin.version>0.8.7</jacoco.plugin.version>
         <failsafe.plugin.version>2.22.2</failsafe.plugin.version>
         <compiler.plugin.version>3.8.1</compiler.plugin.version>
         <source.plugin.version>3.2.1</source.plugin.version>
@@ -73,7 +73,7 @@
         <resilience4j.retry.version>1.6.1</resilience4j.retry.version>
         <jetbrains.kotlin.version>1.5.10</jetbrains.kotlin.version>
         <kotlin.coroutines.version>1.5.0</kotlin.coroutines.version>
-        <aws-java-sdk.version>1.12.11</aws-java-sdk.version>
+        <aws-java-sdk.version>1.12.18</aws-java-sdk.version>
         <protobuf-java-util.version>3.17.3</protobuf-java-util.version>
         <klint.version>0.41.0</klint.version>
     </properties>
