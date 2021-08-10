@@ -28,7 +28,7 @@ class SqsEventPublisher : IEventPublisherBase {
         publish(message, busUrl, SendMessageRequest(), messageGroupId)
     }
 
-     override fun delete(receiptHandle: String, busUrl: String): Boolean {
+    override fun delete(receiptHandle: String, busUrl: String): Boolean {
         return doDelete(receiptHandle, busUrl)
     }
 
