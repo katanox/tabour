@@ -1,5 +1,7 @@
 package com.katanox.tabour.integration.sqs.core.publisher
 
+import com.amazonaws.services.sqs.model.DeleteMessageRequest
+import com.amazonaws.services.sqs.model.Message
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.katanox.tabour.base.IEventPublisherBase
 import com.katanox.tabour.config.TabourAutoConfigs
@@ -25,6 +27,10 @@ class SqsEventPublisher : IEventPublisherBase {
 
     override fun publish(message: String, busUrl: String, messageGroupId: String?) {
         publish(message, busUrl, SendMessageRequest(), messageGroupId)
+    }
+
+     override fun delete(receiptHandle: String, busUrl: String): Boolean {
+        return doDelete(receiptHandle, busUrl)
     }
 
     /**
@@ -65,5 +71,13 @@ class SqsEventPublisher : IEventPublisherBase {
             )
         }
         logger.info("Sent message ID {}", result.messageId)
+    }
+
+    private fun doDelete(receiptHandle: String, busUrl: String): Boolean {
+        val request = DeleteMessageRequest()
+            .withQueueUrl(busUrl)
+            .withReceiptHandle(receiptHandle)
+
+        return runCatching { sqsConfiguration.amazonSQSAsync().deleteMessage(request) }.isSuccess
     }
 }

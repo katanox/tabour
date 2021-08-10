@@ -22,4 +22,8 @@ abstract class EventPublisher {
     open fun publish(message: String, busUrl: String, messageGroupId: String? = null) {
         publisherBase.publish(message, busUrl, messageGroupId)
     }
+
+    open fun delete(receiptHandle: String, busUrl: String): Boolean {
+        return publisherBase.delete(receiptHandle, busUrl)
+    }
 }
