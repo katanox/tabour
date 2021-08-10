@@ -1,7 +1,6 @@
 package com.katanox.tabour.integration.sqs.core.publisher
 
 import com.amazonaws.services.sqs.model.DeleteMessageRequest
-import com.amazonaws.services.sqs.model.Message
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.katanox.tabour.base.IEventPublisherBase
 import com.katanox.tabour.config.TabourAutoConfigs

@@ -1,6 +1,5 @@
 package com.katanox.tabour.base
 
-import com.amazonaws.services.sqs.model.Message
 import com.katanox.tabour.factory.BusType
 
 interface IEventPublisherBase {
