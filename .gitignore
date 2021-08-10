@@ -32,3 +32,4 @@ buildNumber.properties
 *.iws
 *.iml
 *.ipr
+*.attach_pid*

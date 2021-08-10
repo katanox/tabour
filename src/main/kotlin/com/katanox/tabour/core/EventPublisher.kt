@@ -1,5 +1,6 @@
 package com.katanox.tabour.core
 
+import com.katanox.tabour.base.DeletableMessage
 import com.katanox.tabour.base.IEventPublisherBase
 import com.katanox.tabour.factory.BusType
 import com.katanox.tabour.factory.EventPublisherFactory
@@ -23,7 +24,7 @@ abstract class EventPublisher {
         publisherBase.publish(message, busUrl, messageGroupId)
     }
 
-    open fun delete(receiptHandle: String, busUrl: String): Boolean {
-        return publisherBase.delete(receiptHandle, busUrl)
+    open fun delete(message: DeletableMessage, busUrl: String): Boolean {
+        return publisherBase.delete(message, busUrl)
     }
 }

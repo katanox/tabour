@@ -5,5 +5,5 @@ import com.katanox.tabour.factory.BusType
 interface IEventPublisherBase {
     fun getType(): BusType
     fun publish(message: String, busUrl: String, messageGroupId: String?)
-    fun delete(receiptHandle: String, busUrl: String): Boolean
+    fun delete(message: DeletableMessage, busUrl: String): Boolean
 }
