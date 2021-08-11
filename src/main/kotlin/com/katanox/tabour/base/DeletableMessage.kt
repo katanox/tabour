@@ -3,7 +3,7 @@ package com.katanox.tabour.base
 import com.amazonaws.services.sqs.model.Message
 import com.katanox.tabour.factory.BusType
 
-typealias DeletableMessageConverter = (msg: Any) -> DeletableMessage
+typealias DeletableMessageConverter = (message: Any) -> DeletableMessage
 
 data class DeletableMessage(val id: String)
 
@@ -13,8 +13,8 @@ data class DeletableMessage(val id: String)
  */
 val sqsMessageToDeletableMessageConverter: DeletableMessageConverter = { m -> DeletableMessage((m as Message).receiptHandle) }
 
-fun getDeletableMessageProducer(busType: BusType): DeletableMessageConverter {
-    return when(busType) {
-       BusType.SQS -> sqsMessageToDeletableMessageConverter
+fun getDeletableMessageProducer(message: Any, busType: BusType): DeletableMessage {
+    return when (busType) {
+        BusType.SQS -> sqsMessageToDeletableMessageConverter(message)
     }
 }
