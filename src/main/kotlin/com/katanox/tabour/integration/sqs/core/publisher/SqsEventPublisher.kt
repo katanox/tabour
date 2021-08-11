@@ -74,10 +74,11 @@ class SqsEventPublisher : IEventPublisherBase {
     }
 
     private fun doDelete(message: DeletableMessage, busUrl: String): Boolean {
-        val request = DeleteMessageRequest()
-            .withQueueUrl(busUrl)
-            .withReceiptHandle(message.id)
-
-        return runCatching { sqsConfiguration.amazonSQSAsync().deleteMessage(request) }.isSuccess
+        return runCatching {
+            DeleteMessageRequest()
+                .withQueueUrl(busUrl)
+                .withReceiptHandle(message.id)
+                .let { sqsConfiguration.amazonSQSAsync().deleteMessage(it) }
+        }.isSuccess
     }
 }
