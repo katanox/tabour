@@ -12,7 +12,8 @@ data class DeletableMessage(val id: String)
  * by the publisher's delete method.
  */
 val sqsMessageToDeletableMessageConverter: DeletableMessageConverter = {
-        m -> DeletableMessage((m as Message).receiptHandle)
+    m ->
+    DeletableMessage((m as Message).receiptHandle)
 }
 
 fun getDeletableMessageProducer(message: Any, busType: BusType): DeletableMessage {
