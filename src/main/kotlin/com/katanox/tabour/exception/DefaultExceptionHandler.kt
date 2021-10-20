@@ -11,7 +11,7 @@ class DefaultExceptionHandler : ExceptionHandler {
 
     override fun handleException(message: Message, e: Exception): ExceptionHandler.ExceptionHandlerDecision {
         logger.error(
-            "error while processing message ${message.messageId} - message has not been deleted from SQS and will be retried:  ${e}",
+            "error while processing message ${message.messageId} - message has not been deleted from SQS and will be retried:  $e",
         )
         return ExceptionHandler.ExceptionHandlerDecision.RETRY
     }
