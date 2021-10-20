@@ -6,7 +6,7 @@ import com.katanox.tabour.core.EventPublisher
 
 abstract class ProtoEventPublisher : EventPublisher() {
     fun publish(event: MessageOrBuilder, busUrl: String, messageGroupId: String? = null) {
-        val json: String = JsonFormat.printer().print(event)
+        val json: String = JsonFormat.printer().includingDefaultValueFields().print(event)
         this.publish(json, busUrl, messageGroupId)
     }
 }
