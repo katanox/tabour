@@ -75,7 +75,7 @@
         <kotlin.coroutines.version>1.5.0-native-mt</kotlin.coroutines.version>
         <aws-java-sdk.version>1.12.19</aws-java-sdk.version>
         <protobuf-java-util.version>3.17.3</protobuf-java-util.version>
-        <klint.version>0.41.0</klint.version>
+        <klint.version>0.43.2</klint.version>
     </properties>
 
     <dependencyManagement>
