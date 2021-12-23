@@ -1,21 +1,23 @@
 package com.katanox.tabour.integration.sqs.core.consumer
 
-import com.katanox.tabour.config.EventHandlerProperties
 import com.katanox.tabour.config.EventPollerProperties
-import com.katanox.tabour.exception.ExceptionHandler
+import com.katanox.tabour.config.TabourAutoConfigs
 import com.katanox.tabour.integration.sqs.config.SqsConfiguration
-import com.katanox.tabour.thread.ThreadPools
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newCoroutineContext
+import kotlinx.coroutines.withContext
 import mu.KotlinLogging
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor
 
 private val logger = KotlinLogging.logger {}
 
 class SqsEventHandlerRegistry(
     eventHandlers: List<SqsEventHandler>,
-    var eventHandlerProperties: EventHandlerProperties,
-    var eventPollerProperties: EventPollerProperties,
-    var sqsConfiguration: SqsConfiguration
+    private val sqsConfiguration: SqsConfiguration,
+    private val tabourAutoConfigs: TabourAutoConfigs,
+    private val pollerConfigs: EventPollerProperties,
 ) {
     private var pollers: Set<SqsEventPoller> = setOf()
 
@@ -27,46 +29,29 @@ class SqsEventHandlerRegistry(
         val pollers: MutableSet<SqsEventPoller> = HashSet()
         for (registration in registrations) {
             pollers.add(createPollerForHandler(registration))
-            logger.info("initialized SqsMessagePoller '{}'", registration.javaClass.canonicalName)
+            logger.info("initialized SqsMessagePoller ${registration.javaClass.canonicalName}")
         }
         return pollers
     }
 
     private fun createPollerForHandler(registration: SqsEventHandler): SqsEventPoller {
         return SqsEventPoller(
-            name = registration.javaClass.canonicalName,
+            queueUrl = registration.sqsQueueUrl,
             eventHandler = registration,
-            eventFetcher = createFetcherForHandler(registration),
-            pollerThreadPool = createPollingThreadPool(registration),
-            handlerThreadPool = createHandlerThreadPool(registration),
-            pollingProperties = eventPollerProperties,
-            sqsConfiguration = sqsConfiguration,
-            exceptionHandler = ExceptionHandler.defaultExceptionHandler()
+            client = sqsConfiguration.amazonSQSAsync(),
+            tabourConfigs = tabourAutoConfigs,
+            pollerConfigs = pollerConfigs
         )
     }
 
-    private fun createFetcherForHandler(registration: SqsEventHandler): SqsEventFetcher {
-        return SqsEventFetcher(registration.sqsQueueUrl, sqsConfiguration, eventPollerProperties)
-    }
-
-    private fun createPollingThreadPool(registration: SqsEventHandler): ScheduledThreadPoolExecutor {
-        return ThreadPools.blockingScheduledThreadPool(
-            eventPollerProperties.pollingThreads,
-            String.format("%s-poller", registration.javaClass.canonicalName)
-        )
-    }
-
-    private fun createHandlerThreadPool(registration: SqsEventHandler): ThreadPoolExecutor {
-        return ThreadPools.blockingThreadPool(
-            eventHandlerProperties.threadPoolSize,
-            eventHandlerProperties.queueSize,
-            String.format("%s-handler", registration.javaClass.canonicalName)
-        )
-    }
-
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun start() {
         for (poller in pollers) {
-            poller.start()
+            GlobalScope.launch {
+                withContext(newCoroutineContext(Dispatchers.IO)) {
+                    poller.start()
+                }
+            }
         }
     }
 

@@ -9,9 +9,9 @@ data class TabourProperties(
 
     /**
      *
-     * Number of times that is gonna retry to publish or consume an event
+     * Number of times that is going to retry to publish or consume an event
      *
-     * The default is 1.
+     * The default is 3.
      */
-    var retryMaxCount: Int = 1
+    var maxRetryCount: Int = 3,
 )

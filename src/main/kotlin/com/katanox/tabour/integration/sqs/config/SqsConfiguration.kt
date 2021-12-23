@@ -1,39 +1,32 @@
 package com.katanox.tabour.integration.sqs.config
 
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.AWSStaticCredentialsProvider
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.cloud.aws.messaging.config.annotation.EnableSqs
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sqs.SqsClient
 
 @Configuration(proxyBeanMethods = false)
-@EnableSqs
 class SqsConfiguration(@Autowired val sqsProperties: SqsProperties) {
 
     @Bean
     @Primary
-    fun amazonSQSAsync(): AmazonSQSAsync {
-        return AmazonSQSAsyncClientBuilder.standard()
-            .withCredentials(credentialsProvider())
-            .withRegion(sqsProperties.region)
+    fun amazonSQSAsync(): SqsClient {
+        return SqsClient.builder()
+            .credentialsProvider(credentialsProvider())
+            .region(Region.of(sqsProperties.region))
             .build()
     }
 
     @Bean
-    fun credentialsProvider(): AWSCredentialsProvider {
-        return AWSStaticCredentialsProvider(
-            BasicAWSCredentials(sqsProperties.accessKey, sqsProperties.secretKey)
+    fun credentialsProvider(): AwsCredentialsProvider {
+        return StaticCredentialsProvider.create(
+            AwsBasicCredentials.create(sqsProperties.accessKey, sqsProperties.secretKey) as AwsCredentials
         )
-    }
-
-    @Bean
-    fun queueMessagingTemplate(): QueueMessagingTemplate {
-        return QueueMessagingTemplate(amazonSQSAsync())
     }
 }

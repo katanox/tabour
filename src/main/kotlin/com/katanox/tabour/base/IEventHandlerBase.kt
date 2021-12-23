@@ -1,3 +1,3 @@
 package com.katanox.tabour.base
 
-interface IEventConsumerBase
+interface IEventHandlerBase

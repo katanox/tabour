@@ -28,49 +28,9 @@ data class SqsProperties(
 
     /**
      *
-     * Configures if this listening container should be automatically started.
+     * Number of coroutines that are going to be used to publish events
      *
-     * The default is true
+     * The default is 50.
      */
-    var autoStartup: Boolean = true,
-
-    /**
-     * Configure the maximum number of messages that should be retrieved during one poll to the
-     * Amazon SQS system. This number must be a positive, non-zero number that has a maximum number
-     * of 10. Values higher then 10 are currently not supported by the queueing system. the maximum
-     * number of messages (between 1-10)
-     *
-     * The default is 10
-     */
-    var maxNumberOfMessages: Int = 10,
-
-    /**
-     * Set the ThreadPoolExecutor's core pool size, that is being used by SQS
-     *
-     * Default is 1.
-     */
-    var corePoolSize: Int = 1,
-
-    /**
-     * Set the ThreadPoolExecutor's maximum pool size, that is being used by SQS
-     *
-     * Default is Integer.MAX_VALUE.
-     */
-    var maxPoolSize: Int = Int.MAX_VALUE,
-
-    /**
-     * Set the capacity for the ThreadPoolExecutor's BlockingQueue, that is being used by SQS Any
-     * positive value will lead to a LinkedBlockingQueue instance; Any other value will lead to a
-     * SynchronousQueue instance
-     *
-     * Default is Integer.MAX_VALUE.
-     */
-    var queueCapacity: Int = 100,
-
-    /**
-     * Configures if this the sqs listeners should be starting
-     *
-     * The default is false
-     */
-    var enableConsumption: Boolean = false,
+    var publishingCoroutines: Int = 50,
 )

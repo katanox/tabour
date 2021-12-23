@@ -1,19 +1,19 @@
 package com.katanox.tabour.factory
 
-import com.katanox.tabour.base.IEventConsumerBase
+import com.katanox.tabour.base.IEventHandlerBase
 import com.katanox.tabour.config.TabourAutoConfigs
 import com.katanox.tabour.integration.sqs.core.consumer.SqsEventHandler
 import java.util.EnumMap
 
-class EventConsumerFactory(private val tabourAutoConfigs: TabourAutoConfigs) {
+class EventHandlerFactory(private val tabourAutoConfigs: TabourAutoConfigs) {
 
-    private val eventConsumers = EnumMap<BusType, List<IEventConsumerBase>>(BusType::class.java)
+    private val eventConsumers = EnumMap<BusType, List<IEventHandlerBase>>(BusType::class.java)
 
     init {
         BusType.values().forEach { eventConsumers[it] = ArrayList() }
     }
 
-    fun getEventConsumer(type: BusType, busName: String, consume: (Any) -> Unit): IEventConsumerBase {
+    fun getEventHandler(type: BusType, busName: String, consume: (Any) -> Unit): IEventHandlerBase {
         return when (type) {
             BusType.SQS -> {
                 val handler = SqsEventHandler(busName, consume, tabourAutoConfigs)
@@ -23,7 +23,7 @@ class EventConsumerFactory(private val tabourAutoConfigs: TabourAutoConfigs) {
         }
     }
 
-    fun getEventConsumers(type: BusType): List<IEventConsumerBase> {
+    fun getEventHandlers(type: BusType): List<IEventHandlerBase> {
         return when (type) {
             BusType.SQS -> {
                 eventConsumers[type] ?: listOf()

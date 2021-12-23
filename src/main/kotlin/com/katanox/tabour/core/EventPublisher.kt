@@ -10,7 +10,8 @@ abstract class EventPublisher {
 
     private lateinit var publisherBase: IEventPublisherBase
 
-    @Autowired private lateinit var eventPublisherFactory: EventPublisherFactory
+    @Autowired
+    private lateinit var eventPublisherFactory: EventPublisherFactory
 
     abstract fun getBusType(): BusType
 
@@ -21,5 +22,9 @@ abstract class EventPublisher {
 
     open fun publish(message: String, busUrl: String, messageGroupId: String? = null) {
         publisherBase.publish(message, busUrl, messageGroupId)
+    }
+
+    open fun publishBatch(messages: List<String>, busUrl: String, messagesGroupId: String? = null) {
+        publisherBase.publishBatch(messages, busUrl, messagesGroupId)
     }
 }
