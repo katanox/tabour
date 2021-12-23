@@ -1,13 +1,21 @@
 package com.katanox.tabour.integration.sqs.core.consumer
 
-import com.amazonaws.services.sqs.model.Message
 import com.katanox.tabour.config.EventPollerProperties
 import com.katanox.tabour.exception.ExceptionHandler
 import com.katanox.tabour.integration.sqs.config.SqsConfiguration
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
+import software.amazon.awssdk.services.sqs.model.Message
+import java.time.LocalDateTime
+import kotlin.time.ExperimentalTime
 
 /**
  * Polls messages from an SQS queue in potentially multiple threads at regular intervals.
@@ -17,56 +25,58 @@ import java.util.concurrent.TimeUnit
 private val logger = KotlinLogging.logger {}
 
 class SqsEventPoller(
-    private val name: String,
+    private val queueUrl: String,
     private val eventHandler: SqsEventHandler,
     private val eventFetcher: SqsEventFetcher,
-    private val pollerThreadPool: ScheduledThreadPoolExecutor,
-    private val handlerThreadPool: ThreadPoolExecutor,
     private val pollingProperties: EventPollerProperties,
     private val sqsConfiguration: SqsConfiguration,
-    private val exceptionHandler: ExceptionHandler
+    private val exceptionHandler: ExceptionHandler,
 ) {
+    @OptIn(ExperimentalTime::class, DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun start() {
-        logger.info("starting SqsMessagePoller")
-        for (i in 0 until pollerThreadPool.corePoolSize) {
-            logger.info("starting SqsMessagePoller ({}) - thread {}", name, i)
-            pollerThreadPool.scheduleWithFixedDelay(
-                { pollMessages() },
-                pollingProperties.pollDelay.seconds,
-                pollingProperties.pollDelay.seconds,
-                TimeUnit.SECONDS
-            )
+        logger.info("starting SqsMessagePoller ${LocalDateTime.now()}")
+        GlobalScope.launch {
+            launch {
+                val channel = Channel<Message>()
+                repeat(100) { pollMessages(channel) }
+                repeat(100) { consumeChannel(channel) }
+            }
         }
     }
 
     fun stop() {
         logger.info("stopping SqsMessagePoller")
-        pollerThreadPool.shutdownNow()
-        handlerThreadPool.shutdownNow()
     }
 
-    private fun pollMessages() {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun pollMessages(channel: SendChannel<Message>) {
         try {
-            val messages: List<Message> = eventFetcher.fetchMessages()
-            for (sqsMessage in messages) {
-                handleMessage(sqsMessage)
+            while (true) {
+                eventFetcher.fetchMessages(queueUrl).forEach { channel.send(it) }
             }
         } catch (e: Exception) {
-            logger.error("error fetching messages from queue {}:", eventHandler.sqsQueueUrl, e)
+            logger.error("error fetching messages from queue $eventHandler.sqsQueueUrl : ${e.message}")
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun consumeChannel(channel: ReceiveChannel<Message>) {
+        for (msg in channel) {
+            handleMessage(msg)
         }
     }
 
     private fun handleMessage(sqsMessage: Message) {
-        logger.info("Received message ID {}", sqsMessage.messageId)
-        val message = sqsMessage.body
-        handlerThreadPool.submit {
+        runBlocking {
+            logger.info("Received message ID {}", sqsMessage.messageId())
+            val message = sqsMessage.body()
             try {
                 eventHandler.onBeforeHandle(message)
                 eventHandler.handle(message)
                 acknowledgeMessage(sqsMessage)
                 logger.debug(
                     "message {} processed successfully - message has been deleted from SQS",
-                    sqsMessage.messageId
+                    sqsMessage.messageId()
                 )
             } catch (e: Exception) {
                 when (exceptionHandler.handleException(sqsMessage, e)) {
@@ -80,6 +90,11 @@ class SqsEventPoller(
     }
 
     private fun acknowledgeMessage(message: Message) {
-        sqsConfiguration.amazonSQSAsync().deleteMessage(eventHandler.sqsQueueUrl, message.receiptHandle)
+        sqsConfiguration.amazonSQSAsync().deleteMessage(
+            DeleteMessageRequest.builder()
+                .queueUrl(eventHandler.sqsQueueUrl)
+                .receiptHandle(message.receiptHandle())
+                .build()
+        )
     }
 }

@@ -1,6 +1,6 @@
 package com.katanox.tabour.exception
 
-import com.amazonaws.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.model.Message
 
 interface ExceptionHandler {
     enum class ExceptionHandlerDecision {

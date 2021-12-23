@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.katanox</groupId>
     <artifactId>tabour</artifactId>
-    <version>0.1.2</version>
+    <version>0.2.0</version>
     <name>Tabour</name>
     <url>https://github.com/katanox/tabour</url>
     <description>Kotlin's library to make working with queues/topics much easier.</description>
@@ -41,7 +41,7 @@
 
         <!-- language dependencies -->
         <java.version>11</java.version>
-        <kotlin.version>1.4.31</kotlin.version>
+        <kotlin.version>1.5.30</kotlin.version>
 
         <!-- plugins -->
         <resources.plugin.version>3.0.2</resources.plugin.version>
@@ -105,11 +105,6 @@
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
             <version>${javax.annotation.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-aws-messaging</artifactId>
-            <version>${spring.cloud.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
@@ -183,7 +178,24 @@
             <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sqs</artifactId>
+            <version>2.17.32</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-jdk8 -->
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-jdk8</artifactId>
+            <version>1.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.13</version>
+        </dependency>
     </dependencies>
+
 
     <build>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
@@ -204,6 +216,7 @@
                 <configuration>
                     <args>
                         <arg>-Xjsr305=strict</arg>
+                        <arg>-Xopt-in=kotlin</arg>
                     </args>
                     <compilerPlugins>
                         <plugin>spring</plugin>
