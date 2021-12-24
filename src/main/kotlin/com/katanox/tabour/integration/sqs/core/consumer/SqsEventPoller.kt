@@ -51,16 +51,12 @@ class SqsEventPoller(
     private suspend fun pollMessages(handler: (List<Message>) -> Unit) {
         while (true) {
             try {
-                coroutineScope {
-                    withContext(Dispatchers.IO) {
-                        handler(eventFetcher.fetchMessages(queueUrl))
-                    }
-                }
+                handler(eventFetcher.fetchMessages(queueUrl))
             } catch (e: Exception) {
                 logger.error("error fetching messages from queue $eventHandler.sqsQueueUrl : ${e.message}")
             }
 
-            delay(500L)
+            delay(10L)
         }
     }
 
