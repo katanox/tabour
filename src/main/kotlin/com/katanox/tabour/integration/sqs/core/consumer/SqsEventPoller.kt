@@ -52,7 +52,7 @@ class SqsEventPoller(
         while (true) {
             try {
                 coroutineScope {
-                    withContext(Dispatchers.Default) {
+                    withContext(Dispatchers.IO) {
                         handler(eventFetcher.fetchMessages(queueUrl))
                     }
                 }
