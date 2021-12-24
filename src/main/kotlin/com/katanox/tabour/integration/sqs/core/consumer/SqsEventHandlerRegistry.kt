@@ -3,6 +3,7 @@ package com.katanox.tabour.integration.sqs.core.consumer
 import com.katanox.tabour.config.EventPollerProperties
 import com.katanox.tabour.exception.ExceptionHandler
 import com.katanox.tabour.integration.sqs.config.SqsConfiguration
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -41,7 +42,9 @@ class SqsEventHandlerRegistry(
 
     fun start() {
         for (poller in pollers) {
-            poller.start()
+            runBlocking {
+                poller.start()
+            }
         }
     }
 

@@ -3,7 +3,6 @@ package com.katanox.tabour.integration.sqs.core.consumer
 import com.katanox.tabour.base.IEventConsumerBase
 import com.katanox.tabour.config.TabourAutoConfigs
 import com.katanox.tabour.extentions.ConsumerAction
-import io.github.resilience4j.retry.event.RetryOnErrorEvent
 import mu.KotlinLogging
 import org.springframework.context.annotation.Scope
 import org.springframework.context.annotation.ScopedProxyMode
@@ -39,10 +38,11 @@ class SqsEventHandler(
     fun onAfterHandle(message: String) {}
 
     fun handle(message: String) {
-        val retry = tabourConfigs.retryRegistry().retry("handler")
-        retry.eventPublisher.onError { event: RetryOnErrorEvent? ->
-            logger.warn("error {} handling message {}", event, message)
-        }
-        retry.executeRunnable { consumerAction(message) }
+        consumerAction(message)
+//        val retry = tabourConfigs.retryRegistry().retry("handler")
+//        retry.eventPublisher.onError { event: RetryOnErrorEvent? ->
+//            logger.warn("error {} handling message {}", event, message)
+//        }
+//        retry.executeRunnable { consumerAction(message) }
     }
 }
