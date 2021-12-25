@@ -2,9 +2,9 @@ package com.katanox.tabour.integration.sqs.core.consumer
 // ktlint-disable no-wildcard-imports
 import com.katanox.tabour.config.EventPollerProperties
 import com.katanox.tabour.exception.ExceptionHandler
-import com.katanox.tabour.integration.sqs.config.SqsConfiguration
 import kotlinx.coroutines.*
 import mu.KotlinLogging
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
@@ -24,7 +24,7 @@ class SqsEventPoller(
     private val eventHandler: SqsEventHandler,
     private val eventFetcher: SqsEventFetcher,
     private val pollingProperties: EventPollerProperties,
-    private val sqsConfiguration: SqsConfiguration,
+    private val client: SqsAsyncClient,
     private val exceptionHandler: ExceptionHandler,
 ) : CoroutineScope {
 
@@ -36,7 +36,7 @@ class SqsEventPoller(
     fun start() = launch(Dispatchers.IO) {
         logger.info("starting SqsMessagePoller ${LocalDateTime.now()}")
 
-        repeat(10) {
+        repeat(100) {
             launch {
                 pollMessages(::handleMessagesPack)
             }
@@ -96,7 +96,7 @@ class SqsEventPoller(
                 .receiptHandle(it.receiptHandle())
                 .build()
         }
-        sqsConfiguration.amazonSQSAsync().deleteMessageBatch(
+        client.deleteMessageBatch(
             DeleteMessageBatchRequest.builder()
                 .queueUrl(eventHandler.sqsQueueUrl)
                 .entries(entries)

@@ -35,7 +35,7 @@ class SqsEventHandlerRegistry(
             eventHandler = registration,
             eventFetcher = sqsEventFetcher,
             pollingProperties = eventPollerProperties,
-            sqsConfiguration = sqsConfiguration,
+            client = sqsConfiguration.amazonSQSAsync(),
             exceptionHandler = ExceptionHandler.defaultExceptionHandler()
         )
     }

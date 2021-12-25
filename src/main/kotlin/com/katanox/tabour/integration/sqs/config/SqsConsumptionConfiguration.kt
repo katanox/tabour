@@ -41,6 +41,6 @@ class SqsConsumptionConfiguration(@Autowired val sqsProperties: SqsProperties) {
         eventPollerProperties: EventPollerProperties,
         sqsConfiguration: SqsConfiguration,
     ): SqsEventFetcher {
-        return SqsEventFetcher(sqsConfiguration, eventPollerProperties)
+        return SqsEventFetcher(eventPollerProperties, sqsConfiguration.amazonSQSAsync())
     }
 }
