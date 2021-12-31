@@ -16,7 +16,7 @@ class SqsConfiguration(@Autowired val sqsProperties: SqsProperties) {
 
     @Bean
     @Primary
-    fun amazonSQSAsync(): SqsClient {
+    fun amazonSQSClient(): SqsClient {
         return SqsClient.builder()
             .credentialsProvider(credentialsProvider())
             .region(Region.of(sqsProperties.region))

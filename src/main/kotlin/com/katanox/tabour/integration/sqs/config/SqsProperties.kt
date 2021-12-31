@@ -25,12 +25,4 @@ data class SqsProperties(
      * requests.
      */
     var region: String = "",
-
-    /**
-     *
-     * Number of coroutines that are going to be used to publish events
-     *
-     * The default is 50.
-     */
-    var publishingCoroutines: Int = 50,
 )

@@ -3,11 +3,11 @@ package com.katanox.tabour.integration.sqs.core.consumer
 import com.katanox.tabour.config.EventPollerProperties
 import com.katanox.tabour.config.TabourAutoConfigs
 import com.katanox.tabour.extentions.retry
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
@@ -37,34 +37,35 @@ class SqsEventPoller(
     private val client: SqsClient,
     private val pollerConfigs: EventPollerProperties,
     private val tabourConfigs: TabourAutoConfigs,
-) {
+) : CoroutineScope {
 
-    private lateinit var job: Job
+    private val supervisorJob = SupervisorJob()
+
+    override val coroutineContext
+        get() = Dispatchers.IO + supervisorJob
 
     @OptIn(ExperimentalTime::class, ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
-    fun start() {
+    fun start() = launch {
         logger.debug("starting SqsMessagePoller ${LocalDateTime.now()}")
-        job = GlobalScope.launch {
-            withContext(Dispatchers.IO) {
-                repeat(pollerConfigs.pollingCoroutines) {
-                    async {
-                        logger.debug("starting coroutine-$it ${LocalDateTime.now()}")
-                        while (true) {
-                            handleMessage()
-                            pollerConfigs.pollDelay?.toMillis()?.let {
-                                delay(it)
-                            }
+        withContext(Dispatchers.IO) {
+            repeat(pollerConfigs.numOfPollers) {
+                async {
+                    logger.debug("starting coroutine-$it ${LocalDateTime.now()}")
+                    while (true) {
+                        handleMessage()
+                        pollerConfigs.pollDelay?.toMillis()?.let {
+                            delay(it)
                         }
-                    }.start()
-                }
+                    }
+                }.start()
             }
         }
     }
 
     fun stop() {
         logger.info("stopping SqsMessagePoller")
-        job.cancelChildren()
-        job.cancel()
+        supervisorJob.cancelChildren()
+        supervisorJob.cancel()
     }
 
     private fun handleMessage() {
@@ -105,7 +106,7 @@ class SqsEventPoller(
             eventHandler.onAfterHandle(message)
             true
         } catch (exception: Exception) {
-            logger.warn { "error happened while processing the message " }
+            logger.error { "error happened while processing the message " }
             false
         }
     }

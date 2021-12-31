@@ -47,7 +47,7 @@ data class EventPollerProperties(
      *
      * The default is 50.
      */
-    var pollingCoroutines: Int = 50,
+    var numOfPollers: Int = 50,
 ) {
 
     companion object {

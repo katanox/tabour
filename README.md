@@ -196,7 +196,7 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 
 </tr>
 <tr>
-<td><pre>tabour.poller.polling-coroutines</pre></td>
+<td><pre>tabour.poller.num-of-pollers</pre></td>
 <td><pre>50</pre></td>
 <td>The number of coroutines that should poll/process new messages. Each of those coroutines will poll a batch of batchSize messages and then wait for the pollDelay interval until polling the next batch.</td>
 </tr>
@@ -214,11 +214,6 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 <td><pre>tabour.sqs.region</pre></td>
 <td><pre>NA</pre></td>
 <td>The AWS region</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.publishing-coroutines</pre></td>
-<td><pre>50</pre></td>
-<td>Number of coroutines that are going to be used to publish events</td>
 </tr>
 <tr>
 <td><pre>tabour.sqs.enable-consumption</pre></td>

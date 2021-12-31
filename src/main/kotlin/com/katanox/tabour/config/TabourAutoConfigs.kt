@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration
 @ComponentScan("com.katanox.tabour")
 class TabourAutoConfigs(@Autowired val tabourProperties: TabourProperties) {
     @Bean
-    fun eventConsumerFactory(): EventHandlerFactory {
+    fun eventHandlerFactory(): EventHandlerFactory {
         return EventHandlerFactory(this)
     }
 

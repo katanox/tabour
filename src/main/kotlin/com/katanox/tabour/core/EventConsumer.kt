@@ -8,9 +8,9 @@ import javax.annotation.PostConstruct
 
 abstract class EventConsumer {
 
-    private lateinit var handlerBase: IEventHandlerBase
+    private lateinit var handler: IEventHandlerBase
 
-    @Autowired private lateinit var eventConsumerFactory: EventHandlerFactory
+    @Autowired private lateinit var eventHandlerFactory: EventHandlerFactory
 
     abstract fun getBusURL(): String
 
@@ -20,7 +20,7 @@ abstract class EventConsumer {
 
     @PostConstruct
     private fun setUp() {
-        handlerBase =
-            eventConsumerFactory.getEventHandler(getBusType(), getBusURL()) { consume(it as String) }
+        handler =
+            eventHandlerFactory.getEventHandler(getBusType(), getBusURL()) { consume(it as String) }
     }
 }
