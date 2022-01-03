@@ -9,4 +9,9 @@ abstract class ProtoEventPublisher : EventPublisher() {
         val json: String = JsonFormat.printer().print(event)
         this.publish(json, busUrl, messageGroupId)
     }
+
+    fun publishEventBatch(events: List<MessageOrBuilder>, busUrl: String, messageGroupId: String? = null) {
+        val parsedEvents = events.map { JsonFormat.printer().print(it) }
+        this.publishBatch(parsedEvents, busUrl, messageGroupId)
+    }
 }

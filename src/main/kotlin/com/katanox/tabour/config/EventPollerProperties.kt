@@ -11,9 +11,9 @@ data class EventPollerProperties(
     /**
      * The delay the poller should wait for the next poll after the previous poll has finished
      *
-     * The default is 1 second.
+     * The default is null.
      */
-    var pollDelay: Duration = Duration.ofSeconds(1),
+    var pollDelay: Duration? = null,
 
     /**
      * The duration (in seconds) for which the call waits for a message to arrive in the queue
@@ -43,13 +43,11 @@ data class EventPollerProperties(
     var batchSize: Int = DEFAULT_BATCH_SIZE,
 
     /**
-     * The number of threads that should poll for new messages. Each of those threads will poll a
-     * batch of batchSize messages and then wait for the pollDelay interval until polling the next
-     * batch.
+     * The number of coroutines that should poll for new messages and then consume them.
      *
-     * The default is 1.
+     * The default is 10.
      */
-    var pollingThreads: Int = 1,
+    var numOfPollers: Int = 10,
 ) {
 
     companion object {

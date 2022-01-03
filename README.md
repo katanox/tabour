@@ -167,29 +167,13 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 <table>
 <thead><tr><th>path</th><th>default value</th><th>explanation</th></tr></thead>
 <tr>
-<td><pre>tabour.retry-max-count</pre></td>
-<td><pre>1</pre></td>
-<td>Number of times that is gonna retry to publish  or consume an event</td>
-</tr>
-<tr>
-<tr>
-<td><pre>tabour.handler.thread-pool-size</pre></td>
+<td><pre>tabour.max-retry-count</pre></td>
 <td><pre>3</pre></td>
-<td>Size of the thread pool the the handler actors will use to consume the messages</td>
-</tr>
-<tr>
-<td><pre>tabour.handler.queue-size</pre></td>
-<td><pre>10</pre></td>
-<td>Size of the internal queue that the threads will use to pull from once a message is consumed</td>
-</tr>
-<tr>
-<td><pre>tabour.handler.thread-name-prefix</pre></td>
-<td><pre>""</pre></td>
-<td>Prefix of the threads that are created by the thread pool</td>
+<td>Number of times that is going to retry to publish  or consume an event</td>
 </tr>
 <tr>
 <td><pre>tabour.poller.poll-delay</pre></td>
-<td><pre>1 Second</pre></td>
+<td><pre>NA</pre></td>
 <td>Delay the poller should wait for the next poll after the previous poll has finished</td>
 </tr>
 <tr>
@@ -212,9 +196,9 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 
 </tr>
 <tr>
-<td><pre>tabour.poller.polling-threads</pre></td>
-<td><pre>1</pre></td>
-<td>The number of threads that should poll for new messages. Each of those threads will poll a batch of batchSize messages and then wait for the pollDelay interval until polling the next batch.</td>
+<td><pre>tabour.poller.num-of-pollers</pre></td>
+<td><pre>10</pre></td>
+<td>The number of coroutines that should poll/process new messages. Each of those coroutines will poll a batch of batchSize messages and then wait for the pollDelay interval until polling the next batch.</td>
 </tr>
 <tr>
 <td><pre>tabour.sqs.access-key</pre></td>
@@ -230,31 +214,6 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 <td><pre>tabour.sqs.region</pre></td>
 <td><pre>NA</pre></td>
 <td>The AWS region</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.auto-startup</pre></td>
-<td><pre>true</pre></td>
-<td>Configures if this listening container should be automatically started.</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.max-number-of-messages</pre></td>
-<td><pre>10</pre></td>
-<td>Configure the maximum number of messages that should be retrieved during one poll to the Amazon SQS system. This number must be a positive, non-zero number that has a maximum number of 10. Values higher then 10 are currently not supported by the queueing system.</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.core-pool-size</pre></td>
-<td><pre>1</pre></td>
-<td>Set the ThreadPoolExecutor's core pool size, that is being used by SQS</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.max-pool-size</pre></td>
-<td><pre>Int.MAX_VALUE</pre></td>
-<td>Set the ThreadPoolExecutor's maximum pool size, that is being used by SQS</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.queue-capacity</pre></td>
-<td><pre>Int.MAX_VALUE</pre></td>
-<td>Set the capacity for the ThreadPoolExecutor's BlockingQueue, that is being used by SQS Any positive value will lead to a LinkedBlockingQueue instance; Any other value will lead to a SynchronousQueue instance</td>
 </tr>
 <tr>
 <td><pre>tabour.sqs.enable-consumption</pre></td>
