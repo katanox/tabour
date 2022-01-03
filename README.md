@@ -197,7 +197,7 @@ class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
 </tr>
 <tr>
 <td><pre>tabour.poller.num-of-pollers</pre></td>
-<td><pre>50</pre></td>
+<td><pre>10</pre></td>
 <td>The number of coroutines that should poll/process new messages. Each of those coroutines will poll a batch of batchSize messages and then wait for the pollDelay interval until polling the next batch.</td>
 </tr>
 <tr>

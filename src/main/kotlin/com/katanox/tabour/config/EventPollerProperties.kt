@@ -45,9 +45,9 @@ data class EventPollerProperties(
     /**
      * The number of coroutines that should poll for new messages and then consume them.
      *
-     * The default is 50.
+     * The default is 10.
      */
-    var numOfPollers: Int = 50,
+    var numOfPollers: Int = 10,
 ) {
 
     companion object {
