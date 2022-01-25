@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.katanox</groupId>
     <artifactId>tabour</artifactId>
-    <version>0.2.0-rc1</version>
+    <version>0.2.1</version>
     <name>Tabour</name>
     <url>https://github.com/katanox/tabour</url>
     <description>Kotlin's library to make working with queues/topics much easier.</description>
