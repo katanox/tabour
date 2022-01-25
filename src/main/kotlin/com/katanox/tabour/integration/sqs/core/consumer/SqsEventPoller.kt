@@ -106,7 +106,7 @@ class SqsEventPoller(
             eventHandler.onAfterHandle(message)
             true
         } catch (exception: Exception) {
-            logger.error { "error happened while processing the message " }
+            logger.warn { "error happened while processing the message " }
             false
         }
     }
