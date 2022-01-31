@@ -21,7 +21,6 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import java.time.LocalDateTime
-import kotlin.streams.toList
 import kotlin.time.ExperimentalTime
 
 /**
@@ -70,45 +69,37 @@ class SqsEventPoller(
 
     private fun handleMessage() {
         val messages = retrieveMessages()
-        val messagesToDelete = messages
-            .parallelStream()
-            .filter {
-                processMessage(it)
-            }.map {
-                DeleteMessageBatchRequestEntry.builder()
-                    .id(it.messageId())
-                    .receiptHandle(it.receiptHandle())
-                    .build()
-            }.toList()
-        logger.debug { "number of messages to be deleted ${messagesToDelete.size}" }
-        acknowledgeMessage(messagesToDelete)
+        val messagesToBeDeleted = mutableListOf<DeleteMessageBatchRequestEntry>()
+        messages.forEach { message ->
+            runCatching {
+                processMessage(message)
+            }.onFailure { throwable ->
+                eventHandler.onFailure(throwable, message)
+            }.onSuccess {
+                messagesToBeDeleted.add(
+                    DeleteMessageBatchRequestEntry.builder().id(it.messageId())
+                        .receiptHandle(it.receiptHandle())
+                        .build()
+                )
+            }
+        }
+        logger.debug { "number of messages to be deleted ${messagesToBeDeleted.size}" }
+        acknowledgeMessage(messagesToBeDeleted)
     }
 
     private fun retrieveMessages(): List<Message> {
-        val request =
-            ReceiveMessageRequest.builder()
-                .maxNumberOfMessages(pollerConfigs.batchSize)
-                .queueUrl(queueUrl)
-                .waitTimeSeconds(pollerConfigs.waitTime.toSeconds().toInt())
-                .visibilityTimeout(pollerConfigs.visibilityTimeout.toSeconds().toInt())
-                .build()
-        return client
-            .receiveMessage(request)
-            .messages()
+        val request = ReceiveMessageRequest.builder().maxNumberOfMessages(pollerConfigs.batchSize).queueUrl(queueUrl)
+            .waitTimeSeconds(pollerConfigs.waitTime.toSeconds().toInt())
+            .visibilityTimeout(pollerConfigs.visibilityTimeout.toSeconds().toInt()).build()
+        return client.receiveMessage(request).messages()
     }
 
-    private fun processMessage(sqsMessage: Message): Boolean {
-        return try {
-            val message = sqsMessage.body()
-            eventHandler.onBeforeHandle(message)
-            eventHandler.handle(message)
-            logger.debug { "message ${sqsMessage.messageId()} processed successfully - message has been deleted from SQS" }
-            eventHandler.onAfterHandle(message)
-            true
-        } catch (exception: Exception) {
-            logger.warn { "error happened while processing the message " }
-            false
-        }
+    private fun processMessage(sqsMessage: Message): Message {
+        val message = sqsMessage.body()
+        eventHandler.onBeforeHandle(message)
+        eventHandler.handle(message)
+        eventHandler.onAfterHandle(message)
+        return sqsMessage
     }
 
     private fun acknowledgeMessage(messagesToDelete: List<DeleteMessageBatchRequestEntry>) {
@@ -124,5 +115,6 @@ class SqsEventPoller(
                 }
             }
         }
+        logger.debug { "${messagesToDelete.size} messages has been deleted from SQS" }
     }
 }

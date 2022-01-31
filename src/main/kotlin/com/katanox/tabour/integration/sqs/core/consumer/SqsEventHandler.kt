@@ -3,6 +3,7 @@ package com.katanox.tabour.integration.sqs.core.consumer
 import com.katanox.tabour.base.IEventHandlerBase
 import com.katanox.tabour.config.TabourAutoConfigs
 import com.katanox.tabour.extentions.ConsumerAction
+import com.katanox.tabour.extentions.FailureAction
 import com.katanox.tabour.extentions.retry
 import kotlinx.coroutines.runBlocking
 import org.springframework.context.annotation.Scope
@@ -15,6 +16,7 @@ class SqsEventHandler(
     val sqsQueueUrl: String = "",
     val consumerAction: ConsumerAction = {},
     val tabourConfigs: TabourAutoConfigs,
+    val failureAction: FailureAction,
 ) : IEventHandlerBase {
     /**
      * Called just before the handle() method is being called. You can implement this method to
@@ -43,5 +45,9 @@ class SqsEventHandler(
                 consumerAction(message)
             }
         }
+    }
+
+    fun onFailure(throwable: Throwable, message: Any) {
+        failureAction
     }
 }
