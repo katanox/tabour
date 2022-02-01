@@ -74,7 +74,7 @@ class SqsEventPoller(
             runCatching {
                 processMessage(message)
             }.onFailure { throwable ->
-                eventHandler.onFailure(throwable, message)
+                eventHandler.failureAction(throwable, message)
             }.onSuccess {
                 messagesToBeDeleted.add(
                     DeleteMessageBatchRequestEntry.builder().id(it.messageId())

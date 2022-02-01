@@ -46,8 +46,4 @@ class SqsEventHandler(
             }
         }
     }
-
-    fun onFailure(throwable: Throwable, message: Any) {
-        failureAction
-    }
 }
