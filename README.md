@@ -102,6 +102,8 @@ Then simply call
 
 Extend the EventConsumer, set enableConsumption parameter to true, and it will automatically start consuming messages
 using your consume method.
+The default case when the consumption fails is to log the exception with warn level
+It is allowed change that behavior by override onFailure method
 
 ```kotlin
 class BookingEventConsumer : EventConsumer() {
@@ -118,6 +120,11 @@ class BookingEventConsumer : EventConsumer() {
     override fun getBusType(): BusType {
         return BusType.SQS
 
+    }
+    
+    //override failure behavior and change the log lvl to error
+    override fun onFailure(throwable: Throwable, message: Any) {
+        logger.error { "error ${throwable.message} happened while processing the message $message" }
     }
 }
 ```
