@@ -60,7 +60,7 @@
         <!-- https://mvnrepository.com/artifact/io.kotest/kotest-assertions-core-jvm -->
         <kotest.version>5.0.2</kotest.version>
         <!-- https://mvnrepository.com/artifact/org.testcontainers/testcontainers -->
-        <testcontainers.version>1.16.2</testcontainers.version>
+        <testcontainers.version>1.17.2</testcontainers.version>
         <!-- https://mvnrepository.com/artifact/org.testcontainers/junit-jupiter -->
         <testcontainers.jupiter.version>1.16.2</testcontainers.jupiter.version>
         <!-- https://mvnrepository.com/artifact/io.github.microutils/kotlin-logging-jvm -->
