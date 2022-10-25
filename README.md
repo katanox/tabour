@@ -72,7 +72,7 @@ tabour:
 
 ## Supported Types
 
-- SQS
+- SQS fifo queues
 
 ## Working with self-defined serialization
 
