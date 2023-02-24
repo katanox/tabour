@@ -1,11 +1,1 @@
-version: 2
-updates:
-  - package-ecosystem: maven
-    directory: "/"
-    schedule:
-      interval: monthly
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: dependency
-    reviewers:
-      - "katanox/developers"
+
