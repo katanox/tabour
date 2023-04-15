@@ -3,7 +3,6 @@ package com.katanox.tabour.consumer
 import com.katanox.tabour.config.Configuration.sqs
 import io.mockk.*
 import java.util.concurrent.CompletableFuture
-import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -25,12 +24,15 @@ class SqsPollerTest {
     fun `test accept with one worker for one message runs once the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
         val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
-        val configuration = spyk(sqs {
-            workers = 1
-            queueUrl = "url"
-            successFn = successFunc
-            errorFn = errorFunc
-        })
+        val configuration =
+            spyk(
+                sqs {
+                    workers = 1
+                    queueUrl = "url"
+                    successFn = successFunc
+                    errorFn = errorFunc
+                }
+            )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
                 .queueUrl(configuration.queueUrl)
@@ -51,7 +53,6 @@ class SqsPollerTest {
 
         sqsPoller.accept(configuration)
         advanceUntilIdle()
-
 
         verify(exactly = 1) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
