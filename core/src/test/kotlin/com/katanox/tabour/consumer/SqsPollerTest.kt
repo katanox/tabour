@@ -49,12 +49,50 @@ class SqsPollerTest {
         coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
-        every { successFunc(any()) }.returns(Unit)
+        every { successFunc(message) }.returns(Unit)
 
         sqsPoller.accept(configuration)
         advanceUntilIdle()
 
         verify(exactly = 1) { successFunc(message) }
+        verify(exactly = 0) { errorFunc(any()) }
+    }
+
+    @Test
+    fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
+        val sqs: SqsAsyncClient = mockk()
+        val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
+        val configuration =
+            spyk(
+                sqs {
+                    workers = 5
+                    queueUrl = "url"
+                    successFn = successFunc
+                    errorFn = errorFunc
+                }
+            )
+        val request: ReceiveMessageRequest =
+            ReceiveMessageRequest.builder()
+                .queueUrl(configuration.queueUrl)
+                .maxNumberOfMessages(1)
+                .waitTimeSeconds(30)
+                .build()
+
+        val message: Message =
+            Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+
+        val response: ReceiveMessageResponse =
+            ReceiveMessageResponse.builder().messages(message).build()
+
+        coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
+        coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
+            .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
+        every { successFunc(message) }.returns(Unit)
+
+        sqsPoller.accept(configuration)
+        advanceUntilIdle()
+
+        verify(exactly = 5) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
     }
 
