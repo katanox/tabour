@@ -12,6 +12,6 @@ class Tabour {
 
     suspend fun start() {
         println(registries.size)
-        registries.forEach { it.start() }
+        registries.forEach { it.startConsumption() }
     }
 }

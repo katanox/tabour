@@ -8,14 +8,13 @@ enum class IntegrationType {
     SQS
 }
 
-sealed interface Consumer {
-    fun <T> onSuccess(successResult: T)
-    fun onFail(exception: Exception)
-
+sealed interface Consumer<T> {
     val type: IntegrationType
+    var successFn: (T) -> Unit
+    var errorFn: (Exception) -> Unit
 }
 
-class SqsConfiguration : Consumer {
+class SqsConfiguration : Consumer<Message> {
     override val type = IntegrationType.SQS
 
     var queueUrl: String = ""
@@ -26,14 +25,14 @@ class SqsConfiguration : Consumer {
 
             field = value
         }
-    var maxMessages: Int = 10
+    var maxMessages: Int = 1
         set(value) {
             if (value > 10 || value < 0) {
                 throw IllegalArgumentException("Value must be 0-10")
             }
             field = value
         }
-    val waitTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
+    val waitTime: Duration = Duration.of(30, ChronoUnit.SECONDS)
     var workers: Int = 1
         set(value) {
             if (value > 10 || value < 0) {
@@ -42,10 +41,6 @@ class SqsConfiguration : Consumer {
             field = value
         }
     var sleepTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
-    var successFn: (Message) -> Unit = {}
-    var errorFn: (Exception) -> Unit = {}
-
-    override fun <T> onSuccess(successResult: T): Unit = successFn(successResult as Message)
-
-    override fun onFail(exception: Exception): Unit = errorFn(exception)
+    override var successFn: (Message) -> Unit = {}
+    override var errorFn: (Exception) -> Unit = {}
 }
