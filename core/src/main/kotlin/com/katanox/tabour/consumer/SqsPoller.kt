@@ -47,7 +47,6 @@ internal class SqsPoller(
                         }
                     }
                 } catch (e: Exception) {
-                    println(e.message)
                     configuration.errorFn(e)
                 }
             }
