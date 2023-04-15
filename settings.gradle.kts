@@ -5,3 +5,26 @@
  */
 
 rootProject.name = "tabour"
+
+include("core")
+
+val kotlinVersion = "1.8.20"
+
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            library("kotlin-jdk8", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+            library("kotlin-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+            library("kotlin-coroutines-jdk", "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.4")
+            library("aws-sqs", "software.amazon.awssdk:sqs:2.20.46")
+        }
+
+        create("testLibs") {
+            library("kotlin-test-junit", "org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
+            library("kotlin-test", "org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
+
+
+            bundle("kotlin-test", listOf("kotlin-test", "kotlin-test-junit"))
+        }
+    }
+}

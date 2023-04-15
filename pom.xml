@@ -191,7 +191,7 @@
 
 
     <build>
-        <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
+        <sourceDirectory>core/src/main/kotlin</sourceDirectory>
         <extensions>
             <extension>
                 <groupId>kr.motd.maven</groupId>
@@ -239,7 +239,7 @@
                         <configuration>
                             <testOutput>${basedir}/target/test-classes</testOutput>
                             <sourceDirs>
-                                <source>src/test/kotlin</source>
+                                <source>core/src/test/kotlin</source>
                             </sourceDirs>
                         </configuration>
                     </execution>
@@ -253,7 +253,7 @@
                             <testOutput>${basedir}/target/integration-test-classes</testOutput>
                             <sourceDirs>
                                 <sourceDir>
-                                    ${basedir}/src/integration-test/kotlin
+                                    core/src/integration-test/kotlin
                                 </sourceDir>
                             </sourceDirs>
                         </configuration>
@@ -266,7 +266,7 @@
                         </goals>
                         <configuration>
                             <sourceDirs>
-                                <source>src/main/kotlin</source>
+                                <source>core/src/main/kotlin</source>
                             </sourceDirs>
                         </configuration>
                     </execution>
@@ -316,7 +316,7 @@
                 <version>${sunfire.plugin.version}</version>
                 <configuration>
                     <testClassesDirectory>${basedir}/target/test-classes</testClassesDirectory>
-                    <testSourceDirectory>${basedir}/src/test/kotlin</testSourceDirectory>
+                    <testSourceDirectory>core/src/test/kotlin</testSourceDirectory>
                     <argLine>${surefireArgLine}</argLine>
                     <testFailureIgnore>false</testFailureIgnore>
                     <skipTests>${skipUTs}</skipTests>
@@ -412,7 +412,7 @@
                             </includes>
                             <classesDirectory>${project.build.outputDirectory}</classesDirectory>
                             <testClassesDirectory>${basedir}/target/integration-test-classes</testClassesDirectory>
-                            <testSourceDirectory>${basedir}/src/integration-test/kotlin</testSourceDirectory>
+                            <testSourceDirectory>core/src/integration-test/kotlin</testSourceDirectory>
                         </configuration>
                     </execution>
                     <execution>
