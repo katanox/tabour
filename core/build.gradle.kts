@@ -23,7 +23,6 @@ dependencies {
     api(libs.kotlin.coroutines)
     api(libs.kotlin.coroutines.jdk)
     api(libs.aws.sqs)
-//    api("")
     //    api("javax.annotation:javax.annotation-api:1.3.2")
     //    api("org.jetbrains.kotlin:kotlin-reflect:1.6.0")
     //    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.0")
@@ -41,7 +40,7 @@ dependencies {
     //    compileOnly("org.springframework:spring-context-support:5.3.7")
 }
 
-group = "com.katanox"
+group = "com.katanox.tabour"
 
 version = "0.3.0"
 
@@ -50,11 +49,11 @@ description = "Tabour Core"
 
 kotlin {
     jvmToolchain(19)
-    sourceSets.all {
-        languageSettings {
-            languageVersion = "2.0"
-        }
-    }
+//    sourceSets.all {
+//        languageSettings {
+//            languageVersion = "2.0"
+//        }
+//    }
 }
 
 tasks.test {
