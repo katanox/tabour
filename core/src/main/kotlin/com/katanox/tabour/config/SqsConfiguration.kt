@@ -2,19 +2,24 @@ package com.katanox.tabour.config
 
 import java.time.Duration
 import java.time.temporal.ChronoUnit
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.services.sqs.model.Message
 
 enum class IntegrationType {
     SQS
 }
 
-sealed interface Consumer<T> {
-    val type: IntegrationType
-    var successFn: (T) -> Unit
-    var errorFn: (Exception) -> Unit
+sealed interface ConsumptionError {
+    data class AwsError(val details: AwsErrorDetails) : ConsumptionError
 }
 
-class SqsConfiguration : Consumer<Message> {
+sealed interface Consumer<T, K : ConsumptionError> {
+    val type: IntegrationType
+    var successFn: (T) -> Unit
+    var errorFn: (K) -> Unit
+}
+
+class SqsConfiguration : Consumer<Message, ConsumptionError.AwsError> {
     override val type = IntegrationType.SQS
 
     var queueUrl: String = ""
@@ -42,5 +47,5 @@ class SqsConfiguration : Consumer<Message> {
         }
     var sleepTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
     override var successFn: (Message) -> Unit = {}
-    override var errorFn: (Exception) -> Unit = {}
+    override var errorFn: (ConsumptionError.AwsError) -> Unit = {}
 }

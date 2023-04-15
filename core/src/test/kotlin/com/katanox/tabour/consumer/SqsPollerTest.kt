@@ -1,6 +1,7 @@
 package com.katanox.tabour.consumer
 
 import com.katanox.tabour.config.Configuration.sqs
+import com.katanox.tabour.config.ConsumptionError
 import io.mockk.*
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -8,6 +9,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails
+import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
@@ -18,7 +21,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 @OptIn(ExperimentalCoroutinesApi::class)
 class SqsPollerTest {
     val successFunc: (Message) -> Unit = mockk()
-    val errorFunc: (Exception) -> Unit = mockk()
+    val errorFunc: (ConsumptionError) -> Unit = mockk()
 
     @Test
     fun `test accept with one worker for one message runs once the successFn`() = runTest {
@@ -116,12 +119,17 @@ class SqsPollerTest {
                 .waitTimeSeconds(30)
                 .build()
 
-        coEvery { sqs.receiveMessage(request) }.throws(Exception(""))
+        val exception = AwsServiceException
+            .builder()
+            .awsErrorDetails(AwsErrorDetails.builder().build())
+            .build()
+
+        coEvery { sqs.receiveMessage(request) }.throws(exception)
 
         sqsPoller.accept(configuration)
         advanceUntilIdle()
 
         verify(exactly = 0) { successFunc(any()) }
-        verify(exactly = 1) { errorFunc(any()) }
+        verify(exactly = 1) { errorFunc(ConsumptionError.AwsError(AwsErrorDetails.builder().build())) }
     }
 }

@@ -1,8 +1,10 @@
 package com.katanox.tabour.consumer
 
+import com.katanox.tabour.config.ConsumptionError
 import com.katanox.tabour.config.SqsConfiguration
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
+import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
@@ -46,8 +48,8 @@ internal class SqsPoller(
                             acknowledge(messages, configuration.queueUrl)
                         }
                     }
-                } catch (e: Exception) {
-                    configuration.errorFn(e)
+                } catch (e: AwsServiceException) {
+                    configuration.errorFn(ConsumptionError.AwsError(details = e.awsErrorDetails()))
                 }
             }
         }
