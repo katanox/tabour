@@ -1,25 +1,25 @@
-package com.katanox.tabour.registry
+package com.katanox.tabour.sqs
 
-import com.katanox.tabour.config.SqsConfiguration
-import com.katanox.tabour.consumer.SqsPoller
+import com.katanox.tabour.sqs.config.SqsQueueConfiguration
+import com.katanox.tabour.sqs.consumption.SqsPoller
+import com.katanox.tabour.Registry
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-
-sealed interface Registry {
-    suspend fun startConsumption()
-}
+import java.net.URI
 
 class SqsRegistry(credentialsProvider: AwsCredentialsProvider, region: Region) : Registry {
-    private val consumers: MutableList<SqsConfiguration> = mutableListOf()
+    private val consumers: MutableList<SqsQueueConfiguration> = mutableListOf()
     private val sqs: SqsAsyncClient =
-        SqsAsyncClient.builder().credentialsProvider(credentialsProvider).region(region).build()
+        SqsAsyncClient.builder().credentialsProvider(credentialsProvider)
+            .endpointOverride(URI("http://localhost:4566"))
+            .region(region).build()
 
     /**
      * Registers a consumer for a specific SQS queue After registering the consumers, use
      * [startConsumption] to start the consumption process
      */
-    fun addConsumer(consumer: SqsConfiguration): SqsRegistry =
+    fun addConsumer(consumer: SqsQueueConfiguration): SqsRegistry =
         this.apply { consumers.add(consumer) }
 
     /**

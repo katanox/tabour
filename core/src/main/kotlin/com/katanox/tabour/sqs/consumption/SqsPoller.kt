@@ -1,7 +1,8 @@
-package com.katanox.tabour.consumer
+package com.katanox.tabour.sqs.consumption
 
-import com.katanox.tabour.config.ConsumptionError
-import com.katanox.tabour.config.SqsConfiguration
+import com.katanox.tabour.ConsumptionError
+import com.katanox.tabour.sqs.config.SqsQueueConfiguration
+import java.net.URI
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.awscore.exception.AwsServiceException
@@ -18,25 +19,24 @@ internal class SqsPoller(
 ) {
     private val scope = CoroutineScope(context)
 
-    suspend fun poll(consumers: List<SqsConfiguration>) {
+    suspend fun poll(consumers: List<SqsQueueConfiguration>) {
         consumers.forEach {
             scope.launch {
                 while (true) {
                     accept(it)
-                    delay(it.sleepTime.toMillis())
+                    delay(it.config.sleepTime.toMillis())
                 }
             }
         }
     }
 
-    suspend fun accept(configuration: SqsConfiguration) {
-        repeat(configuration.workers) {
+    suspend fun accept(configuration: SqsQueueConfiguration) {
+        repeat(configuration.config.concurrency) {
             scope.launch {
                 val request =
                     ReceiveMessageRequest.builder()
-                        .queueUrl(configuration.queueUrl)
-                        .maxNumberOfMessages(configuration.maxMessages)
-                        .waitTimeSeconds(configuration.waitTime.toSecondsPart())
+                        .queueUrl(configuration.queueUrl.toASCIIString())
+                        .maxNumberOfMessages(configuration.config.maxMessages)
                         .build()
 
                 try {
@@ -44,18 +44,18 @@ internal class SqsPoller(
                         val messages = response.messages()
 
                         if (messages.isNotEmpty()) {
-                            messages.forEach { configuration.successFn(it) }
+                            messages.forEach { configuration.onSuccess(it) }
                             acknowledge(messages, configuration.queueUrl)
                         }
                     }
                 } catch (e: AwsServiceException) {
-                    configuration.errorFn(ConsumptionError.AwsError(details = e.awsErrorDetails()))
+                    configuration.onError(ConsumptionError.AwsError(details = e.awsErrorDetails()))
                 }
             }
         }
     }
 
-    private suspend fun acknowledge(messages: List<Message>, queueUrl: String) {
+    private suspend fun acknowledge(messages: List<Message>, queueUrl: URI) {
         val entries =
             messages.map {
                 DeleteMessageBatchRequestEntry.builder()
@@ -65,7 +65,10 @@ internal class SqsPoller(
             }
 
         val request =
-            DeleteMessageBatchRequest.builder().queueUrl(queueUrl).entries(entries).build()
+            DeleteMessageBatchRequest.builder()
+                .queueUrl(queueUrl.toASCIIString())
+                .entries(entries)
+                .build()
 
         sqs.deleteMessageBatch(request).await()
     }

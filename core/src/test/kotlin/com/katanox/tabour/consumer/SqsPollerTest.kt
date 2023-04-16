@@ -1,8 +1,11 @@
 package com.katanox.tabour.consumer
 
-import com.katanox.tabour.config.Configuration.sqs
-import com.katanox.tabour.config.ConsumptionError
+import com.katanox.tabour.ConsumptionError
+import com.katanox.tabour.sqsConsumerConfiguration
+import com.katanox.tabour.sqsQueueConfiguration
+import com.katanox.tabour.sqs.consumption.SqsPoller
 import io.mockk.*
+import java.net.URI
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -29,18 +32,17 @@ class SqsPollerTest {
         val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
         val configuration =
             spyk(
-                sqs {
-                    workers = 1
-                    queueUrl = "url"
-                    successFn = successFunc
-                    errorFn = errorFunc
+                sqsQueueConfiguration {
+                    queueUrl = URI("url")
+                    onSuccess = successFunc
+                    onError = errorFunc
+                    config = sqsConsumerConfiguration { concurrency = 1 }
                 }
             )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
-                .queueUrl(configuration.queueUrl)
+                .queueUrl(configuration.queueUrl.toASCIIString())
                 .maxNumberOfMessages(1)
-                .waitTimeSeconds(30)
                 .build()
 
         val message: Message =
@@ -67,18 +69,17 @@ class SqsPollerTest {
         val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
         val configuration =
             spyk(
-                sqs {
-                    workers = 5
-                    queueUrl = "url"
-                    successFn = successFunc
-                    errorFn = errorFunc
+                sqsQueueConfiguration {
+                    queueUrl = URI("url")
+                    onSuccess = successFunc
+                    onError = errorFunc
+                    config = sqsConsumerConfiguration { concurrency = 5 }
                 }
             )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
-                .queueUrl(configuration.queueUrl)
+                .queueUrl(configuration.queueUrl.toASCIIString())
                 .maxNumberOfMessages(1)
-                .waitTimeSeconds(30)
                 .build()
 
         val message: Message =
@@ -105,24 +106,21 @@ class SqsPollerTest {
         val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
         val configuration =
             spyk(
-                sqs {
-                    workers = 1
-                    queueUrl = "url"
-                    successFn = successFunc
-                    errorFn = errorFunc
+                sqsQueueConfiguration {
+                    queueUrl = URI("url")
+                    onSuccess = successFunc
+                    onError = errorFunc
+                    config = sqsConsumerConfiguration { concurrency = 1 }
                 }
             )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
-                .queueUrl(configuration.queueUrl)
+                .queueUrl(configuration.queueUrl.toASCIIString())
                 .maxNumberOfMessages(1)
-                .waitTimeSeconds(30)
                 .build()
 
-        val exception = AwsServiceException
-            .builder()
-            .awsErrorDetails(AwsErrorDetails.builder().build())
-            .build()
+        val exception =
+            AwsServiceException.builder().awsErrorDetails(AwsErrorDetails.builder().build()).build()
 
         coEvery { sqs.receiveMessage(request) }.throws(exception)
 
@@ -130,6 +128,8 @@ class SqsPollerTest {
         advanceUntilIdle()
 
         verify(exactly = 0) { successFunc(any()) }
-        verify(exactly = 1) { errorFunc(ConsumptionError.AwsError(AwsErrorDetails.builder().build())) }
+        verify(exactly = 1) {
+            errorFunc(ConsumptionError.AwsError(AwsErrorDetails.builder().build()))
+        }
     }
 }
