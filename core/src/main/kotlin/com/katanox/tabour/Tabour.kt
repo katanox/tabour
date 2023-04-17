@@ -1,14 +1,19 @@
 package com.katanox.tabour
 
-class Tabour {
-    private val registries: MutableList<Registry> = mutableListOf()
+import com.katanox.tabour.configuration.Registry
+import kotlinx.coroutines.*
 
-    fun register(registry: Registry): Tabour {
-        registries.add(registry)
-        return this
-    }
+class Tabour(numOfThreads: Int = 4) {
+    private val registries: MutableSet<Registry> = mutableSetOf()
+
+    @OptIn(DelicateCoroutinesApi::class)
+    val dispatcher: CoroutineDispatcher = newFixedThreadPoolContext(numOfThreads, "tabour")
+
+    private val scope = CoroutineScope(dispatcher)
+
+    fun register(registry: Registry): Tabour = this.apply { registries.add(registry) }
 
     suspend fun start() {
-        registries.forEach { it.startConsumption() }
+        registries.forEach { scope.launch { it.startConsumption() } }
     }
 }

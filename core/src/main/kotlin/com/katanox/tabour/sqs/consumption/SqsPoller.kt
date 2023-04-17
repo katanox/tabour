@@ -1,7 +1,8 @@
 package com.katanox.tabour.sqs.consumption
 
-import com.katanox.tabour.ConsumptionError
-import com.katanox.tabour.sqs.config.SqsQueueConfiguration
+import com.katanox.tabour.configuration.ConsumptionError
+import com.katanox.tabour.retry
+import com.katanox.tabour.sqs.config.SqsConsumer
 import java.net.URI
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
@@ -12,16 +13,14 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
-@OptIn(DelicateCoroutinesApi::class)
-internal class SqsPoller(
-    private val sqs: SqsAsyncClient,
-    context: CoroutineDispatcher = newFixedThreadPoolContext(16, "sqs-poller")
-) {
-    private val scope = CoroutineScope(context)
+internal class SqsPoller private constructor(private val sqs: SqsAsyncClient) {
+    companion object {
+        fun create(sqs: SqsAsyncClient) = SqsPoller(sqs)
+    }
 
-    suspend fun poll(consumers: List<SqsQueueConfiguration>) {
+    suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consumers.forEach {
-            scope.launch {
+            launch {
                 while (true) {
                     accept(it)
                     delay(it.config.sleepTime.toMillis())
@@ -30,26 +29,35 @@ internal class SqsPoller(
         }
     }
 
-    suspend fun accept(configuration: SqsQueueConfiguration) {
-        repeat(configuration.config.concurrency) {
-            scope.launch {
-                val request =
-                    ReceiveMessageRequest.builder()
-                        .queueUrl(configuration.queueUrl.toASCIIString())
-                        .maxNumberOfMessages(configuration.config.maxMessages)
-                        .build()
+    suspend fun accept(consumer: SqsConsumer) = coroutineScope {
+        repeat(consumer.config.concurrency) {
+            launch {
+                retry(
+                    consumer.config.retries,
+                    {
+                        when (it) {
+                            is AwsServiceException ->
+                                consumer.onError(
+                                    ConsumptionError.AwsError(details = it.awsErrorDetails())
+                                )
+                            else -> consumer.onError(ConsumptionError.UnrecognizedError(it))
+                        }
+                    }
+                ) {
+                    val request =
+                        ReceiveMessageRequest.builder()
+                            .queueUrl(consumer.queueUrl.toASCIIString())
+                            .maxNumberOfMessages(consumer.config.maxMessages)
+                            .build()
 
-                try {
                     sqs.receiveMessage(request).await().let { response ->
                         val messages = response.messages()
 
                         if (messages.isNotEmpty()) {
-                            messages.forEach { configuration.onSuccess(it) }
-                            acknowledge(messages, configuration.queueUrl)
+                            messages.forEach { consumer.onSuccess(it) }
+                            acknowledge(messages, consumer.queueUrl)
                         }
                     }
-                } catch (e: AwsServiceException) {
-                    configuration.onError(ConsumptionError.AwsError(details = e.awsErrorDetails()))
                 }
             }
         }

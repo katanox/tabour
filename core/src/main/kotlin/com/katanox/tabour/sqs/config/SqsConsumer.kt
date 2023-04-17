@@ -1,25 +1,22 @@
 package com.katanox.tabour.sqs.config
 
-import com.katanox.tabour.*
-import com.katanox.tabour.Config
-import com.katanox.tabour.Consumer
+import com.katanox.tabour.configuration.*
+import com.katanox.tabour.configuration.Config
+import com.katanox.tabour.configuration.Consumer
 import java.net.URI
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import software.amazon.awssdk.services.sqs.model.Message
 
-
-class SqsQueueConfiguration internal constructor() :
-    Consumer<Message, ConsumptionError.AwsError>, Config {
+class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, Config {
     override val type = IntegrationType.SQS
 
     override var onSuccess: (Message) -> Unit = {}
-    override var onError: (ConsumptionError.AwsError) -> Unit = {}
+    override var onError: (ConsumptionError) -> Unit = {}
 
     var queueUrl: URI = URI("")
 
-    var config: SqsConsumerConfiguration =
-        sqsConsumerConfiguration { maxMessages = 10 }
+    var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 10 }
 }
 
 class SqsConsumerConfiguration internal constructor() : Config {
@@ -46,4 +43,12 @@ class SqsConsumerConfiguration internal constructor() : Config {
         }
 
     var sleepTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
+
+    var retries: Int = 1
+        set(value) {
+            if (value < 0) {
+                throw IllegalArgumentException("Negative values are not allowed")
+            }
+            field = value
+        }
 }

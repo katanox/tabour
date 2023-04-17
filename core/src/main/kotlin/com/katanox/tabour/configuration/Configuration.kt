@@ -1,13 +1,14 @@
-package com.katanox.tabour
+package com.katanox.tabour.configuration
 
+import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.config.SqsConsumerConfiguration
-import com.katanox.tabour.sqs.config.SqsQueueConfiguration
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 
 internal interface Config
 
 sealed interface ConsumptionError {
     data class AwsError(val details: AwsErrorDetails) : ConsumptionError
+    data class UnrecognizedError(val exception: Exception): ConsumptionError
 }
 
 enum class IntegrationType {
@@ -23,10 +24,6 @@ internal interface Consumer<T, K : ConsumptionError> {
 fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsConsumerConfiguration =
     config(SqsConsumerConfiguration(), init)
 
-fun sqsQueueConfiguration(init: SqsQueueConfiguration.() -> Unit): SqsQueueConfiguration =
-    config(SqsQueueConfiguration(), init)
+fun sqsConsumer(init: SqsConsumer.() -> Unit): SqsConsumer = config(SqsConsumer(), init)
 
-private inline fun <T : Config> config(conf: T, init: T.() -> Unit): T {
-    conf.init()
-    return conf
-}
+private fun <T : Config> config(conf: T, init: T.() -> Unit): T = conf.apply { init() }

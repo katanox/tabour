@@ -1,8 +1,8 @@
 package com.katanox.tabour.consumer
 
-import com.katanox.tabour.ConsumptionError
-import com.katanox.tabour.sqsConsumerConfiguration
-import com.katanox.tabour.sqsQueueConfiguration
+import com.katanox.tabour.configuration.ConsumptionError
+import com.katanox.tabour.configuration.sqsConsumer
+import com.katanox.tabour.configuration.sqsConsumerConfiguration
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import io.mockk.*
 import java.net.URI
@@ -29,14 +29,15 @@ class SqsPollerTest {
     @Test
     fun `test accept with one worker for one message runs once the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
+        val sqsPoller = SqsPoller.create(sqs)
         val configuration =
             spyk(
-                sqsQueueConfiguration {
+                sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config = sqsConsumerConfiguration { concurrency = 1 }
+                    config =
+                        sqsConsumerConfiguration { concurrency = 1 }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -57,7 +58,6 @@ class SqsPollerTest {
         every { successFunc(message) }.returns(Unit)
 
         sqsPoller.accept(configuration)
-        advanceUntilIdle()
 
         verify(exactly = 1) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
@@ -66,14 +66,15 @@ class SqsPollerTest {
     @Test
     fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
+        val sqsPoller = SqsPoller.create(sqs)
         val configuration =
             spyk(
-                sqsQueueConfiguration {
+                sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config = sqsConsumerConfiguration { concurrency = 5 }
+                    config =
+                        sqsConsumerConfiguration { concurrency = 5 }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -94,7 +95,6 @@ class SqsPollerTest {
         every { successFunc(message) }.returns(Unit)
 
         sqsPoller.accept(configuration)
-        advanceUntilIdle()
 
         verify(exactly = 5) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
@@ -103,14 +103,15 @@ class SqsPollerTest {
     @Test
     fun `test accept an exception calls error fn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller(sqs, StandardTestDispatcher(testScheduler))
+        val sqsPoller = SqsPoller.create(sqs)
         val configuration =
             spyk(
-                sqsQueueConfiguration {
+                sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config = sqsConsumerConfiguration { concurrency = 1 }
+                    config =
+                        sqsConsumerConfiguration { concurrency = 1 }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -122,10 +123,10 @@ class SqsPollerTest {
         val exception =
             AwsServiceException.builder().awsErrorDetails(AwsErrorDetails.builder().build()).build()
 
+        coEvery { errorFunc(any()) }.returns(Unit)
         coEvery { sqs.receiveMessage(request) }.throws(exception)
 
         sqsPoller.accept(configuration)
-        advanceUntilIdle()
 
         verify(exactly = 0) { successFunc(any()) }
         verify(exactly = 1) {
