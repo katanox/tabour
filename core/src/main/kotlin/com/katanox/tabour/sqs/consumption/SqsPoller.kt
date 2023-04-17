@@ -13,11 +13,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
-internal class SqsPoller private constructor(private val sqs: SqsAsyncClient) {
-    companion object {
-        fun create(sqs: SqsAsyncClient) = SqsPoller(sqs)
-    }
-
+internal class SqsPoller(private val sqs: SqsAsyncClient) {
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consumers.forEach {
             launch {

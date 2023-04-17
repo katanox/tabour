@@ -8,8 +8,6 @@ import io.mockk.*
 import java.net.URI
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
@@ -29,15 +27,14 @@ class SqsPollerTest {
     @Test
     fun `test accept with one worker for one message runs once the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller.create(sqs)
+        val sqsPoller = SqsPoller(sqs)
         val configuration =
             spyk(
                 sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config =
-                        sqsConsumerConfiguration { concurrency = 1 }
+                    config = sqsConsumerConfiguration { concurrency = 1 }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -66,15 +63,14 @@ class SqsPollerTest {
     @Test
     fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller.create(sqs)
+        val sqsPoller = SqsPoller(sqs)
         val configuration =
             spyk(
                 sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config =
-                        sqsConsumerConfiguration { concurrency = 5 }
+                    config = sqsConsumerConfiguration { concurrency = 5 }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -103,15 +99,14 @@ class SqsPollerTest {
     @Test
     fun `test accept an exception calls error fn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller.create(sqs)
+        val sqsPoller = SqsPoller(sqs)
         val configuration =
             spyk(
                 sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config =
-                        sqsConsumerConfiguration { concurrency = 1 }
+                    config = sqsConsumerConfiguration { concurrency = 1 }
                 }
             )
         val request: ReceiveMessageRequest =

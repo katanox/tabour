@@ -33,7 +33,7 @@ private constructor(
      * when start was used
      */
     override suspend fun startConsumption() {
-        val sqsPoller = SqsPoller.create(sqs)
+        val sqsPoller = SqsPoller(sqs)
         sqsPoller.poll(consumers)
     }
 
