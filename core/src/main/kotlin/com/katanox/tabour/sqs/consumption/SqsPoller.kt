@@ -1,6 +1,6 @@
 package com.katanox.tabour.sqs.consumption
 
-import com.katanox.tabour.configuration.ConsumptionError
+import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import java.net.URI

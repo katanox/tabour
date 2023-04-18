@@ -1,8 +1,8 @@
 package com.katanox.tabour.consumer
 
-import com.katanox.tabour.configuration.ConsumptionError
 import com.katanox.tabour.configuration.sqsConsumer
 import com.katanox.tabour.configuration.sqsConsumerConfiguration
+import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import io.mockk.*
 import java.net.URI

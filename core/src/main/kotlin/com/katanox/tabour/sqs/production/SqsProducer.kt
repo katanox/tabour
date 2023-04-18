@@ -1,7 +1,7 @@
 package com.katanox.tabour.sqs.production
 
-import com.katanox.tabour.configuration.Config
 import com.katanox.tabour.configuration.sqsProducerConfiguration
+import com.katanox.tabour.consumption.Config
 import java.net.URI
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.sqs.SqsAsyncClient

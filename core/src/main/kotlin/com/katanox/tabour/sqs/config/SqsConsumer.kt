@@ -1,8 +1,9 @@
 package com.katanox.tabour.sqs.config
 
 import com.katanox.tabour.configuration.*
-import com.katanox.tabour.configuration.Config
-import com.katanox.tabour.configuration.Consumer
+import com.katanox.tabour.consumption.Config
+import com.katanox.tabour.consumption.Consumer
+import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.production.SqsProducer
 import java.net.URI
 import java.time.Duration
@@ -15,7 +16,7 @@ class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, 
 
     val producer: SqsProducer = sqsProducer {
         queueUrl = URI("")
-        key= "heheh"
+        key = "heheh"
         produce = { "asd" }
     }
 
