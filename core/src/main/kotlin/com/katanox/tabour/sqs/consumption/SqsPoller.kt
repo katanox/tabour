@@ -51,6 +51,7 @@ internal class SqsPoller(private val sqs: SqsAsyncClient) {
 
                         if (messages.isNotEmpty()) {
                             messages.forEach { launch { consumer.onSuccess(it) } }
+
                             launch { acknowledge(messages, consumer.queueUrl) }
                         }
                     }

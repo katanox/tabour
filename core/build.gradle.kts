@@ -3,9 +3,7 @@ plugins {
     `maven-publish`
 }
 
-repositories {
-    maven { url = uri("https://repo.maven.apache.org/maven2/") }
-}
+repositories { maven { url = uri("https://repo.maven.apache.org/maven2/") } }
 
 dependencies {
     implementation(libs.kotlin.jdk8)
@@ -13,6 +11,7 @@ dependencies {
     implementation(libs.kotlin.coroutines.jdk)
 
     api(libs.aws.sqs)
+
     testImplementation(testLibs.kotlin.test.coroutines)
     testImplementation(testLibs.bundles.kotlin.test)
     testImplementation(testLibs.mockk)
@@ -24,20 +23,10 @@ version = "0.3.0"
 
 description = "Tabour Core"
 
+kotlin { jvmToolchain(19) }
 
-kotlin {
-    jvmToolchain(19)
-//    sourceSets.all {
-//        languageSettings {
-//            languageVersion = "2.0"
-//        }
-//    }
-}
+tasks.test { useJUnitPlatform() }
 
-tasks.test {
-    useJUnitPlatform()
-}
-
-//java { withSourcesJar() }
+// java { withSourcesJar() }
 
 publishing { publications.create<MavenPublication>("maven") { from(components["java"]) } }

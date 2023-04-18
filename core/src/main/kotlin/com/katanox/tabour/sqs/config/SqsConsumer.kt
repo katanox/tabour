@@ -3,16 +3,21 @@ package com.katanox.tabour.sqs.config
 import com.katanox.tabour.configuration.*
 import com.katanox.tabour.configuration.Config
 import com.katanox.tabour.configuration.Consumer
+import com.katanox.tabour.sqs.production.SqsProducer
 import java.net.URI
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import software.amazon.awssdk.services.sqs.model.Message
 
 class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, Config {
-    override val type = IntegrationType.SQS
-
     override var onSuccess: (Message) -> Unit = {}
     override var onError: (ConsumptionError) -> Unit = {}
+
+    val producer: SqsProducer = sqsProducer {
+        queueUrl = URI("")
+        key= "heheh"
+        produce = { "asd" }
+    }
 
     var queueUrl: URI = URI("")
 
