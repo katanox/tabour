@@ -44,6 +44,7 @@ internal class SqsPoller(private val sqs: SqsAsyncClient) {
                         ReceiveMessageRequest.builder()
                             .queueUrl(consumer.queueUrl.toASCIIString())
                             .maxNumberOfMessages(consumer.config.maxMessages)
+                            .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
                             .build()
 
                     sqs.receiveMessage(request).await().let { response ->
