@@ -30,4 +30,11 @@ class Tabour(numOfThreads: Int = 4) {
             registries.forEach { scope.launch { it.startConsumption() } }
         }
     }
+
+    suspend fun stop() {
+        if (consumptionStarted) {
+            consumptionStarted = false
+            registries.forEach { scope.launch { it.stopConsumption() } }
+        }
+    }
 }

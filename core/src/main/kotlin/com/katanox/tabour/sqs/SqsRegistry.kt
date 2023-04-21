@@ -26,6 +26,7 @@ private constructor(
             .region(region)
             .build()
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
+    private val sqsPoller = SqsPoller(sqs)
 
     /**
      * Registers a consumer for a specific SQS queue After registering the consumers, use
@@ -38,8 +39,11 @@ private constructor(
      * when start was used
      */
     override suspend fun startConsumption() {
-        val sqsPoller = SqsPoller(sqs)
         sqsPoller.poll(consumers)
+    }
+
+    override suspend fun stopConsumption() {
+        sqsPoller.stopPolling()
     }
 
     fun addProducer(producer: SqsProducer) = this.apply { producers.add(producer) }

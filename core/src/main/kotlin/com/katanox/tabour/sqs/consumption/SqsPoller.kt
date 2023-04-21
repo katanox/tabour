@@ -14,15 +14,22 @@ import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 internal class SqsPoller(private val sqs: SqsAsyncClient) {
+    private var consume: Boolean = false
+
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
+        consume = true
         consumers.forEach {
             launch {
-                while (true) {
+                while (consume) {
                     accept(it)
                     delay(it.config.sleepTime.toMillis())
                 }
             }
         }
+    }
+
+    internal fun stopPolling() {
+        consume = false
     }
 
     suspend fun accept(consumer: SqsConsumer) = coroutineScope {
@@ -46,16 +53,16 @@ internal class SqsPoller(private val sqs: SqsAsyncClient) {
                             .maxNumberOfMessages(consumer.config.maxMessages)
                             .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
                             .build()
-
-                    sqs.receiveMessage(request).await().let { response ->
-                        val messages = response.messages()
-
-                        if (messages.isNotEmpty()) {
-                            messages.forEach { launch { consumer.onSuccess(it) } }
-
-                            launch { acknowledge(messages, consumer.queueUrl) }
-                        }
-                    }
+//
+//                    sqs.receiveMessage(request).await().let { response ->
+//                        val messages = response.messages()
+//
+//                        if (messages.isNotEmpty()) {
+//                            messages.forEach { launch { consumer.onSuccess(it) } }
+//
+//                            launch { acknowledge(messages, consumer.queueUrl) }
+//                        }
+//                    }
                 }
             }
         }

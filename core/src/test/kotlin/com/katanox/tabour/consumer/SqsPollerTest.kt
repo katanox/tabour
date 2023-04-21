@@ -41,6 +41,7 @@ class SqsPollerTest {
             ReceiveMessageRequest.builder()
                 .queueUrl(configuration.queueUrl.toASCIIString())
                 .maxNumberOfMessages(1)
+                .waitTimeSeconds(10)
                 .build()
 
         val message: Message =
@@ -76,6 +77,7 @@ class SqsPollerTest {
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
                 .queueUrl(configuration.queueUrl.toASCIIString())
+                .waitTimeSeconds(10)
                 .maxNumberOfMessages(1)
                 .build()
 
@@ -113,6 +115,7 @@ class SqsPollerTest {
             ReceiveMessageRequest.builder()
                 .queueUrl(configuration.queueUrl.toASCIIString())
                 .maxNumberOfMessages(1)
+                .waitTimeSeconds(10)
                 .build()
 
         val exception =

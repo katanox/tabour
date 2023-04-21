@@ -14,11 +14,7 @@ class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, 
     override var onSuccess: (Message) -> Unit = {}
     override var onError: (ConsumptionError) -> Unit = {}
 
-    val producer: SqsProducer = sqsProducer {
-        queueUrl = URI("")
-        key = ""
-        produce = { "" }
-    }
+    val producer: SqsProducer? = null
 
     var queueUrl: URI = URI("")
 
