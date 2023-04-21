@@ -53,16 +53,16 @@ internal class SqsPoller(private val sqs: SqsAsyncClient) {
                             .maxNumberOfMessages(consumer.config.maxMessages)
                             .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
                             .build()
-//
-//                    sqs.receiveMessage(request).await().let { response ->
-//                        val messages = response.messages()
-//
-//                        if (messages.isNotEmpty()) {
-//                            messages.forEach { launch { consumer.onSuccess(it) } }
-//
-//                            launch { acknowledge(messages, consumer.queueUrl) }
-//                        }
-//                    }
+
+                    sqs.receiveMessage(request).await().let { response ->
+                        val messages = response.messages()
+
+                        if (messages.isNotEmpty()) {
+                            messages.forEach { launch { consumer.onSuccess(it) } }
+
+                            launch { acknowledge(messages, consumer.queueUrl) }
+                        }
+                    }
                 }
             }
         }
