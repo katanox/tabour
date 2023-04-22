@@ -3,8 +3,8 @@ package com.katanox.tabour.sqs
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
-import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import com.katanox.tabour.sqs.production.SqsProducer
+import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
 import kotlinx.coroutines.coroutineScope
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -40,6 +40,10 @@ private constructor(
      */
     override suspend fun startConsumption() {
         sqsPoller.poll(consumers)
+    }
+
+    suspend fun startConsumption(f: () -> Boolean) {
+        sqsPoller.poll(consumers, f)
     }
 
     override suspend fun stopConsumption() {

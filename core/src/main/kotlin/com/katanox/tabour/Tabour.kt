@@ -1,11 +1,14 @@
 package com.katanox.tabour
 
 import com.katanox.tabour.configuration.Registry
+import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.sqs.SqsRegistry
 import kotlinx.coroutines.*
 
-class Tabour(numOfThreads: Int = 4) {
+class Tabour : Config {
     private val registries: MutableSet<Registry> = mutableSetOf()
+    var numOfThreads: Int = 4
+
     @OptIn(DelicateCoroutinesApi::class)
     val dispatcher: CoroutineDispatcher = newFixedThreadPoolContext(numOfThreads, "tabour")
     private var consumptionStarted: Boolean = false
