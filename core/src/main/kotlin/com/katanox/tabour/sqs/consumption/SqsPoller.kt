@@ -18,17 +18,9 @@ internal class SqsPoller(private val sqs: SqsAsyncClient) {
 
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consume = true
-        pollWhile(consumers) { consume }
-    }
-
-    suspend fun poll(consumers: List<SqsConsumer>, flagCheck: () -> Boolean) = coroutineScope {
-        pollWhile(consumers, flagCheck)
-    }
-
-    private suspend fun pollWhile(consumers: List<SqsConsumer>, f: () -> Boolean) = coroutineScope {
         consumers.forEach {
             launch {
-                while (f()) {
+                while (consume && it.config.consumeWhile()) {
                     accept(it)
                     delay(it.config.sleepTime.toMillis())
                 }

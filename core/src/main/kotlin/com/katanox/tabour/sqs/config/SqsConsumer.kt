@@ -56,7 +56,7 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * available and the wait time expires, the call returns successfully with an empty list of
      * messages.
      *
-     * Default is 20 seconds
+     * Default is 10 seconds
      */
     var waitTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
 
@@ -72,4 +72,6 @@ class SqsConsumerConfiguration internal constructor() : Config {
             }
             field = value
         }
+
+    var consumeWhile: () -> Boolean = { true }
 }
