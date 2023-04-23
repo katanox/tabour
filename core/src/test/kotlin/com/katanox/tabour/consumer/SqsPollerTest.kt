@@ -28,13 +28,20 @@ class SqsPollerTest {
     fun `test accept with one worker for one message runs once the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
         val sqsPoller = SqsPoller(sqs)
+        var counter = 0
         val configuration =
             spyk(
                 sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config = sqsConsumerConfiguration { concurrency = 1 }
+                    config = sqsConsumerConfiguration {
+                        concurrency = 1
+                        consumeWhile = {
+                            counter++
+                            counter < 2
+                        }
+                    }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -55,7 +62,7 @@ class SqsPollerTest {
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
         every { successFunc(message) }.returns(Unit)
 
-        sqsPoller.accept(configuration)
+        sqsPoller.poll(listOf(configuration))
 
         verify(exactly = 1) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
@@ -65,13 +72,20 @@ class SqsPollerTest {
     fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
         val sqsPoller = SqsPoller(sqs)
+        var counter = 0
         val configuration =
             spyk(
                 sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config = sqsConsumerConfiguration { concurrency = 5 }
+                    config = sqsConsumerConfiguration {
+                        concurrency = 5
+                        consumeWhile = {
+                            counter++
+                            counter < 2
+                        }
+                    }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -92,7 +106,7 @@ class SqsPollerTest {
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
         every { successFunc(message) }.returns(Unit)
 
-        sqsPoller.accept(configuration)
+        sqsPoller.poll(listOf(configuration))
 
         verify(exactly = 5) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
@@ -102,13 +116,20 @@ class SqsPollerTest {
     fun `test accept an exception calls error fn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
         val sqsPoller = SqsPoller(sqs)
+        var counter = 0
         val configuration =
             spyk(
                 sqsConsumer {
                     queueUrl = URI("url")
                     onSuccess = successFunc
                     onError = errorFunc
-                    config = sqsConsumerConfiguration { concurrency = 1 }
+                    config = sqsConsumerConfiguration {
+                        concurrency = 1
+                        consumeWhile = {
+                            counter++
+                            counter < 2
+                        }
+                    }
                 }
             )
         val request: ReceiveMessageRequest =
@@ -124,7 +145,7 @@ class SqsPollerTest {
         coEvery { errorFunc(any()) }.returns(Unit)
         coEvery { sqs.receiveMessage(request) }.throws(exception)
 
-        sqsPoller.accept(configuration)
+        sqsPoller.poll(listOf(configuration))
 
         verify(exactly = 0) { successFunc(any()) }
         verify(exactly = 1) {

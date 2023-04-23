@@ -42,10 +42,6 @@ private constructor(
         sqsPoller.poll(consumers)
     }
 
-    suspend fun startConsumption(f: () -> Boolean) {
-        sqsPoller.poll(consumers, f)
-    }
-
     override suspend fun stopConsumption() {
         sqsPoller.stopPolling()
     }
