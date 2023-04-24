@@ -22,7 +22,6 @@ private constructor(
     private val sqs: SqsAsyncClient =
         SqsAsyncClient.builder()
             .credentialsProvider(credentialsProvider)
-            .endpointOverride(URI("http://localhost:4566"))
             .region(region)
             .build()
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
