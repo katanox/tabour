@@ -21,7 +21,7 @@ dependencies {
 
 group = "com.katanox.tabour"
 
-version = "0.3.0"
+version = "1.0-RC"
 
 description = "Tabour Core"
 
@@ -32,8 +32,8 @@ tasks.test { useJUnitPlatform() }
 publishing {
     publications.create<MavenPublication>("maven") {
         from(components["java"])
-        groupId = "com.katanox"
-        artifactId = "tabour"
+        groupId = "com.katanox.tabour"
+        artifactId = "core"
         version = "1.0-RC"
 
         pom {

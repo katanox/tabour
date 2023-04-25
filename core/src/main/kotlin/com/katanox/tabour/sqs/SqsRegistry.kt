@@ -5,7 +5,6 @@ import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
-import java.net.URI
 import kotlinx.coroutines.coroutineScope
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
@@ -20,10 +19,7 @@ private constructor(
     private val consumers: MutableList<SqsConsumer> = mutableListOf()
     private val producers: MutableSet<SqsProducer> = mutableSetOf()
     private val sqs: SqsAsyncClient =
-        SqsAsyncClient.builder()
-            .credentialsProvider(credentialsProvider)
-            .region(region)
-            .build()
+        SqsAsyncClient.builder().credentialsProvider(credentialsProvider).region(region).build()
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
     private val sqsPoller = SqsPoller(sqs)
 

@@ -4,6 +4,7 @@ import com.katanox.tabour.configuration.sqsProducer
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.net.URI
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.test.runTest
@@ -12,6 +13,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SqsProducerExecutorTest {
     private val sqs = mockk<SqsAsyncClient>()
     private val executor = SqsProducerExecutor(sqs)

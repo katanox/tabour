@@ -58,7 +58,7 @@ class SqsConsumerConfiguration internal constructor() : Config {
      *
      * Default is 10 seconds
      */
-    var waitTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
+    var waitTime: Duration = Duration.of(0L, ChronoUnit.SECONDS)
 
     /**
      * The number of attempts to receive a message if an exception occurs
