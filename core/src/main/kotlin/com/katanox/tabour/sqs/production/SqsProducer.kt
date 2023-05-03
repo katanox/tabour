@@ -7,6 +7,8 @@ import java.net.URI
 class SqsProducer internal constructor() : Config, TabourProducer {
     var queueUrl: URI = URI("")
 
+    override val onError: (ProducerError) -> Unit = {}
+
     fun urlWasSet() = queueUrl.toASCIIString().isNotEmpty()
 
     /**
@@ -16,4 +18,3 @@ class SqsProducer internal constructor() : Config, TabourProducer {
     override var key: String = ""
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }
-
