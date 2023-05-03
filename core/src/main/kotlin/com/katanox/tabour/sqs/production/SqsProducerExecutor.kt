@@ -22,8 +22,9 @@ internal class SqsProducerExecutor(private val sqs: SqsAsyncClient) {
                 {
                     producer.onError(
                         ProducerError(
-                            it.message
-                                ?: "Unknown exception during production (producer key: [${producer.key}])"
+                            producerKey = producer.key,
+                            message = it.message
+                                    ?: "Unknown exception during production (producer key: [${producer.key}])"
                         )
                     )
                 }
