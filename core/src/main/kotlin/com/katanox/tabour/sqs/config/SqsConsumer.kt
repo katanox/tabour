@@ -1,6 +1,7 @@
 package com.katanox.tabour.sqs.config
 
-import com.katanox.tabour.configuration.*
+import com.katanox.tabour.configuration.sqs.sqsConsumerConfiguration
+import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.consumption.Consumer
 import com.katanox.tabour.consumption.ConsumptionError
@@ -10,11 +11,33 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import software.amazon.awssdk.services.sqs.model.Message
 
+class SqsPipeline : Config {
+    internal var prodFnWasSet = false
+    internal var producerWasSet = false
+
+    var producer: SqsProducer = sqsProducer {}
+        set(value) {
+            producerWasSet = true
+            field = value
+        }
+    var prodFn: (Message) -> String = { "" }
+        set(value) {
+            field = value
+            prodFnWasSet = true
+        }
+}
+
 class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, Config {
+    internal var onSuccessWasSet: Boolean = false
+
     override var onSuccess: (Message) -> Unit = {}
+        set(value) {
+            onSuccessWasSet = true
+            field = value
+        }
     override var onError: (ConsumptionError) -> Unit = {}
 
-    val producer: SqsProducer? = null
+    var pipeline: SqsPipeline? = null
 
     var queueUrl: URI = URI("")
 

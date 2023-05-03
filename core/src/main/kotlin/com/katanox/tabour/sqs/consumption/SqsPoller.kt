@@ -3,6 +3,8 @@ package com.katanox.tabour.sqs.consumption
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
+import com.katanox.tabour.sqs.config.SqsPipeline
+import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
@@ -13,9 +15,11 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
-internal class SqsPoller(private val sqs: SqsAsyncClient) {
+internal class SqsPoller(
+    private val sqs: SqsAsyncClient,
+    private val executor: SqsProducerExecutor
+) {
     private var consume: Boolean = false
-
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consume = true
         consumers.forEach {
@@ -58,7 +62,19 @@ internal class SqsPoller(private val sqs: SqsAsyncClient) {
                         val messages = response.messages()
 
                         if (messages.isNotEmpty()) {
-                            messages.forEach { launch { consumer.onSuccess(it) } }
+                            val pipeline = consumer.pipeline
+
+                            if (pipeline != null && isPipelineSet(pipeline)) {
+                                messages.forEach { message ->
+                                    launch {
+                                        executor.produce(pipeline.producer) {
+                                            pipeline.prodFn(message)
+                                        }
+                                    }
+                                }
+                            } else {
+                                messages.forEach { launch { consumer.onSuccess(it) } }
+                            }
 
                             launch { acknowledge(messages, consumer.queueUrl) }
                         }
@@ -86,3 +102,6 @@ internal class SqsPoller(private val sqs: SqsAsyncClient) {
         sqs.deleteMessageBatch(request).await()
     }
 }
+
+private fun isPipelineSet(pipeline: SqsPipeline): Boolean =
+    pipeline.prodFnWasSet && pipeline.producerWasSet

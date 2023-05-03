@@ -1,9 +1,10 @@
-package com.katanox.tabour.configuration
+package com.katanox.tabour.configuration.sqs
 
 import com.katanox.tabour.Tabour
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.config.SqsConsumerConfiguration
+import com.katanox.tabour.sqs.config.SqsPipeline
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerConfiguration
 
@@ -18,5 +19,7 @@ fun sqsProducerConfiguration(init: SqsProducerConfiguration.() -> Unit): SqsProd
     config(SqsProducerConfiguration(), init)
 
 fun tabour(init: Tabour.() -> Unit): Tabour = config(Tabour(), init)
+
+fun sqsPipeline(init: SqsPipeline.() -> Unit): SqsPipeline = config(SqsPipeline(), init)
 
 private fun <T : Config> config(conf: T, init: T.() -> Unit): T = conf.apply { init() }

@@ -21,7 +21,7 @@ private constructor(
     private val sqs: SqsAsyncClient =
         SqsAsyncClient.builder().credentialsProvider(credentialsProvider).region(region).build()
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
-    private val sqsPoller = SqsPoller(sqs)
+    private val sqsPoller = SqsPoller(sqs, sqsProducerExecutor)
 
     /**
      * Registers a consumer for a specific SQS queue After registering the consumers, use
@@ -41,10 +41,17 @@ private constructor(
         sqsPoller.stopPolling()
     }
 
+    override fun isValid(): Boolean =
+        consumers.all(SqsConsumer::onSuccessWasSet) && producers.all(SqsProducer::urlWasSet)
+
     fun addProducer(producer: SqsProducer) = this.apply { producers.add(producer) }
 
-    suspend fun produce(producerKey: String) = coroutineScope {
-        producers.find { it.key == producerKey }?.also { sqsProducerExecutor.produce(it) }
+    suspend fun produce(producerKey: String, valueFn: () -> String) = coroutineScope {
+        val producer = producers.find { it.key == producerKey }
+
+        if (producer != null) {
+            sqsProducerExecutor.produce(producer, valueFn)
+        }
     }
 
     companion object {

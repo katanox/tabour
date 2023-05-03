@@ -16,18 +16,16 @@ class Tabour : Config {
 
     fun register(registry: Registry): Tabour = this.apply { registries.add(registry) }
 
-    suspend fun produce(registryKey: String, producerKey: String) {
-        registries
-            .find { it.key == registryKey }
-            ?.also {
-                when (it) {
-                    is SqsRegistry -> scope.launch { it.produce(producerKey) }
-                    else -> {}
-                }
-            }
+    suspend fun produce(registryKey: String, producerKey: String, value: () -> String) {
+        when (val registry = registries.find { it.key == registryKey }) {
+            is SqsRegistry -> scope.launch { registry.produce(producerKey, value) }
+            else -> {}
+        }
     }
 
     suspend fun start() {
+        validate(this.registries)
+
         if (!consumptionStarted) {
             consumptionStarted = true
             registries.forEach { scope.launch { it.startConsumption() } }
@@ -39,5 +37,11 @@ class Tabour : Config {
             consumptionStarted = false
             registries.forEach { scope.launch { it.stopConsumption() } }
         }
+    }
+}
+
+private fun validate(registries: Iterable<Registry>) {
+    if (registries.any { !it.isValid() }) {
+        throw RuntimeException("All consumers and producers must be configured")
     }
 }
