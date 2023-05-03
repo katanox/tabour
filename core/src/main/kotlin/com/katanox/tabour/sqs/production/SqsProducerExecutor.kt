@@ -7,24 +7,29 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 internal class SqsProducerExecutor(private val sqs: SqsAsyncClient) {
     suspend fun produce(producer: SqsProducer, produceFn: () -> String) {
-        val request =
-            SendMessageRequest.builder()
-                .messageBody(produceFn())
-                .queueUrl(producer.queueUrl.toASCIIString())
-                .build()
+        val body = produceFn()
+        val url = producer.queueUrl.toASCIIString()
 
-        retry(
-            producer.config.retries,
-            {
-                producer.onError(
-                    ProducerError(
-                        it.message
-                            ?: "Unknown exception during production (producer key: [${producer.key}])"
+        if (body.isNotEmpty() && url.isNotEmpty()) {
+            val request =
+                SendMessageRequest.builder()
+                    .messageBody(body)
+                    .queueUrl(producer.queueUrl.toASCIIString())
+                    .build()
+
+            retry(
+                producer.config.retries,
+                {
+                    producer.onError(
+                        ProducerError(
+                            it.message
+                                ?: "Unknown exception during production (producer key: [${producer.key}])"
+                        )
                     )
-                )
+                }
+            ) {
+                sqs.sendMessage(request).await()
             }
-        ) {
-            sqs.sendMessage(request).await()
         }
     }
 }
