@@ -42,7 +42,7 @@ private constructor(
     }
 
     override fun isValid(): Boolean =
-        consumers.all(SqsConsumer::onSuccessWasSet) && producers.all(SqsProducer::urlWasSet)
+        consumers.all(SqsConsumer::handlerWasSet) && producers.all(SqsProducer::urlWasSet)
 
     fun addProducer(producer: SqsProducer) = this.apply { producers.add(producer) }
 

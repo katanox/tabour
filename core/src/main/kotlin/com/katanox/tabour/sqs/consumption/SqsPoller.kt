@@ -64,16 +64,16 @@ internal class SqsPoller(
                         if (messages.isNotEmpty()) {
                             val pipeline = consumer.pipeline
 
-                            if (pipeline != null && isPipelineSet(pipeline)) {
-                                messages.forEach { message ->
-                                    launch {
+                            messages.forEach { message ->
+                                launch {
+                                    if (isPipelineSet(pipeline)) {
                                         executor.produce(pipeline.producer) {
-                                            pipeline.prodFn(message)
+                                            pipeline.transformer(message)
                                         }
+                                    } else {
+                                        consumer.onSuccess(message)
                                     }
                                 }
-                            } else {
-                                messages.forEach { launch { consumer.onSuccess(it) } }
                             }
 
                             launch { acknowledge(messages, consumer.queueUrl) }
@@ -104,4 +104,4 @@ internal class SqsPoller(
 }
 
 private fun isPipelineSet(pipeline: SqsPipeline): Boolean =
-    pipeline.prodFnWasSet && pipeline.producerWasSet
+    pipeline.transformerWasSet && pipeline.producerWasSet
