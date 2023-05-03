@@ -6,7 +6,7 @@
 
 rootProject.name = "tabour"
 
-include("core")
+include("core", "proto")
 
 val kotlinVersion = "1.8.20"
 val coroutinesVersion = "1.6.4"

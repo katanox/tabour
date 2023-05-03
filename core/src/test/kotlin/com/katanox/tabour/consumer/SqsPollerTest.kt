@@ -2,8 +2,11 @@ package com.katanox.tabour.consumer
 
 import com.katanox.tabour.configuration.sqs.sqsConsumer
 import com.katanox.tabour.configuration.sqs.sqsConsumerConfiguration
+import com.katanox.tabour.configuration.sqs.sqsPipeline
+import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
+import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.*
 import java.net.URI
@@ -19,6 +22,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
+import java.net.URL
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SqsPollerTest {
@@ -50,7 +54,7 @@ class SqsPollerTest {
             ReceiveMessageRequest.builder()
                 .queueUrl(configuration.queueUrl.toASCIIString())
                 .maxNumberOfMessages(1)
-                .waitTimeSeconds(10)
+                .waitTimeSeconds(0)
                 .build()
 
         val message: Message =
@@ -70,6 +74,59 @@ class SqsPollerTest {
         verify(exactly = 0) { errorFunc(any()) }
     }
 
+    @Test
+    fun `test accept with pipeline`() = runTest {
+        val sqs: SqsAsyncClient = mockk()
+        val executor = SqsProducerExecutor(sqs)
+        val sqsPoller = SqsPoller(sqs, executor)
+        var counter = 0
+        val transformer = mockk<(Message) -> String?>()
+        val pipelineProducer = sqsProducer {
+            queueUrl = URI("http://test.com")
+        }
+
+        val configuration =
+            spyk(
+                sqsConsumer {
+                    queueUrl = URI("url")
+                    pipeline = sqsPipeline {
+                        this.transformer = transformer
+                        this.producer = pipelineProducer
+                    }
+
+                    onError = errorFunc
+                    config = sqsConsumerConfiguration {
+                        concurrency = 1
+                        consumeWhile = {
+                            counter++
+                            counter < 2
+                        }
+                    }
+                }
+            )
+        val request: ReceiveMessageRequest =
+            ReceiveMessageRequest.builder()
+                .queueUrl(configuration.queueUrl.toASCIIString())
+                .maxNumberOfMessages(1)
+                .waitTimeSeconds(0)
+                .build()
+
+        val message: Message =
+            Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+
+        val response: ReceiveMessageResponse =
+            ReceiveMessageResponse.builder().messages(message).build()
+
+        coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
+        coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
+            .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
+        every { transformer(message) }.returns("value")
+
+        sqsPoller.poll(listOf(configuration))
+
+        verify(exactly = 1) { transformer(message) }
+        verify(exactly = 0) { errorFunc(any()) }
+    }
     @Test
     fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
@@ -94,7 +151,7 @@ class SqsPollerTest {
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
                 .queueUrl(configuration.queueUrl.toASCIIString())
-                .waitTimeSeconds(10)
+                .waitTimeSeconds(0)
                 .maxNumberOfMessages(1)
                 .build()
 
@@ -140,7 +197,7 @@ class SqsPollerTest {
             ReceiveMessageRequest.builder()
                 .queueUrl(configuration.queueUrl.toASCIIString())
                 .maxNumberOfMessages(1)
-                .waitTimeSeconds(10)
+                .waitTimeSeconds(0)
                 .build()
 
         val exception =

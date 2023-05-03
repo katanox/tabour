@@ -43,7 +43,7 @@ private constructor(
 
     fun addProducer(producer: SqsProducer) = this.apply { producers.add(producer) }
 
-    suspend fun produce(producerKey: String, valueFn: () -> String) = coroutineScope {
+    suspend fun produce(producerKey: String, valueFn: () -> String?) = coroutineScope {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
