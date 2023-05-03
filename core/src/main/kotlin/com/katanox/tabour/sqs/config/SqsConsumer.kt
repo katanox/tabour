@@ -18,7 +18,7 @@ class SqsPipeline : Config {
 
     var producer: SqsProducer = sqsProducer {}
         set(value) {
-            producerWasSet = true
+            producerWasSet = value.urlWasSet()
             field = value
         }
 
@@ -43,6 +43,7 @@ class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, 
             onSuccessWasSet = true
             field = value
         }
+
     override var onError: (ConsumptionError) -> Unit = {}
 
     var pipeline: SqsPipeline = sqsPipeline {}
@@ -56,7 +57,7 @@ class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, 
 
     var queueUrl: URI = URI("")
 
-    var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 10 }
+    var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 1 }
 }
 
 class SqsConsumerConfiguration internal constructor() : Config {

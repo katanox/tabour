@@ -9,15 +9,9 @@ interface TabourProducer {
 }
 
 class SqsProducer internal constructor() : Config, TabourProducer {
-    internal var urlWasSet: Boolean = false
     var queueUrl: URI = URI("")
-        set(value) {
-            if (value.toASCIIString().isBlank()) {
-                throw IllegalArgumentException("URL can not be empty")
-            }
-            urlWasSet = true
-            field = value
-        }
+
+    fun urlWasSet() = queueUrl.toASCIIString().isNotEmpty()
 
     /**
      * [key] must be unique for each producer. It will be used to select the correct producer when

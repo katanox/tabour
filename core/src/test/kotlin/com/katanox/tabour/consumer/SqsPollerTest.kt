@@ -1,9 +1,10 @@
 package com.katanox.tabour.consumer
 
-import com.katanox.tabour.configuration.sqsConsumer
-import com.katanox.tabour.configuration.sqsConsumerConfiguration
+import com.katanox.tabour.configuration.sqs.sqsConsumer
+import com.katanox.tabour.configuration.sqs.sqsConsumerConfiguration
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
+import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.*
 import java.net.URI
 import java.util.concurrent.CompletableFuture
@@ -27,7 +28,8 @@ class SqsPollerTest {
     @Test
     fun `test accept with one worker for one message runs once the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller(sqs)
+        val executor = SqsProducerExecutor(sqs)
+        val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
         val configuration =
             spyk(
@@ -71,7 +73,8 @@ class SqsPollerTest {
     @Test
     fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller(sqs)
+        val executor = SqsProducerExecutor(sqs)
+        val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
         val configuration =
             spyk(
@@ -115,7 +118,8 @@ class SqsPollerTest {
     @Test
     fun `test accept an exception calls error fn`() = runTest {
         val sqs: SqsAsyncClient = mockk()
-        val sqsPoller = SqsPoller(sqs)
+        val executor = SqsProducerExecutor(sqs)
+        val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
         val configuration =
             spyk(
