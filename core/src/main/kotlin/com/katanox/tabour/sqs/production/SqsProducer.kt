@@ -4,10 +4,6 @@ import com.katanox.tabour.configuration.sqs.sqsProducerConfiguration
 import com.katanox.tabour.consumption.Config
 import java.net.URI
 
-interface TabourProducer {
-    val key: String
-}
-
 class SqsProducer internal constructor() : Config, TabourProducer {
     var queueUrl: URI = URI("")
 
@@ -21,6 +17,3 @@ class SqsProducer internal constructor() : Config, TabourProducer {
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }
 
-class SqsProducerConfiguration internal constructor() : Config {
-    var retries: Int = 1
-}
