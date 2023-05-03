@@ -3,7 +3,6 @@ package com.katanox.tabour.sqs.consumption
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
-import com.katanox.tabour.sqs.config.SqsPipeline
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
 import kotlinx.coroutines.*
@@ -66,7 +65,7 @@ internal class SqsPoller(
 
                             messages.forEach { message ->
                                 launch {
-                                    if (isPipelineSet(pipeline)) {
+                                    if (pipeline?.producer != null) {
                                         executor.produce(pipeline.producer) {
                                             pipeline.transformer(message)
                                         }
@@ -102,6 +101,3 @@ internal class SqsPoller(
         sqs.deleteMessageBatch(request).await()
     }
 }
-
-private fun isPipelineSet(pipeline: SqsPipeline): Boolean =
-    pipeline.transformerWasSet && pipeline.producerWasSet

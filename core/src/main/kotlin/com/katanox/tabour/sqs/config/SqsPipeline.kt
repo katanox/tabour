@@ -6,18 +6,8 @@ import com.katanox.tabour.sqs.production.SqsProducer
 import software.amazon.awssdk.services.sqs.model.Message
 
 class SqsPipeline : Config {
-    internal var transformerWasSet = false
-    internal var producerWasSet = false
 
     var producer: SqsProducer = sqsProducer {}
-        set(value) {
-            producerWasSet = value.urlWasSet()
-            field = value
-        }
 
     var transformer: (Message) -> String = { "" }
-        set(value) {
-            field = value
-            transformerWasSet = true
-        }
 }
