@@ -6,7 +6,7 @@ import com.katanox.tabour.sqs.SqsRegistry
 import kotlinx.coroutines.*
 
 class Tabour : Config {
-    private val registries: MutableSet<Registry> = mutableSetOf()
+    private val registries: MutableSet<Registry<*>> = mutableSetOf()
     var numOfThreads: Int = 4
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -14,9 +14,9 @@ class Tabour : Config {
     private var consumptionStarted: Boolean = false
     private val scope = CoroutineScope(dispatcher)
 
-    fun register(registry: Registry): Tabour = this.apply { registries.add(registry) }
+    fun <T> register(registry: Registry<T>): Tabour = this.apply { registries.add(registry) }
 
-    suspend fun <T> produce(registryKey: String, producerKey: T, value: () -> String?) {
+    suspend fun <T, K> produce(registryKey: K, producerKey: T, value: () -> String?) {
         when (val registry = registries.find { it.key == registryKey }) {
             is SqsRegistry -> scope.launch { registry.produce(producerKey, value) }
             else -> {}

@@ -1,7 +1,7 @@
 package com.katanox.tabour.configuration
 
-interface Registry {
+interface Registry<K> {
     suspend fun startConsumption()
     suspend fun stopConsumption()
-    val key: String
+    val key: K
 }

@@ -10,12 +10,12 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
-class SqsRegistry
+class SqsRegistry<T>
 private constructor(
     credentialsProvider: AwsCredentialsProvider,
     region: Region,
-    override val key: String
-) : Registry {
+    override val key: T
+) : Registry<T> {
     private val consumers: MutableList<SqsConsumer> = mutableListOf()
     private val producers: MutableSet<SqsProducer<*>> = mutableSetOf()
     private val sqs: SqsAsyncClient =
@@ -27,7 +27,7 @@ private constructor(
      * Registers a consumer for a specific SQS queue After registering the consumers, use
      * [startConsumption] to start the consumption process
      */
-    fun addConsumer(consumer: SqsConsumer): SqsRegistry = this.apply { consumers.add(consumer) }
+    fun addConsumer(consumer: SqsConsumer): SqsRegistry<T> = this.apply { consumers.add(consumer) }
 
     /**
      * Starts the consuming process using the Consumers that have been registered up until the time
@@ -52,10 +52,10 @@ private constructor(
     }
 
     companion object {
-        fun create(
+        fun <K> create(
             credentialsProvider: AwsCredentialsProvider,
             region: Region,
-            key: String
-        ): SqsRegistry = SqsRegistry(credentialsProvider, region, key)
+            key: K
+        ): SqsRegistry<K> = SqsRegistry(credentialsProvider, region, key)
     }
 }
