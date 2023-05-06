@@ -13,7 +13,8 @@ fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsCons
 
 fun sqsConsumer(init: SqsConsumer.() -> Unit): SqsConsumer = config(SqsConsumer(), init)
 
-fun sqsProducer(init: SqsProducer.() -> Unit): SqsProducer = config(SqsProducer(), init)
+fun <T> sqsProducer(keyInit: () -> T, init: SqsProducer<T>.() -> Unit): SqsProducer<T> =
+    config(SqsProducer(keyInit), init)
 
 fun sqsProducerConfiguration(init: SqsProducerConfiguration.() -> Unit): SqsProducerConfiguration =
     config(SqsProducerConfiguration(), init)

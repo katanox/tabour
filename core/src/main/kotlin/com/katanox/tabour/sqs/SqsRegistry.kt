@@ -17,7 +17,7 @@ private constructor(
     override val key: String
 ) : Registry {
     private val consumers: MutableList<SqsConsumer> = mutableListOf()
-    private val producers: MutableSet<SqsProducer> = mutableSetOf()
+    private val producers: MutableSet<SqsProducer<*>> = mutableSetOf()
     private val sqs: SqsAsyncClient =
         SqsAsyncClient.builder().credentialsProvider(credentialsProvider).region(region).build()
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
@@ -41,9 +41,9 @@ private constructor(
         sqsPoller.stopPolling()
     }
 
-    fun addProducer(producer: SqsProducer) = this.apply { producers.add(producer) }
+    fun <T> addProducer(producer: SqsProducer<T>) = this.apply { producers.add(producer) }
 
-    suspend fun produce(producerKey: String, valueFn: () -> String?) = coroutineScope {
+    suspend fun <T> produce(producerKey: T, valueFn: () -> String?) = coroutineScope {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {

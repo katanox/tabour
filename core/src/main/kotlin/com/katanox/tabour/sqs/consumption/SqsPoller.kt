@@ -65,17 +65,14 @@ internal class SqsPoller(
 
                             messages.forEach { message ->
                                 launch {
-                                    if (pipeline?.producer != null) {
-                                        executor.produce(pipeline.producer) {
-                                            pipeline.transformer(message)
-                                        }
-                                    } else {
-                                        consumer.onSuccess(message)
+                                    pipeline?.producer?.also {
+                                        executor.produce(it) { pipeline.transformer(message) }
                                     }
+                                        ?: consumer.onSuccess(message)
+
+                                    acknowledge(messages, consumer.queueUrl)
                                 }
                             }
-
-                            launch { acknowledge(messages, consumer.queueUrl) }
                         }
                     }
                 }

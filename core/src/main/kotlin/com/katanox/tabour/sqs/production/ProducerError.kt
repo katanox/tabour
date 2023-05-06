@@ -1,3 +1,3 @@
 package com.katanox.tabour.sqs.production
 
-data class ProducerError(val message: String, val producerKey: String)
+data class ProducerError<T>(val message: String, val producerKey: T)
