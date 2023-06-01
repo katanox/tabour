@@ -6,7 +6,6 @@ import com.katanox.tabour.configuration.sqs.sqsPipeline
 import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
-import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.*
 import java.net.URI
@@ -81,7 +80,7 @@ class SqsPollerTest {
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
         val transformer = mockk<(Message) -> String?>()
-        val pipelineProducer = sqsProducer {
+        val pipelineProducer = sqsProducer("my-prod") {
             queueUrl = URI("http://test.com")
         }
 
