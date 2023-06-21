@@ -13,7 +13,7 @@ class SqsProducer<K> internal constructor(
 ) : Config, TabourProducer<K> {
     var queueUrl: URI = URI("")
 
-    override val onError: (ProducerError<K>) -> Unit = {}
+    override var onError: (ProducerError<K>) -> Unit = {}
 
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }
