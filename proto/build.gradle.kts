@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.8.20"
+    kotlin("jvm") version "1.9.0-RC"
     `maven-publish`
 }
 
@@ -48,7 +48,7 @@ publishing {
                     id.set("ahmad.s")
                 }
                 developer {
-                    name.set("George Popides ")
+                    name.set("George Popides")
                     email.set("g.popides@katanox.com")
                     organization.set("Katanox")
                     id.set("gp")

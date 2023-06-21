@@ -8,22 +8,16 @@ import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.*
-import java.net.URI
-import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
-import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
-import java.net.URL
+import software.amazon.awssdk.services.sqs.model.*
+import java.net.URI
+import java.util.concurrent.CompletableFuture
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SqsPollerTest {
     val successFunc: (Message) -> Unit = mockk()
     val errorFunc: (ConsumptionError) -> Unit = mockk()
