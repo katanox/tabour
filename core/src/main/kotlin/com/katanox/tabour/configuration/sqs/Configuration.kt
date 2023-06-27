@@ -8,26 +8,18 @@ import com.katanox.tabour.sqs.config.SqsConsumerConfiguration
 import com.katanox.tabour.sqs.config.SqsPipeline
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerConfiguration
-import java.net.URL
+import java.net.URI
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 
-fun sqsConsumer(
-    configuration: SqsConsumerConfiguration,
-    init: SqsConsumer.() -> Unit
-): SqsConsumer = config(SqsConsumer(configuration), init)
+fun sqsConsumer(uri: URI, init: SqsConsumer.() -> Unit): SqsConsumer =
+    config(SqsConsumer(uri), init)
 
 fun <T> sqsProducer(key: T, init: SqsProducer<T>.() -> Unit): SqsProducer<T> =
     config(SqsProducer(key), init)
 
-fun sqsConsumerConfiguration(
-    url: URL,
-    init: SqsConsumerConfiguration.() -> Unit
-): SqsConsumerConfiguration = config(SqsConsumerConfiguration(url), init)
-
-fun sqsConsumerConfiguration(
-    url: URL,
-): SqsConsumerConfiguration = SqsConsumerConfiguration(url)
+fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsConsumerConfiguration =
+    config(SqsConsumerConfiguration(), init)
 
 fun sqsProducerConfiguration(init: SqsProducerConfiguration.() -> Unit): SqsProducerConfiguration =
     config(SqsProducerConfiguration(), init)

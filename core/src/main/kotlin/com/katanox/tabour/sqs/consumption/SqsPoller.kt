@@ -52,7 +52,7 @@ internal class SqsPoller(
                 ) {
                     val request =
                         ReceiveMessageRequest.builder()
-                            .queueUrl(consumer.queueUrl.toASCIIString())
+                            .queueUrl(consumer.queueUri.toASCIIString())
                             .maxNumberOfMessages(consumer.config.maxMessages)
                             .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
                             .build()
@@ -73,9 +73,11 @@ internal class SqsPoller(
                                             ?: consumer.onSuccess(message)
 
                                     if (consumed) {
-                                        acknowledge(messages, consumer.queueUrl)
+                                        acknowledge(messages, consumer.queueUri)
                                     } else {
-                                        consumer.onError(ConsumptionError.UnsuccessfulConsumption(message))
+                                        consumer.onError(
+                                            ConsumptionError.UnsuccessfulConsumption(message)
+                                        )
                                     }
                                 }
                             }
