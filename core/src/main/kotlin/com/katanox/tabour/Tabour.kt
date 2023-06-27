@@ -5,12 +5,12 @@ import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.sqs.SqsRegistry
 import kotlinx.coroutines.*
 
-class Tabour : Config {
+class Tabour internal constructor(configuration: Configuration) {
     private val registries: MutableSet<Registry<*>> = mutableSetOf()
-    var numOfThreads: Int = 4
 
     @OptIn(DelicateCoroutinesApi::class)
-    val dispatcher: CoroutineDispatcher = newFixedThreadPoolContext(numOfThreads, "tabour")
+    private val dispatcher: CoroutineDispatcher =
+        newFixedThreadPoolContext(configuration.numOfThreads, "tabour")
     private var consumptionStarted: Boolean = false
     private val scope = CoroutineScope(dispatcher)
 
@@ -19,10 +19,11 @@ class Tabour : Config {
     suspend fun <T, K> produceSqsMessage(
         registryKey: K,
         producerKey: T,
-        value: () -> Pair<String?, String?>
+        produceFn: () -> Pair<String?, String?>
     ) {
         when (val registry = registries.find { it.key == registryKey }) {
-            is SqsRegistry -> scope.launch { registry.produce(producerKey, value) }
+            is SqsRegistry ->
+                scope.launch { coroutineScope { registry.produce(producerKey, produceFn) } }
             else -> {}
         }
     }
@@ -39,5 +40,9 @@ class Tabour : Config {
             consumptionStarted = false
             registries.forEach { scope.launch { it.stopConsumption() } }
         }
+    }
+
+    class Configuration : Config {
+        var numOfThreads: Int = 4
     }
 }

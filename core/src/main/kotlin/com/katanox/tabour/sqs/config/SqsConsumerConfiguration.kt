@@ -1,10 +1,12 @@
 package com.katanox.tabour.sqs.config
 
 import com.katanox.tabour.consumption.Config
+import java.net.URL
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
-class SqsConsumerConfiguration internal constructor() : Config {
+class SqsConsumerConfiguration internal constructor(val queueUrl: URL) : Config {
+
     /** The number of max messages to fetch. Default is 1 with max being 10 */
     var maxMessages: Int = 1
         set(value) {

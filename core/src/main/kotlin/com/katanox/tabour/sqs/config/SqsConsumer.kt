@@ -1,21 +1,16 @@
 package com.katanox.tabour.sqs.config
 
-import com.katanox.tabour.configuration.sqs.sqsConsumerConfiguration
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.consumption.Consumer
 import com.katanox.tabour.consumption.ConsumptionError
-import java.net.URI
 import software.amazon.awssdk.services.sqs.model.Message
 
-class SqsConsumer internal constructor() : Consumer<Message, ConsumptionError>, Config {
+class SqsConsumer internal constructor(val config: SqsConsumerConfiguration) :
+    Consumer<Message, ConsumptionError>, Config {
 
-  override var onSuccess: suspend (Message) -> Boolean = { false }
+    override var onSuccess: suspend (Message) -> Boolean = { false }
 
-  override var onError: (ConsumptionError) -> Unit = {}
+    override var onError: (ConsumptionError) -> Unit = {}
 
-  var pipeline: SqsPipeline? = null
-
-  var queueUrl: URI = URI("")
-
-  var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 1 }
+    var pipeline: SqsPipeline? = null
 }

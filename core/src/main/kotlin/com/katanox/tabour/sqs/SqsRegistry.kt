@@ -5,21 +5,25 @@ import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
-import kotlinx.coroutines.coroutineScope
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 class SqsRegistry<T>
 private constructor(
-    credentialsProvider: AwsCredentialsProvider,
-    region: Region,
-    override val key: T
+    private val configuration: Configuration<T>,
 ) : Registry<T> {
+    override val key: T
+        get() = configuration.key
+
     private val consumers: MutableList<SqsConsumer> = mutableListOf()
     private val producers: MutableSet<SqsProducer<*>> = mutableSetOf()
     private val sqs: SqsAsyncClient =
-        SqsAsyncClient.builder().credentialsProvider(credentialsProvider).region(region).build()
+        SqsAsyncClient.builder()
+            .credentialsProvider(configuration.credentialsProvider)
+            .region(configuration.region)
+            .build()
+
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
     private val sqsPoller = SqsPoller(sqs, sqsProducerExecutor)
 
@@ -43,7 +47,7 @@ private constructor(
 
     fun <T> addProducer(producer: SqsProducer<T>) = this.apply { producers.add(producer) }
 
-    suspend fun <T> produce(producerKey: T, produceFn: () -> Pair<String?, String?>) = coroutineScope {
+    suspend fun <T> produce(producerKey: T, produceFn: () -> Pair<String?, String?>) {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
@@ -52,10 +56,16 @@ private constructor(
     }
 
     companion object {
-        fun <K> create(
+        internal fun <T> create(
+            key: T,
             credentialsProvider: AwsCredentialsProvider,
-            region: Region,
-            key: K
-        ): SqsRegistry<K> = SqsRegistry(credentialsProvider, region, key)
+            region: Region
+        ): SqsRegistry<T> = SqsRegistry(Configuration(key, credentialsProvider, region))
     }
+
+    private class Configuration<T>(
+        val key: T,
+        val credentialsProvider: AwsCredentialsProvider,
+        val region: Region
+    )
 }
