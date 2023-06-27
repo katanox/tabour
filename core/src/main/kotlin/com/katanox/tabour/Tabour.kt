@@ -16,7 +16,11 @@ class Tabour : Config {
 
     fun <T> register(registry: Registry<T>): Tabour = this.apply { registries.add(registry) }
 
-    suspend fun <T, K> produce(registryKey: K, producerKey: T, value: () -> String?) {
+    suspend fun <T, K> produceSqsMessage(
+        registryKey: K,
+        producerKey: T,
+        value: () -> Pair<String?, String?>
+    ) {
         when (val registry = registries.find { it.key == registryKey }) {
             is SqsRegistry -> scope.launch { registry.produce(producerKey, value) }
             else -> {}

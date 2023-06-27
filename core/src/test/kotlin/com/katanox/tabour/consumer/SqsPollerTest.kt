@@ -8,17 +8,17 @@ import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.*
+import java.net.URI
+import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.*
-import java.net.URI
-import java.util.concurrent.CompletableFuture
 
 class SqsPollerTest {
-    val successFunc: (Message) -> Unit = mockk()
+    val successFunc: suspend (Message) -> Boolean = mockk()
     val errorFunc: (ConsumptionError) -> Unit = mockk()
 
     @Test
@@ -58,11 +58,11 @@ class SqsPollerTest {
         coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
-        every { successFunc(message) }.returns(Unit)
+        coEvery { successFunc(message) }.returns(true)
 
         sqsPoller.poll(listOf(configuration))
 
-        verify(exactly = 1) { successFunc(message) }
+        coVerify(exactly = 1) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
     }
 
@@ -73,9 +73,7 @@ class SqsPollerTest {
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
         val transformer = mockk<(Message) -> String?>()
-        val pipelineProducer = sqsProducer("my-prod") {
-            queueUrl = URI("http://test.com")
-        }
+        val pipelineProducer = sqsProducer("my-prod") { queueUrl = URI("http://test.com") }
 
         val configuration =
             spyk(
@@ -156,11 +154,11 @@ class SqsPollerTest {
         coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
-        every { successFunc(message) }.returns(Unit)
+        coEvery { successFunc(message) }.returns(true)
 
         sqsPoller.poll(listOf(configuration))
 
-        verify(exactly = 5) { successFunc(message) }
+        coVerify(exactly = 5) { successFunc(message) }
         verify(exactly = 0) { errorFunc(any()) }
     }
 
@@ -200,7 +198,7 @@ class SqsPollerTest {
 
         sqsPoller.poll(listOf(configuration))
 
-        verify(exactly = 0) { successFunc(any()) }
+        coVerify(exactly = 0) { successFunc(any()) }
         verify(exactly = 1) {
             errorFunc(ConsumptionError.AwsError(AwsErrorDetails.builder().build()))
         }

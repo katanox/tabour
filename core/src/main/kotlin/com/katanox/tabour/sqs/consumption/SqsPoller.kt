@@ -65,12 +65,18 @@ internal class SqsPoller(
 
                             messages.forEach { message ->
                                 launch {
-                                    pipeline?.producer?.also {
-                                        executor.produce(it) { pipeline.transformer(message) }
-                                    }
-                                        ?: consumer.onSuccess(message)
+                                    val consumed =
+                                        pipeline?.producer?.let {
+                                            executor.produce(it) { pipeline.transformer(message) }
+                                            true
+                                        }
+                                            ?: consumer.onSuccess(message)
 
-                                    acknowledge(messages, consumer.queueUrl)
+                                    if (consumed) {
+                                        acknowledge(messages, consumer.queueUrl)
+                                    } else {
+                                        consumer.onError(ConsumptionError.UnsuccessfulConsumption(message))
+                                    }
                                 }
                             }
                         }
