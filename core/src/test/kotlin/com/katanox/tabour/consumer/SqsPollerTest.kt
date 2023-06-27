@@ -73,7 +73,7 @@ class SqsPollerTest {
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
         val transformer = mockk<(Message) -> String?>()
-        val pipelineProducer = sqsProducer("my-prod") { queueUrl = URI("http://test.com") }
+        val pipelineProducer = sqsProducer("my-prod") { queueUri = URI("http://test.com") }
 
         val configuration =
             spyk(

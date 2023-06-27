@@ -15,8 +15,8 @@ import software.amazon.awssdk.regions.Region
 fun sqsConsumer(uri: URI, init: SqsConsumer.() -> Unit): SqsConsumer =
     config(SqsConsumer(uri), init)
 
-fun <T> sqsProducer(key: T, init: SqsProducer<T>.() -> Unit): SqsProducer<T> =
-    config(SqsProducer(key), init)
+fun <T> sqsProducer(uri: URI, key: T, init: SqsProducer<T>.() -> Unit): SqsProducer<T> =
+    config(SqsProducer(key, uri), init)
 
 fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsConsumerConfiguration =
     config(SqsConsumerConfiguration(), init)

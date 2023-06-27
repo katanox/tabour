@@ -8,13 +8,13 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 internal class SqsProducerExecutor(private val sqs: SqsAsyncClient) {
     suspend fun <T> produce(producer: SqsProducer<T>, produceFn: () -> Pair<String?, String?>) {
         val (body, messageGroupId) = produceFn()
-        val url = producer.queueUrl.toASCIIString()
+        val url = producer.queueUri.toASCIIString()
 
         if (!body.isNullOrEmpty() && url.isNotEmpty()) {
             val request =
                 SendMessageRequest.builder()
                     .messageBody(body)
-                    .queueUrl(producer.queueUrl.toASCIIString())
+                    .queueUrl(producer.queueUri.toASCIIString())
                     .messageGroupId(messageGroupId)
                     .build()
 
