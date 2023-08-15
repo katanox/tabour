@@ -21,6 +21,7 @@ internal class SqsPoller(
     private var consume: Boolean = false
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consume = true
+        // for each consumer, spawn a new coroutine
         consumers.forEach {
             launch {
                 while (consume && it.config.consumeWhile()) {
@@ -63,18 +64,24 @@ internal class SqsPoller(
                         if (messages.isNotEmpty()) {
                             val pipeline = consumer.pipeline
 
+                            // consume the messages in parallel
                             messages.forEach { message ->
                                 launch {
                                     val consumed =
                                         pipeline?.producer?.let {
                                             executor.produce(it) { pipeline.transformer(message) }
+                                            // consumption worked, so we specify it manually
+                                            // instead of having the pipeline handle it
                                             true
                                         }
                                             ?: consumer.onSuccess(message)
 
                                     if (consumed) {
+                                        // we acknowledge the message only if the consumption
+                                        // succeeded
                                         acknowledge(messages, consumer.queueUri)
                                     } else {
+                                        // otherwise, we use the error handler of the consumer
                                         consumer.onError(
                                             ConsumptionError.UnsuccessfulConsumption(message)
                                         )
