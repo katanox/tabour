@@ -19,7 +19,8 @@ open class TabourStartupApplicationListener : ApplicationListener<ApplicationRea
         val annotatedBeans: Map<String, Any> =
             event.applicationContext.getBeansWithAnnotation(TabourAutoConfiguration::class.java)
 
-        if (annotatedBeans.isNotEmpty()) {
+        // only one class should be annotated with this class
+        if (annotatedBeans.isNotEmpty() && annotatedBeans.size == 1) {
             val mainClass = ClassUtils.getUserClass(annotatedBeans.values.first())
 
             val annotation = mainClass.getAnnotation(TabourAutoConfiguration::class.java)

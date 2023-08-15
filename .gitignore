@@ -28,6 +28,8 @@ buildNumber.properties
 .sts4-cache
 
 core/build
+spring/build
+proto/build
 .gradle
 
 ### IntelliJ IDEA ###
