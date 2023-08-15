@@ -23,7 +23,7 @@ version = "1.0-beta"
 
 description = "Tabour Core"
 
-kotlin { jvmToolchain(17) }
+kotlin { jvmToolchain(19) }
 
 tasks.test { useJUnitPlatform() }
 
