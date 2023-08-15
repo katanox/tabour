@@ -7,5 +7,5 @@ import software.amazon.awssdk.services.sqs.model.Message
 class SqsPipeline internal constructor() : Config {
     var producer: SqsProducer<*>? = null
 
-    var transformer: (Message) -> Pair<String?, String?> = { Pair(null, null) }
+    var transformer: (Message) -> Pair<String?, String> = { Pair(null, "") }
 }

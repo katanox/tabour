@@ -9,8 +9,15 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
+/**
+ * A type of [Registry] which works with SQS
+ *
+ * [T] is the key of the registry which is used to identify the registry
+ *
+ * Supports consumption and production of SQS messages
+ */
 class SqsRegistry<T>
-private constructor(
+internal constructor(
     private val configuration: Configuration<T>,
 ) : Registry<T> {
     override val key: T
@@ -28,8 +35,8 @@ private constructor(
     private val sqsPoller = SqsPoller(sqs, sqsProducerExecutor)
 
     /**
-     * Registers a consumer for a specific SQS queue After registering the consumers, use
-     * [startConsumption] to start the consumption process
+     * Adds a consumer to the registry which can be later started with other consumers, using
+     * [startConsumption]
      */
     fun addConsumer(consumer: SqsConsumer): SqsRegistry<T> = this.apply { consumers.add(consumer) }
 
@@ -47,7 +54,7 @@ private constructor(
 
     fun <T> addProducer(producer: SqsProducer<T>) = this.apply { producers.add(producer) }
 
-    suspend fun <T> produce(producerKey: T, produceFn: () -> Pair<String?, String?>) {
+    suspend fun <T> produce(producerKey: T, produceFn: () -> Pair<String?, String>) {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
@@ -55,15 +62,7 @@ private constructor(
         }
     }
 
-    companion object {
-        internal fun <T> create(
-            key: T,
-            credentialsProvider: AwsCredentialsProvider,
-            region: Region
-        ): SqsRegistry<T> = SqsRegistry(Configuration(key, credentialsProvider, region))
-    }
-
-    private class Configuration<T>(
+    class Configuration<T>(
         val key: T,
         val credentialsProvider: AwsCredentialsProvider,
         val region: Region

@@ -4,7 +4,7 @@ import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
-import java.net.URI
+import java.net.URL
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.awscore.exception.AwsServiceException
@@ -52,7 +52,7 @@ internal class SqsPoller(
                 ) {
                     val request =
                         ReceiveMessageRequest.builder()
-                            .queueUrl(consumer.queueUri.toASCIIString())
+                            .queueUrl(consumer.queueUri.toString())
                             .maxNumberOfMessages(consumer.config.maxMessages)
                             .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
                             .build()
@@ -88,7 +88,7 @@ internal class SqsPoller(
         }
     }
 
-    private suspend fun acknowledge(messages: List<Message>, queueUrl: URI) {
+    private suspend fun acknowledge(messages: List<Message>, queueUrl: URL) {
         val entries =
             messages.map {
                 DeleteMessageBatchRequestEntry.builder()
@@ -99,7 +99,7 @@ internal class SqsPoller(
 
         val request =
             DeleteMessageBatchRequest.builder()
-                .queueUrl(queueUrl.toASCIIString())
+                .queueUrl(queueUrl.toString())
                 .entries(entries)
                 .build()
 

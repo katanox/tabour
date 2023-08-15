@@ -2,7 +2,7 @@ package com.katanox.tabour.sqs.production
 
 import com.katanox.tabour.configuration.sqs.sqsProducerConfiguration
 import com.katanox.tabour.consumption.Config
-import java.net.URI
+import java.net.URL
 
 class SqsProducer<K>
 internal constructor(
@@ -11,7 +11,7 @@ internal constructor(
      * producing a message through a Registry
      */
     override val key: K,
-    var queueUri: URI
+    var queueUri: URL
 ) : Config, TabourProducer<K> {
 
     override var onError: (ProducerError<K>) -> Unit = {}
