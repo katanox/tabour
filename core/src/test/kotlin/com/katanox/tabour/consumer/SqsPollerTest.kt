@@ -7,15 +7,24 @@ import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
-import io.mockk.*
-import java.net.URI
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.spyk
+import io.mockk.verify
+import java.net.URL
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.*
+import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
+import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
+import software.amazon.awssdk.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 
 class SqsPollerTest {
     val successFunc: suspend (Message) -> Boolean = mockk()
@@ -29,8 +38,7 @@ class SqsPollerTest {
         var counter = 0
         val configuration =
             spyk(
-                sqsConsumer {
-                    queueUrl = URI("url")
+                sqsConsumer(URL("https://katanox.com")) {
                     onSuccess = successFunc
                     onError = errorFunc
                     config = sqsConsumerConfiguration {
@@ -44,7 +52,7 @@ class SqsPollerTest {
             )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
-                .queueUrl(configuration.queueUrl.toASCIIString())
+                .queueUrl("https://katanox.com")
                 .maxNumberOfMessages(1)
                 .waitTimeSeconds(0)
                 .build()
@@ -72,13 +80,13 @@ class SqsPollerTest {
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
-        val transformer = mockk<(Message) -> String?>()
-        val pipelineProducer = sqsProducer("my-prod") { queueUri = URI("http://test.com") }
+        val transformer = mockk<(Message) -> Pair<String?, String>>()
+        val pipelineProducer =
+            sqsProducer(URL("https://katanox.com"), "prod-key") { queueUri = URL("http://katanox.com") }
 
         val configuration =
             spyk(
-                sqsConsumer {
-                    queueUrl = URI("url")
+                sqsConsumer(URL("https://katanox.com")) {
                     pipeline = sqsPipeline {
                         this.transformer = transformer
                         this.producer = pipelineProducer
@@ -96,7 +104,7 @@ class SqsPollerTest {
             )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
-                .queueUrl(configuration.queueUrl.toASCIIString())
+                .queueUrl("https://katanox.com")
                 .maxNumberOfMessages(1)
                 .waitTimeSeconds(0)
                 .build()
@@ -110,7 +118,7 @@ class SqsPollerTest {
         coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
-        every { transformer(message) }.returns("value")
+        every { transformer(message) }.returns(Pair("value", "groupid"))
 
         sqsPoller.poll(listOf(configuration))
 
@@ -125,8 +133,7 @@ class SqsPollerTest {
         var counter = 0
         val configuration =
             spyk(
-                sqsConsumer {
-                    queueUrl = URI("url")
+                sqsConsumer(URL("https://katanox.com")) {
                     onSuccess = successFunc
                     onError = errorFunc
                     config = sqsConsumerConfiguration {
@@ -140,7 +147,7 @@ class SqsPollerTest {
             )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
-                .queueUrl(configuration.queueUrl.toASCIIString())
+                .queueUrl("https://katanox.com")
                 .waitTimeSeconds(0)
                 .maxNumberOfMessages(1)
                 .build()
@@ -170,8 +177,7 @@ class SqsPollerTest {
         var counter = 0
         val configuration =
             spyk(
-                sqsConsumer {
-                    queueUrl = URI("url")
+                sqsConsumer(URL("https://katanox.com")) {
                     onSuccess = successFunc
                     onError = errorFunc
                     config = sqsConsumerConfiguration {
@@ -185,7 +191,7 @@ class SqsPollerTest {
             )
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
-                .queueUrl(configuration.queueUrl.toASCIIString())
+                .queueUrl("https://katanox.com")
                 .maxNumberOfMessages(1)
                 .waitTimeSeconds(0)
                 .build()

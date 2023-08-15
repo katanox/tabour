@@ -8,10 +8,9 @@ class SqsConsumerConfiguration internal constructor() : Config {
 
     /** The number of max messages to fetch. Default is 1 with max being 10 */
     var maxMessages: Int = 1
+        @Throws(IllegalArgumentException::class)
         set(value) {
-            if (value > 10 || value < 0) {
-                throw IllegalArgumentException("Value must be 0-10")
-            }
+            require(value < 10 || value > 0)
             field = value
         }
 
@@ -21,10 +20,9 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * [maxMessages] * [concurrency]
      */
     var concurrency: Int = 1
+        @Throws(IllegalArgumentException::class)
         set(value) {
-            if (value > 10 || value < 0) {
-                throw IllegalArgumentException("Value must be 0-10")
-            }
+            require(value < 10 || value > 0)
             field = value
         }
     /**
@@ -50,12 +48,16 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * Default is 1
      */
     var retries: Int = 1
+        @Throws(IllegalArgumentException::class)
         set(value) {
-            if (value < 0) {
-                throw IllegalArgumentException("Negative values are not allowed")
-            }
+            require(value > 0)
             field = value
         }
 
+    /**
+     * Used to dynamically enable or disable a consumer.
+     *
+     * Default is true, which means that the consumer will start normally by default
+     */
     var consumeWhile: () -> Boolean = { true }
 }
