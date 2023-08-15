@@ -8,8 +8,8 @@ rootProject.name = "tabour"
 
 include("core", "proto")
 
-val kotlinVersion = "1.9.0-RC"
-val coroutinesVersion = "1.7.0"
+val kotlinVersion = "1.9.0"
+val coroutinesVersion = "1.7.3"
 
 dependencyResolutionManagement {
     versionCatalogs {

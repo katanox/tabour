@@ -15,7 +15,7 @@ dependencies {
 
 group = "com.katanox.tabour"
 
-version = "1.3-RC"
+version = "1.0-beta"
 
 description = "Tabour Proto"
 
