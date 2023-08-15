@@ -40,6 +40,25 @@ internal constructor(
      */
     fun addConsumer(consumer: SqsConsumer): SqsRegistry<T> = this.apply { consumers.add(consumer) }
 
+    /** Adds a collection of consumers to the registry */
+    fun addConsumers(consumers: List<SqsConsumer>): SqsRegistry<T> =
+        this.apply {
+            consumers.fold(this) { registry, consumer ->
+                registry.apply { this.addConsumer(consumer) }
+            }
+        }
+
+    fun <K> addProducer(producer: SqsProducer<K>): SqsRegistry<T> =
+        this.apply { producers.add(producer) }
+
+    /** Adds a collection of producers to the registry */
+    fun <K> addProducers(producers: List<SqsProducer<K>>): SqsRegistry<T> =
+        this.apply {
+            producers.fold(this) { registry, producer ->
+                registry.apply { this.addProducer(producer) }
+            }
+        }
+
     /**
      * Starts the consuming process using the Consumers that have been registered up until the time
      * when start was used
@@ -51,8 +70,6 @@ internal constructor(
     override suspend fun stopConsumption() {
         sqsPoller.stopPolling()
     }
-
-    fun <T> addProducer(producer: SqsProducer<T>) = this.apply { producers.add(producer) }
 
     suspend fun <T> produce(producerKey: T, produceFn: () -> Pair<String?, String>) {
         val producer = producers.find { it.key == producerKey }
