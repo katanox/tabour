@@ -32,7 +32,7 @@ open class TabourConfigurer {
             if (annotation != null) {
                 val registries = beanFactory.getBeansOfType(Registry::class.java).values.toList()
                 val threads =
-                    context.environment.getProperty("tabour.config.numOfThreads", Int::class.java)
+                    context.environment.getProperty("tabour.config.num-of-threads", Int::class.java)
                         ?: 2
 
                 if (registries.isNotEmpty()) {
