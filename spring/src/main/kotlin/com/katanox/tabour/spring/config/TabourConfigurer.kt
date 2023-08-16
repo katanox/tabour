@@ -38,13 +38,13 @@ open class TabourConfigurer {
                 if (registries.isNotEmpty()) {
                     tabourBean(registries, threads)
                 } else {
-                    tabourBean(emptyList(), 1)
+                    tabourBean(emptyList(), 0)
                 }
             } else {
-                tabourBean(emptyList(), 1)
+                tabourBean(emptyList(), 0)
             }
         } else {
-            tabourBean(emptyList(), 1)
+            tabourBean(emptyList(), 0)
         }
     }
 }
