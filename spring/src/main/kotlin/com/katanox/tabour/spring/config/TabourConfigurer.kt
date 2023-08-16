@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Lazy
 import org.springframework.util.ClassUtils
 
 val scope = CoroutineScope(Dispatchers.IO)
@@ -17,6 +18,7 @@ val scope = CoroutineScope(Dispatchers.IO)
 open class TabourConfigurer {
 
     @Bean
+    @Lazy(false)
     open fun t(context: ConfigurableApplicationContext): Tabour {
         val annotatedBeans: Map<String, Any> =
             context.getBeansWithAnnotation(AutoconfigureTabour::class.java)
