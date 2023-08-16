@@ -35,11 +35,6 @@ To use Tabour only **core** is required. Proto and Spring packages contain helpe
 
 - SQS
 
-## Working with self-defined serialization
-
-If you have self-defined methods of serializing objects to string representations (or even want to publish plain-text
-messages), you can use the base EventPublisher/EventConsumer classes.
-
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) and [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) for details.
