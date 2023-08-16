@@ -1,19 +1,15 @@
 # Tabour
 
-Tabour is a Kotlin library which makes working with queues/topics much easier.
+Tabour is a Kotlin library which allows you to interact with message brokers.
 
 [![Build Status](https://github.com/katanox/tabour/workflows/Build/badge.svg)](https://github.com/katanox/tabour)
 [![Maven Central](https://img.shields.io/maven-central/v/com.katanox/tabour.svg?label=Maven&logo=apache-maven)](https://search.maven.org/search?q=g:%22com.katanox%22%20AND%20a:%22tabour%22)
-[![Gradle Plugin](https://img.shields.io/maven-central/v/com.katanox/tabour.svg?label=Gradle&?label=Gradle&logo=gradle)](https://search.maven.org/search?q=g:%22com.katanox%22%20AND%20a:%22tabour%22)
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 
-[<img src="https://img.shields.io/badge/slack-@katanox/tabour-red.svg?logo=slack">](https://katanox.slack.com/archives/C027DN2EEBT)
 ![Language](https://img.shields.io/badge/Language-Kotlin-blue?style=flat&logo=kotlin)
-[![Awesome Kotlin Badge](https://kotlin.link/awesome-kotlin.svg)](https://github.com/KotlinBy/awesome-kotlin)
 
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=bugs)](https://sonarcloud.io/dashboard?id=katanox_tabour)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=code_smells)](https://sonarcloud.io/dashboard?id=katanox_tabour)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=coverage)](https://sonarcloud.io/dashboard?id=katanox_tabour)
 [![Duplicated Lines Density](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=katanox_tabour)
 [![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=ncloc)](https://sonarcloud.io/dashboard?id=katanox_tabour)
 [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=katanox_tabour)
@@ -22,212 +18,27 @@ Tabour is a Kotlin library which makes working with queues/topics much easier.
 [![Technical Dept](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=sqale_index)](https://sonarcloud.io/dashboard?id=katanox_tabour)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=katanox_tabour&branch=master&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=katanox_tabour)
 
-## Usage
-
 ### Installation
 
-The first thing you need to do to get started is to add a dependency to `Tabour` library.
+The library contains the following modules
 
-And if you are willing to use the consumers don't forget to enable the consumption based on the queue/topic type
+- [Core](core/README.md)
+- Proto
+- Spring
 
-```yaml
-tabour:
-  sqs:
-    enable-consumption: true
-```
+To use Tabour only **core** is required. Proto and Spring packages contain helpers and functionality regarding 
+- Protobuf
+- Spring Boot
 
-#### Gradle/maven dependency
 
-<table>
-<thead><tr><th>Approach</th><th>Instruction</th></tr></thead>
-<tr>
-<td><img src="docs/maven.png" alt="Maven"/></td>
-<td>
-<pre>&lt;dependency&gt;
-    &lt;groupId&gt;com.katanox&lt;/groupId&gt;
-    &lt;artifactId&gt;tabour&lt;/artifactId&gt;
-    &lt;version&gt;{version}&lt;/version&gt;
-&lt;/dependency&gt;</pre>
-</td>
-</tr>
-<tr>
-<td><img src="docs/gradle_groovy.png" alt="Gradle Groovy DSL"/></td>
-<td>
-<pre>implementation 'com.katanox:tabour:{version}'</pre>
-</td>
-</tr>
-<tr>
-<td><img src="docs/gradle_kotlin.png" alt="Gradle Kotlin DSL"/></td>
-<td>
-<pre>implementation("com.katanox:tabour:{version}")</pre>
-</td>
-</tr>
-<tr>
-<td><img src="docs/sbt.png" alt="Scala SBT"/></td>
-<td>
-<pre>libraryDependencies += "com.katanox" % "tabour" % "{version}"</pre>
-</td>
-</tr>
-</table>
+## Supported messaging systems
 
-## Supported Types
-
-- SQS fifo queues
+- SQS
 
 ## Working with self-defined serialization
 
 If you have self-defined methods of serializing objects to string representations (or even want to publish plain-text
 messages), you can use the base EventPublisher/EventConsumer classes.
-
-### Publisher example
-
-Define a publisher class for a certain queue.
-
-```kotlin
-class BookingEventPublisher : EventPublisher() {
-
-    override fun getBusType(): BusType {
-        return BusType.SQS
-    }
-}
-```
-
-Then simply call
-
-```kotlin
-    bookingEventPublisher.publish(message, "BUS_URL")
-```
-
-### Consumer example
-
-Extend the EventConsumer, set enableConsumption parameter to true, and it will automatically start consuming messages
-using your consume method.
-The default case when the consumption fails is to log the exception with warn level
-It is allowed change that behavior by override onFailure method
-
-```kotlin
-class BookingEventConsumer : EventConsumer() {
-
-    override fun consume(message: String) {
-        logger.info { "received new booking: $booking" }
-        // ... deserialize and perform your business logic ...
-    }
-
-    override fun getBusURL(): String {
-        return "BUS_URL"
-    }
-
-    override fun getBusType(): BusType {
-        return BusType.SQS
-
-    }
-    
-    //override failure behavior and change the log lvl to error
-    override fun onFailure(throwable: Throwable, message: Any) {
-        logger.error { "error ${throwable.message} happened while processing the message $message" }
-    }
-}
-```
-
-## Working with Protobuf
-
-If you're publishing proto messages, you can use the ProtoEventPublisher/ProtoEventConsumer classes which do all
-serialization and deserialization for you.
-
-### Publishing Example
-
-Simply swap the base class your publisher is extending to ProtoEventPublisher
-
-```kotlin
-@Component
-class BookingEventPublisher : ProtoEventPublisher() {
-    override fun getBusType(): BusType {
-        return BusType.SQS
-    }
-}
-```
-
-Now you're free to call the publisher directly with any proto object
-
-```kotlin
-    bookingEventPublisher.publish(bookingEvent, "BUS_URL")
-```
-
-### Consumer example
-
-For consumption, you can extend the ProtoEventConsumer, which implements a helper function deserializing JSON to your
-protobuf as such
-
-```kotlin
-class BookingEventConsumer : ProtoEventConsumer<BookingEvent.Builder>() {
-
-    override fun consume(message: String) {
-        val event = parseMessageToEvent(message, BookingEvent.newBuilder()).build()
-        logger.debug { "consumed event: $event" }
-        // ... perform business logic on your proto event ...
-    }
-}
-```
-
-## Configurations
-
-<table>
-<thead><tr><th>path</th><th>default value</th><th>explanation</th></tr></thead>
-<tr>
-<td><pre>tabour.max-retry-count</pre></td>
-<td><pre>3</pre></td>
-<td>Number of times that is going to retry to publish  or consume an event</td>
-</tr>
-<tr>
-<td><pre>tabour.poller.poll-delay</pre></td>
-<td><pre>NA</pre></td>
-<td>Delay the poller should wait for the next poll after the previous poll has finished</td>
-</tr>
-<tr>
-<td><pre>tabour.poller.wait-time</pre></td>
-<td><pre>20 Seconds</pre></td>
-<td>The duration (in seconds) for which the call waits for a message to arrive in the queue before returning. If a message is available, the call returns sooner than WaitTimeSeconds. If no messages are available and the wait time expires, the call returns successfully with an empty list of messages.</td>
-</tr>
-<tr>
-<td><pre>tabour.poller.visibility-timeout</pre></td>
-<td><pre>360 Seconds</pre></td>
-<td>Visibility timeout is the time-period or duration you specify for the queue item which when is fetched and processed by the consumer is made hidden from the queue and other consumers.</td>
-</tr>
-<tr>
-<td><pre>tabour.poller.batch-size</pre></td>
-<td><pre>10</pre></td>
-<td>The maximum number of messages to pull from the even bus each poll:
-
-     *  event bus:
-        - SQS allows is maximum 10</td>
-
-</tr>
-<tr>
-<td><pre>tabour.poller.num-of-pollers</pre></td>
-<td><pre>10</pre></td>
-<td>The number of coroutines that should poll/process new messages. Each of those coroutines will poll a batch of batchSize messages and then wait for the pollDelay interval until polling the next batch.</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.access-key</pre></td>
-<td><pre>NA</pre></td>
-<td>The AWS access key.</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.secret-key</pre></td>
-<td><pre>NA</pre></td>
-<td>The AWS secret key.</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.region</pre></td>
-<td><pre>NA</pre></td>
-<td>The AWS region</td>
-</tr>
-<tr>
-<td><pre>tabour.sqs.enable-consumption</pre></td>
-<td><pre>false</pre></td>
-<td>Configures if this the sqs listeners should be starting</td>
-</tr>
-</table>
 
 ## Contributing
 

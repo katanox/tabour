@@ -79,7 +79,7 @@ internal constructor(
         }
     }
 
-    class Configuration<T>(
+    internal class Configuration<T>(
         val key: T,
         val credentialsProvider: AwsCredentialsProvider,
         val region: Region
