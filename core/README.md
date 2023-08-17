@@ -13,7 +13,7 @@ of functions that create `consumers` and `producers` which you need to **attach*
 
 ### Available registries
 
-- SqsRegistry
+- [SqsRegistry](docs/sqs/registry.md)
 
 ## Consumer
 
@@ -32,7 +32,6 @@ messaging system.
 ### Available consumers
 
 - [SqsProducer](docs/sqs/producer.md)
-
 
 # Installation
 
