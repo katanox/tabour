@@ -14,7 +14,7 @@ internal constructor(
     var queueUri: URL
 ) : Config, TabourProducer<K> {
 
-  override var onError: (ProducerError<K>) -> Unit = {}
+    override var onError: (ProducerError<K>) -> Unit = {}
 
-  var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
+    var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }

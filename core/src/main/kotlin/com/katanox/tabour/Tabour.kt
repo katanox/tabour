@@ -24,64 +24,65 @@ import kotlinx.coroutines.newFixedThreadPoolContext
  * By default, the container will allocate 4 threads which can be configured using [Configuration]
  */
 class Tabour internal constructor(configuration: Configuration) {
-  private val registries: MutableSet<Registry<*>> = mutableSetOf()
+    private val registries: MutableSet<Registry<*>> = mutableSetOf()
 
-  @OptIn(DelicateCoroutinesApi::class)
-  private val dispatcher: CoroutineDispatcher =
-      newFixedThreadPoolContext(configuration.numOfThreads, "tabour")
+    @OptIn(DelicateCoroutinesApi::class)
+    private val dispatcher: CoroutineDispatcher =
+        newFixedThreadPoolContext(configuration.numOfThreads, "tabour")
 
-  private var consumptionStarted: Boolean = false
+    private var consumptionStarted: Boolean = false
 
-  private val scope = CoroutineScope(dispatcher)
+    private val scope = CoroutineScope(dispatcher)
 
-  /**
-   * Adds a new registry to the Tabour Container
-   *
-   * All registries must be registered before starting the tabour container.
-   */
-  fun <T> register(registry: Registry<T>): Tabour = this.apply { registries.add(registry) }
+    /**
+     * Adds a new registry to the Tabour Container
+     *
+     * All registries must be registered before starting the tabour container.
+     */
+    fun <T> register(registry: Registry<T>): Tabour = this.apply { registries.add(registry) }
 
-  /**
-   * Uses a registered SqsProducer to produce a message. The producer must be part of a sqs registry
-   * that has been itself registered
-   *
-   * [registryKey]: the key of the registry which the producer is part of
-   *
-   * [producerKey]: the key of the producer itself
-   *
-   * [produceFn]: A function that returns a Pair<String?, String>. The first part of the pair is the
-   * body of the message and the second part is the message group id. If the body is null, a message
-   * is not produced
-   *
-   * Note: If the registry is not found (either wrong Registry or Producer key), nothing happens.
-   */
-  suspend fun <T, K> produceSqsMessage(
-      registryKey: K,
-      producerKey: T,
-      produceFn: () -> Pair<String?, String>
-  ) {
-    when (val registry = registries.find { it.key == registryKey }) {
-      is SqsRegistry -> scope.launch { coroutineScope { registry.produce(producerKey, produceFn) } }
-      else -> {}
+    /**
+     * Uses a registered SqsProducer to produce a message. The producer must be part of a sqs
+     * registry that has been itself registered
+     *
+     * [registryKey]: the key of the registry which the producer is part of
+     *
+     * [producerKey]: the key of the producer itself
+     *
+     * [produceFn]: A function that returns a Pair<String?, String>. The first part of the pair is
+     * the body of the message and the second part is the message group id. If the body is null, a
+     * message is not produced
+     *
+     * Note: If the registry is not found (either wrong Registry or Producer key), nothing happens.
+     */
+    suspend fun <T, K> produceSqsMessage(
+        registryKey: K,
+        producerKey: T,
+        produceFn: () -> Pair<String?, String>
+    ) {
+        when (val registry = registries.find { it.key == registryKey }) {
+            is SqsRegistry ->
+                scope.launch { coroutineScope { registry.produce(producerKey, produceFn) } }
+            else -> {}
+        }
     }
-  }
 
-  /** Starts the consumers of the registered registries. */
-  suspend fun start() {
-    if (!consumptionStarted) {
-      consumptionStarted = true
-      registries.forEach { scope.launch { it.startConsumption() } }
+    /** Starts the consumers of the registered registries. */
+    suspend fun start() {
+        if (!consumptionStarted) {
+            consumptionStarted = true
+            registries.forEach { scope.launch { it.startConsumption() } }
+        }
     }
-  }
-  /** Stops the consumers of the registered registries. */
-  suspend fun stop() {
-    if (consumptionStarted) {
-      consumptionStarted = false
-      registries.forEach { scope.launch { it.stopConsumption() } }
+    /** Stops the consumers of the registered registries. */
+    suspend fun stop() {
+        if (consumptionStarted) {
+            consumptionStarted = false
+            registries.forEach { scope.launch { it.stopConsumption() } }
+        }
     }
-  }
 
-  class Configuration : Config {
-    var numOfThreads: Int = 4
-  }
+    class Configuration : Config {
+        var numOfThreads: Int = 4
+    }
 }

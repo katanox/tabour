@@ -33,5 +33,7 @@ subprojects {
         }
     }
 
+    ktfmt { kotlinLangStyle() }
+
     tasks.test { useJUnitPlatform() }
 }

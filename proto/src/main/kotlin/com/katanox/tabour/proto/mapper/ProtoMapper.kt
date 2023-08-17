@@ -10,9 +10,9 @@ private val printer = JsonFormat.printer()
 inline fun <reified T : ProtobufMessage> ProtobufMessage.Builder.fromSqsMessage(
     message: Message
 ): T {
-  val parser = JsonFormat.parser()
-  parser.merge(message.body(), this)
-  return this.build() as T
+    val parser = JsonFormat.parser()
+    parser.merge(message.body(), this)
+    return this.build() as T
 }
 
 /** Converts a protobuf message to a json which can also be parsed by a protobuf message builder */

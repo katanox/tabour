@@ -5,18 +5,18 @@ suspend inline fun retry(
     onError: (Exception) -> Unit,
     crossinline f: suspend () -> Unit
 ) {
-  var tries = 0
+    var tries = 0
 
-  while (tries < repeatTimes) {
-    try {
-      f()
-      break
-    } catch (e: Exception) {
-      tries++
+    while (tries < repeatTimes) {
+        try {
+            f()
+            break
+        } catch (e: Exception) {
+            tries++
 
-      if (tries == repeatTimes) {
-        onError(e)
-      }
+            if (tries == repeatTimes) {
+                onError(e)
+            }
+        }
     }
-  }
 }
