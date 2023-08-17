@@ -1,6 +1,6 @@
 ## SqsProducer
 
-## Create a new producer
+## Create a producer
 
 ```kotlin
 val producer =
@@ -12,7 +12,7 @@ val producer =
 
 The snippet above, creates a new producer to produce sqs messages to the queue in url `https://queue-url.com`
 
-## onError
+### onError
 
 The `onError` handler is called after the producer fails to produce the message `config.retries` times.
 In this case after 1 failed attempt the `onError` handler will be used
@@ -24,14 +24,14 @@ In this case after 1 failed attempt the `onError` handler will be used
 var retries: Int = 1
 ```
 
-## Producing a message
+### Producing a message
 
 Production of messages works differently than consumption.
 First we need to configure and register the producer in a registry.
 Then at any point we want to produce a message, we need to use the `Tabour`
 container (after registering the registry to the `Tabour` container)
 
-### Example
+Example
 
 ```kotlin
 val tabourContainer = tabour {}

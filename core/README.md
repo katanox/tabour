@@ -33,6 +33,25 @@ messaging system.
 
 - [SqsProducer](docs/sqs/producer.md)
 
+### Creating a tabour instance
+
+```kotlin
+val container = tabour { numOfThreads = 2 }
+```
+
+### Registering registries to the tabour instanec
+
+```kotlin
+// check docs/sqs/registry.md about the creation of a registry
+container.register(registry)
+```
+
+### starting tabour
+
+```kotlin
+tabour.start()
+```
+
 # Installation
 
 <table>

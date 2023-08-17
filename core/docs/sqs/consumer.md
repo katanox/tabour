@@ -1,10 +1,10 @@
 ## SqsConsumer
 
-## Create a new consumer
+## Create a consumer
 
 ```kotlin
 val myConsumer =
-    sqsConsumer(URL("https://queue-url.com")) {
+    sqsConsumer(URL("https://sqs.eu-west-1.amazonaws.com/000000000000/my-queue")) {
         onSuccess = { message: Message -> println(message) }
         onError = { error -> println(error) }
         config = sqsConsumerConfiguration {
@@ -18,21 +18,19 @@ val myConsumer =
 
 ```
 
-The snippet above, creates a new conumser to consume sqs messages from the queue in url `https://queue-url.com`
+The snippet above, creates a new consumer to consume sqs messages from the queue in
+url `https://sqs.eu-west-1.amazonaws.com/000000000000/my-queue`
 
-## onSuccess
+### onSuccess
 
-The `onSuccess `function will be called after the tabour fetches successfully messages from that queue, for each message
-fetched
+The `onSuccess `function will be called for each message fetched after tabour fetches messages from that queue
+successfully
 
-## onError
+### onError
 
-Depending on your configuration, the `onError` function will be called if your `onSuccess` function can not finish
-gracefully
+The `onError` handler is called after the conumser fails to consume the message `config.retries` times.
 
-Based on the snippet above, if `onSuccess` fails to consume the message 2 times then `onError` will be called
-
-## config
+### config
 
 Each consumer can be configured independently using the `config` attribute
 

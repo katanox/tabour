@@ -5,10 +5,10 @@ The SqsRegistry is a registry where we can register the following classes
 - [SqsProducer](producer.md)
 - [SqsConsumer](consumer.md)
 
-## Create a new registry
+## Create a registry
 
 ```kotlin
-// using credentials form the environment
+// using credentials from the environment
 val registry =
     sqsRegistry("registry-key", EnvironmentVariableCredentialsProvider.create(), Region.EU_WEST_1)
 
@@ -43,7 +43,7 @@ Then we need to register the registry itself:
 tabour.register(registry)
 ```
 
-And then we can start tabour and the consumers and producers will be able to work. Consumers will start consuming
+Finally we can start tabour and the consumers and producers will be able to work. Consumers will start consuming
 messages and producers will be available to produce a message when called
 
 ```kotlin
