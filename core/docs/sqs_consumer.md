@@ -54,8 +54,6 @@ Concurrency indicates the number of coroutines that will be spawned in parallel
 ### Available configuration options and default values
 
 ```kotlin
-
-
 /** The number of max messages to fetch. Default is 1 with max being 10 */
 var maxMessages: Int = 1
 
