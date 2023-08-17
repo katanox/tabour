@@ -22,7 +22,7 @@ messaging system.
 
 ### Available consumers
 
-- [SqsConsumer](docs/sqs_consumer.md)
+- [SqsConsumer](docs/sqs/consumer.md)
 
 ## Producer
 
@@ -31,7 +31,7 @@ messaging system.
 
 ### Available consumers
 
-- [SqsProducer](docs/sqs_producer.md)
+- [SqsProducer](docs/sqs/producer.md)
 
 
 # Installation

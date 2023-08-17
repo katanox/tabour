@@ -3,18 +3,18 @@
 ## Create a new consumer
 
 ```kotlin
-val myConsumer = sqsConsumer {
-    queueUrl = URI("https://queue-url.com")
-    onSuccess = { message: Message -> println(message) }
-    onError = { error -> println(error) }
-    config = sqsConsumerConfiguration {
-        waitTime = Duration.ofSeconds(10)
-        concurrency = 2
-        retries = 2
-        maxMessages = 10
-        sleepTime = Duration.ofSeconds(2)
+val myConsumer =
+    sqsConsumer(URL("https://queue-url.com")) {
+        onSuccess = { message: Message -> println(message) }
+        onError = { error -> println(error) }
+        config = sqsConsumerConfiguration {
+            waitTime = Duration.ofSeconds(10)
+            concurrency = 2
+            retries = 2
+            maxMessages = 10
+            sleepTime = Duration.ofSeconds(2)
+        }
     }
-}
 
 ```
 
