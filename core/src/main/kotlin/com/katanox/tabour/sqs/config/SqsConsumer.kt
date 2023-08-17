@@ -10,11 +10,11 @@ import software.amazon.awssdk.services.sqs.model.Message
 class SqsConsumer internal constructor(val queueUri: URL) :
     Consumer<Message, ConsumptionError>, Config {
 
-    override var onSuccess: suspend (Message) -> Boolean = { false }
+  override var onSuccess: suspend (Message) -> Boolean = { false }
 
-    override var onError: (ConsumptionError) -> Unit = {}
+  override var onError: (ConsumptionError) -> Unit = {}
 
-    var pipeline: SqsPipeline? = null
+  var pipeline: SqsPipeline? = null
 
-    var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 1 }
+  var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 1 }
 }
