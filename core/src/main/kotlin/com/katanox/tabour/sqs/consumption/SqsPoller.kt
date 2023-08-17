@@ -8,6 +8,7 @@ import java.net.URL
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.awscore.exception.AwsServiceException
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
@@ -47,6 +48,8 @@ internal class SqsPoller(
                                 consumer.onError(
                                     ConsumptionError.AwsError(details = it.awsErrorDetails())
                                 )
+                            is SdkClientException ->
+                                consumer.onError(ConsumptionError.AwsSdkClientError(it))
                             else -> consumer.onError(ConsumptionError.UnrecognizedError(it))
                         }
                     }
