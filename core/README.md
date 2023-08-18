@@ -1,4 +1,6 @@
-# Concept
+# Tabour Core
+
+## Concept
 
 Tabour tries to follow a modular architecture and the core concept of it's architecture is a `Registry`
 

@@ -24,12 +24,12 @@ The library contains the following modules
 
 - [Core](core/README.md)
 - Proto
-- Spring
+- [Spring](spring/README.md)
 
-To use Tabour only **core** is required. Proto and Spring packages contain helpers and functionality regarding 
+To use Tabour only **core** is required. Proto and Spring packages contain helpers and functionality regarding
+
 - Protobuf
 - Spring Boot
-
 
 ## Supported messaging systems
 
