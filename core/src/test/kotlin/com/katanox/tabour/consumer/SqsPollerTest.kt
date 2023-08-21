@@ -14,6 +14,7 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import java.net.URL
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -81,10 +82,7 @@ class SqsPollerTest {
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
         val transformer = mockk<(Message) -> Pair<String?, String>>()
-        val pipelineProducer =
-            sqsProducer(URL("https://katanox.com"), "prod-key") {
-                queueUri = URL("http://katanox.com")
-            }
+        val pipelineProducer = sqsProducer(URL("https://katanox.com"), "prod-key")
 
         val configuration =
             spyk(
@@ -127,6 +125,57 @@ class SqsPollerTest {
         verify(exactly = 1) { transformer(message) }
         verify(exactly = 0) { errorFunc(any()) }
     }
+
+    @Test
+    fun `test accept with pipeline which returns null as body does not consider the message consumed`() =
+        runTest {
+            val sqs: SqsAsyncClient = mockk()
+            val executor = SqsProducerExecutor(sqs)
+            val sqsPoller = SqsPoller(sqs, executor)
+            val transformer: (Message) -> Pair<String?, String> = { Pair(null, "") }
+            var counter = 0
+            val pipelineProducer = sqsProducer(URL("https://katanox.com"), "prod-key")
+
+            val configuration =
+                spyk(
+                    sqsConsumer(URL("https://katanox.com")) {
+                        pipeline = sqsPipeline {
+                            this.transformer = transformer
+                            this.producer = pipelineProducer
+                        }
+
+                        onError = errorFunc
+                        config = sqsConsumerConfiguration {
+                            concurrency = 1
+                            retries = 1
+                            consumeWhile = {
+                                counter++
+                                counter < 2
+                            }
+                        }
+                    }
+                )
+            val request: ReceiveMessageRequest =
+                ReceiveMessageRequest.builder()
+                    .queueUrl("https://katanox.com")
+                    .maxNumberOfMessages(1)
+                    .waitTimeSeconds(0)
+                    .build()
+
+            val message: Message =
+                Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+
+            val response: ReceiveMessageResponse =
+                ReceiveMessageResponse.builder().messages(message).build()
+
+            coEvery { sqs.receiveMessage(request) }
+                .returns(CompletableFuture.completedFuture(response))
+            coEvery { errorFunc(ConsumptionError.UnsuccessfulConsumption(message)) }.returns(Unit)
+
+            sqsPoller.poll(listOf(configuration))
+
+            verify(exactly = 1) { errorFunc(ConsumptionError.UnsuccessfulConsumption(message)) }
+        }
     @Test
     fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
         val sqs: SqsAsyncClient = mockk()

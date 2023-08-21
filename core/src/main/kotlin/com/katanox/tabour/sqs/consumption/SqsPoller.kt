@@ -61,34 +61,39 @@ internal class SqsPoller(
                             .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
                             .build()
 
-                    sqs.receiveMessage(request).await().let { response ->
-                        val messages = response.messages()
+                    val messages = sqs.receiveMessage(request).await().messages()
 
-                        if (messages.isNotEmpty()) {
-                            val pipeline = consumer.pipeline
+                    if (messages.isNotEmpty()) {
+                        val pipeline = consumer.pipeline
 
-                            // consume the messages in parallel
-                            messages.forEach { message ->
-                                launch {
-                                    val consumed =
-                                        pipeline?.producer?.let {
-                                            executor.produce(it) { pipeline.transformer(message) }
-                                            // consumption worked, so we specify it manually
-                                            // instead of having the pipeline handle it
-                                            true
+                        // consume the messages in parallel
+                        messages.forEach { message ->
+                            launch {
+                                val consumed =
+                                    pipeline?.producer?.let {
+                                        var consumedFromPipeline = false
+
+                                        executor.produce(it) {
+                                            pipeline.transformer(message).also {
+                                                transformationResult ->
+                                                consumedFromPipeline =
+                                                    !transformationResult.first.isNullOrEmpty()
+                                            }
                                         }
-                                            ?: consumer.onSuccess(message)
 
-                                    if (consumed) {
-                                        // we acknowledge the message only if the consumption
-                                        // succeeded
-                                        acknowledge(messages, consumer.queueUri)
-                                    } else {
-                                        // otherwise, we use the error handler of the consumer
-                                        consumer.onError(
-                                            ConsumptionError.UnsuccessfulConsumption(message)
-                                        )
+                                        consumedFromPipeline
                                     }
+                                        ?: consumer.onSuccess(message)
+
+                                if (consumed) {
+                                    // we acknowledge the message only if the consumption
+                                    // succeeded
+                                    acknowledge(messages, consumer.queueUri)
+                                } else {
+                                    // otherwise, we use the error handler of the consumer
+                                    consumer.onError(
+                                        ConsumptionError.UnsuccessfulConsumption(message)
+                                    )
                                 }
                             }
                         }

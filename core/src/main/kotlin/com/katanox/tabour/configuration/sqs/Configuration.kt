@@ -32,6 +32,8 @@ fun sqsConsumer(url: URL, init: SqsConsumer.() -> Unit): SqsConsumer =
 fun <T> sqsProducer(url: URL, key: T, init: SqsProducer<T>.() -> Unit): SqsProducer<T> =
     config(SqsProducer(key, url), init)
 
+fun <T> sqsProducer(url: URL, key: T): SqsProducer<T> = SqsProducer(key, url)
+
 /** Creates a new [SqsConsumerConfiguration] which can be used to configure a [SqsConsumer] */
 fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsConsumerConfiguration =
     config(SqsConsumerConfiguration(), init)
