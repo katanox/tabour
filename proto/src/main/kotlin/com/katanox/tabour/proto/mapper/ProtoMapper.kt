@@ -4,13 +4,13 @@ import com.google.protobuf.Message as ProtobufMessage
 import com.google.protobuf.util.JsonFormat
 import software.amazon.awssdk.services.sqs.model.Message
 
-private val printer = JsonFormat.printer()
+private val printer: JsonFormat.Printer = JsonFormat.printer()
+val parser: JsonFormat.Parser = JsonFormat.parser()
 
 /** Converts a SQS message to a Protobuf message using the builder of the Protobuf message */
 inline fun <reified T : ProtobufMessage> ProtobufMessage.Builder.fromSqsMessage(
     message: Message
 ): T {
-    val parser = JsonFormat.parser()
     parser.merge(message.body(), this)
     return this.build() as T
 }
