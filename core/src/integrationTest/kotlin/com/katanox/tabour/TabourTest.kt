@@ -132,9 +132,57 @@ class TabourTest {
             }
 
             // after 2 seconds, assert that we fetched the 1 message we produced earlier
-            await.withPollDelay(Duration.ofSeconds(2)).untilAsserted {
-                assertEquals(1, counter)
+            await.withPollDelay(Duration.ofSeconds(2)).untilAsserted { assertEquals(1, counter) }
+            purgeQueue(nonFifoQueueUrl)
+        }
+
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consume messages with multi concurrency`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration(
+                    "test-registry",
+                    StaticCredentialsProvider.create(credentials),
+                    Region.of(localstack.region)
+                ) {
+                    this.endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var counter = 0
+
+            val producer =
+                sqsProducer(URL(nonFifoQueueUrl), "test-producer") { onError = { println(it) } }
+            val consumer =
+                sqsConsumer(URL(nonFifoQueueUrl)) {
+                    this.onSuccess = {
+                        counter++
+                        true
+                    }
+                    this.onError = ::println
+                    this.config = sqsConsumerConfiguration {
+                        sleepTime = Duration.ofMillis(200)
+                        consumeWhile = { counter < 50 }
+                        concurrency = 5
+                        maxMessages = 10
+                    }
+                }
+
+            sqsRegistry.addConsumer(consumer).addProducer(producer)
+            container.register(sqsRegistry)
+            container.start()
+
+            repeat(50) {
+                container.produceSqsMessage("test-registry", "test-producer") {
+                    NonFifoQueueData("this is a test message - $it")
+                }
             }
+
+            // we assert that in 1 second all (50) messages will be consumed by 5 workers
+            await.withPollDelay(Duration.ofSeconds(1)).untilAsserted { assertEquals(50, counter) }
         }
 
     @Test
