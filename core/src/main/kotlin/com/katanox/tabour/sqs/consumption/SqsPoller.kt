@@ -5,20 +5,18 @@ import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URL
-import kotlinx.coroutines.*
-import kotlinx.coroutines.future.await
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
-internal class SqsPoller(
-    private val sqs: SqsAsyncClient,
-    private val executor: SqsProducerExecutor
-) {
+internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsProducerExecutor) {
     private var consume: Boolean = false
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consume = true
@@ -61,7 +59,7 @@ internal class SqsPoller(
                             .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
                             .build()
 
-                    val messages = sqs.receiveMessage(request).await().messages()
+                    val messages = sqs.receiveMessage(request).messages()
 
                     if (messages.isNotEmpty()) {
                         val pipeline = consumer.pipeline
@@ -118,6 +116,6 @@ internal class SqsPoller(
                 .entries(entries)
                 .build()
 
-        sqs.deleteMessageBatch(request).await()
+        sqs.deleteMessageBatch(request)
     }
 }

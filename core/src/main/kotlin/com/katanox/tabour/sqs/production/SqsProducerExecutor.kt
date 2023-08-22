@@ -1,11 +1,10 @@
 package com.katanox.tabour.sqs.production
 
 import com.katanox.tabour.retry
-import kotlinx.coroutines.future.await
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
-internal class SqsProducerExecutor(private val sqs: SqsAsyncClient) {
+internal class SqsProducerExecutor(private val sqs: SqsClient) {
     suspend fun <T> produce(producer: SqsProducer<T>, produceFn: () -> SqsDataForProduction) {
         val produceData = produceFn()
 
@@ -38,7 +37,7 @@ internal class SqsProducerExecutor(private val sqs: SqsAsyncClient) {
                     )
                 }
             ) {
-                sqs.sendMessage(request).await()
+                sqs.sendMessage(request)
             }
         }
     }

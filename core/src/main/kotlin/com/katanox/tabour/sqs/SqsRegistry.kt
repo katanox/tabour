@@ -8,7 +8,7 @@ import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.SqsClient
 
 /**
  * A type of [Registry] which works with SQS
@@ -26,8 +26,8 @@ internal constructor(
 
     private val consumers: MutableList<SqsConsumer> = mutableListOf()
     private val producers: MutableSet<SqsProducer<*>> = mutableSetOf()
-    private val sqs: SqsAsyncClient =
-        SqsAsyncClient.builder()
+    private val sqs: SqsClient =
+        SqsClient.builder()
             .credentialsProvider(configuration.credentialsProvider)
             .region(configuration.region)
             .build()

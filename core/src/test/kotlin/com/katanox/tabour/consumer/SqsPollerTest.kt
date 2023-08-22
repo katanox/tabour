@@ -16,12 +16,11 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import java.net.URL
-import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.awscore.exception.AwsServiceException
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
 import software.amazon.awssdk.services.sqs.model.Message
@@ -34,7 +33,7 @@ class SqsPollerTest {
 
     @Test
     fun `test accept with one worker for one message runs once the successFn`() = runTest {
-        val sqs: SqsAsyncClient = mockk()
+        val sqs: SqsClient = mockk()
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
@@ -65,9 +64,9 @@ class SqsPollerTest {
         val response: ReceiveMessageResponse =
             ReceiveMessageResponse.builder().messages(message).build()
 
-        coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
+        coEvery { sqs.receiveMessage(request) }.returns(response)
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
-            .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
+            .returns(mockk<DeleteMessageBatchResponse>())
         coEvery { successFunc(message) }.returns(true)
 
         sqsPoller.poll(listOf(configuration))
@@ -78,7 +77,7 @@ class SqsPollerTest {
 
     @Test
     fun `test accept with pipeline`() = runTest {
-        val sqs: SqsAsyncClient = mockk()
+        val sqs: SqsClient = mockk()
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
@@ -116,9 +115,9 @@ class SqsPollerTest {
         val response: ReceiveMessageResponse =
             ReceiveMessageResponse.builder().messages(message).build()
 
-        coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
+        coEvery { sqs.receiveMessage(request) }.returns(response)
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
-            .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
+            .returns(mockk<DeleteMessageBatchResponse>())
         every { transformer(message) }.returns(FifoQueueData("value", "groupid"))
 
         sqsPoller.poll(listOf(configuration))
@@ -130,7 +129,7 @@ class SqsPollerTest {
     @Test
     fun `test accept with pipeline which returns null as body does not consider the message consumed`() =
         runTest {
-            val sqs: SqsAsyncClient = mockk()
+            val sqs: SqsClient = mockk()
             val executor = SqsProducerExecutor(sqs)
             val sqsPoller = SqsPoller(sqs, executor)
             val transformer: (Message) -> SqsDataForProduction = {
@@ -171,8 +170,7 @@ class SqsPollerTest {
             val response: ReceiveMessageResponse =
                 ReceiveMessageResponse.builder().messages(message).build()
 
-            coEvery { sqs.receiveMessage(request) }
-                .returns(CompletableFuture.completedFuture(response))
+            coEvery { sqs.receiveMessage(request) }.returns(response)
             coEvery { errorFunc(ConsumptionError.UnsuccessfulConsumption(message)) }.returns(Unit)
 
             sqsPoller.poll(listOf(configuration))
@@ -181,7 +179,7 @@ class SqsPollerTest {
         }
     @Test
     fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
-        val sqs: SqsAsyncClient = mockk()
+        val sqs: SqsClient = mockk()
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
@@ -212,9 +210,9 @@ class SqsPollerTest {
         val response: ReceiveMessageResponse =
             ReceiveMessageResponse.builder().messages(message).build()
 
-        coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
+        coEvery { sqs.receiveMessage(request) }.returns(response)
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
-            .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
+            .returns(mockk<DeleteMessageBatchResponse>())
         coEvery { successFunc(message) }.returns(true)
 
         sqsPoller.poll(listOf(configuration))
@@ -225,7 +223,7 @@ class SqsPollerTest {
 
     @Test
     fun `test accept an exception calls error fn`() = runTest {
-        val sqs: SqsAsyncClient = mockk()
+        val sqs: SqsClient = mockk()
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
