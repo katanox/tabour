@@ -50,7 +50,6 @@ class TabourTest {
     private lateinit var sqsClient: SqsClient
     private lateinit var nonFifoQueueUrl: String
     private lateinit var fifoQueueUrl: String
-    private val scope = CoroutineScope(Dispatchers.IO)
 
     @BeforeAll
     fun setup() {
