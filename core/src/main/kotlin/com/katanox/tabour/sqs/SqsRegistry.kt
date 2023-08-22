@@ -1,11 +1,13 @@
 package com.katanox.tabour.sqs
 
 import com.katanox.tabour.configuration.Registry
+import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
+import java.net.URI
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -30,6 +32,11 @@ internal constructor(
         SqsClient.builder()
             .credentialsProvider(configuration.credentialsProvider)
             .region(configuration.region)
+            .apply {
+                if (configuration.endpointOverride != null) {
+                    this.endpointOverride(configuration.endpointOverride)
+                }
+            }
             .build()
 
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
@@ -72,9 +79,11 @@ internal constructor(
         }
     }
 
-    internal class Configuration<T>(
+    class Configuration<T>(
         val key: T,
         val credentialsProvider: AwsCredentialsProvider,
-        val region: Region
-    )
+        val region: Region,
+    ) : Config {
+        var endpointOverride: URI? = null
+    }
 }
