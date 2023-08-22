@@ -19,8 +19,8 @@ import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.localstack.LocalStackContainer
@@ -44,7 +44,6 @@ class TabourTest {
             .withReuse(true)
 
     private val credentials = AwsBasicCredentials.create(localstack.accessKey, localstack.secretKey)
-    private val container = tabour { numOfThreads = 1 }
     private lateinit var sqsClient: SqsClient
     private lateinit var nonFifoQueueUrl: String
     private lateinit var fifoQueueUrl: String
@@ -80,26 +79,19 @@ class TabourTest {
                         .build()
                 )
                 .queueUrl()
-
-        scope.launch { container.start() }
     }
 
     @AfterAll
     fun cleanup() {
-        scope.launch { container.stop() }
         sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(nonFifoQueueUrl).build())
         sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(fifoQueueUrl).build())
     }
 
-    @AfterEach
-    fun cleanupEach() {
-        purgeQueue(nonFifoQueueUrl)
-        purgeQueue(fifoQueueUrl)
-    }
-
     @Test
+    @Tag("sqs-producer-test")
     fun `produce a message to a non fifo queue`() =
         runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration(
                     "test-registry",
@@ -117,6 +109,7 @@ class TabourTest {
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
+            container.start()
 
             container.produceSqsMessage("test-registry", "test-producer") {
                 NonFifoQueueData("this is a test message")
@@ -140,11 +133,15 @@ class TabourTest {
                         "this is a test message"
                     )
                 }
+
+            purgeQueue(nonFifoQueueUrl)
         }
 
     @Test
+    @Tag("sqs-producer-test")
     fun `produce a message to a fifo queue`() =
         runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration(
                     "test-registry",
@@ -158,12 +155,13 @@ class TabourTest {
             val sqsRegistry = sqsRegistry(config)
 
             val producer =
-                sqsProducer(URL(fifoQueueUrl), "test-producer") { onError = { println(it) } }
+                sqsProducer(URL(fifoQueueUrl), "fifo-test-producer") { onError = { println(it) } }
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
+            container.start()
 
-            container.produceSqsMessage("test-registry", "test-producer") {
+            container.produceSqsMessage("test-registry", "fifo-test-producer") {
                 FifoQueueData("this is a fifo test message", "group1")
             }
 
@@ -185,6 +183,7 @@ class TabourTest {
                         "this is a fifo test message"
                     )
                 }
+            purgeQueue(fifoQueueUrl)
         }
 
     private fun purgeQueue(url: String) {
