@@ -22,7 +22,7 @@ class SqsConsumerConfiguration internal constructor() : Config {
     var concurrency: Int = 1
         @Throws(IllegalArgumentException::class)
         set(value) {
-            require(value < 10 || value > 0)
+            require(value <= 10 || value > 0)
             field = value
         }
     /**

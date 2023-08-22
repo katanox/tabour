@@ -23,7 +23,7 @@ url `https://sqs.eu-west-1.amazonaws.com/000000000000/my-queue`
 
 ### onSuccess
 
-The `onSuccess `function will be called for each message fetched after tabour fetches messages from that queue
+The `onSuccess` function will be called for each message fetched after tabour fetches messages from that queue
 successfully
 
 ### onError

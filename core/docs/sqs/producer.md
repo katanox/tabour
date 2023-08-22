@@ -28,7 +28,7 @@ var retries: Int = 1
 
 Production of messages works differently than consumption.
 First we need to configure and register the producer in a registry.
-Then at any point we want to produce a message, we need to use the `Tabour`
+When we want to produce a message, we need to use the `Tabour`
 container (after registering the registry to the `Tabour` container)
 
 Example

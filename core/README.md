@@ -41,7 +41,7 @@ messaging system.
 val container = tabour { numOfThreads = 2 }
 ```
 
-### Registering registries to the tabour instanec
+### Registering registries to the tabour instance
 
 ```kotlin
 // check docs/sqs/registry.md about the creation of a registry
