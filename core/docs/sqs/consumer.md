@@ -59,6 +59,8 @@ var maxMessages: Int = 10
  * Unit of concurrency. In combination with [maxMessages] determines the max number of messages that
  * can be received every [sleepTime]. The upper bound of messages every [sleepTime] is
  * [maxMessages] * [concurrency]
+ *
+ * Max coroutines: 50
  */
 var concurrency: Int = 1
 

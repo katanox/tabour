@@ -18,11 +18,13 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * Unit of concurrency. In combination with [maxMessages] determines the max number of messages
      * that can be received every [sleepTime]. The upper bound of messages every [sleepTime] is
      * [maxMessages] * [concurrency]
+     *
+     * Max coroutines: 50
      */
     var concurrency: Int = 1
         @Throws(IllegalArgumentException::class)
         set(value) {
-            require(value <= 10 || value > 0)
+            require(value <= 50 || value > 0)
             field = value
         }
     /**
