@@ -11,7 +11,7 @@ internal constructor(
      * producing a message through a Registry
      */
     override val key: K,
-    val queueUri: URL
+    val queueUrl: URL
 ) : Config, TabourProducer<K> {
 
     override var onError: (ProducerError<K>) -> Unit = {}
