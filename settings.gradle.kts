@@ -19,7 +19,7 @@ dependencyResolutionManagement {
                 "kotlin-coroutines",
                 "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
             )
-            library("kotlin-coroutines-jdk", "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.4")
+            library("kotlin-coroutines-jdk", "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutinesVersion")
             library("aws-sqs", "software.amazon.awssdk:sqs:2.20.46")
         }
 
