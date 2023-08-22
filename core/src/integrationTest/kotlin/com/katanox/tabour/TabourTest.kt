@@ -4,12 +4,13 @@ import com.katanox.tabour.configuration.core.tabour
 import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.configuration.sqs.sqsRegistry
 import com.katanox.tabour.configuration.sqs.sqsRegistryConfiguration
-import com.katanox.tabour.sqs.production.SqsDataForProduction
+import com.katanox.tabour.sqs.production.NonFifoQueueData
 import java.net.URL
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -36,6 +37,7 @@ class TabourTest {
     private val credentials = AwsBasicCredentials.create(localstack.accessKey, localstack.secretKey)
     private val container = tabour { numOfThreads = 1 }
     private lateinit var sqsClient: SqsClient
+    private lateinit var queueUrl: String
     private val scope = CoroutineScope(Dispatchers.IO)
 
     @BeforeAll
@@ -49,6 +51,11 @@ class TabourTest {
                 .region(Region.of(localstack.region))
                 .build()
 
+        queueUrl =
+            sqsClient
+                .createQueue(CreateQueueRequest.builder().queueName("test-queue").build())
+                .queueUrl()
+
         scope.launch { container.start() }
     }
 
@@ -56,10 +63,11 @@ class TabourTest {
     fun cleanup() {
         //        localstack.stop()
         scope.launch { container.stop() }
+        sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build())
     }
 
     @Test
-    fun `produce a message`() = runTest {
+    fun `produce a message to a non fifo queue`() = runTest {
         val config =
             sqsRegistryConfiguration(
                 "test-registry",
@@ -72,35 +80,24 @@ class TabourTest {
 
         val sqsRegistry = sqsRegistry(config)
 
-        val createQueueResponse =
-            sqsClient.createQueue(CreateQueueRequest.builder().queueName("test-queue").build())
-
-        val producer =
-            sqsProducer(URL(createQueueResponse.queueUrl()), "test-producer") {
-                onError = { println(it) }
-            }
+        val producer = sqsProducer(URL(queueUrl), "test-producer") { onError = { println(it) } }
 
         sqsRegistry.addProducer(producer)
         container.register(sqsRegistry)
 
         container.produceSqsMessage("test-registry", "test-producer") {
-            SqsDataForProduction("this is a test message", "group1")
+            NonFifoQueueData("this is a test message")
         }
+
+        advanceUntilIdle()
 
         val receiveMessagesResponse =
             sqsClient.receiveMessage(
-                ReceiveMessageRequest.builder()
-                    .queueUrl(createQueueResponse.queueUrl())
-                    .maxNumberOfMessages(5)
-                    .build()
+                ReceiveMessageRequest.builder().queueUrl(queueUrl).maxNumberOfMessages(5).build()
             )
         //
         //        assertEquals(1, receiveMessagesResponse.messages().size)
         //        assertEquals("this is a test message",
         println(receiveMessagesResponse.messages())
-    }
-
-    private fun deleteQueue(url: String) {
-        sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(url).build())
     }
 }
