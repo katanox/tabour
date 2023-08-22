@@ -2,9 +2,9 @@
 
 ## Concept
 
-Tabour tries to follow a modular architecture and the core concept of it's architecture is a `Registry`
+Tabour follows a modular architecture and the core concept of it's architecture is a `Registry`
 
-Then you need to register the registry to the `Tabour container` and start the `Tabour container`.
+You need to register the registry to the `Tabour container` and start the `Tabour container`.
 After that step, the consumers that you have configured and registered will start consuming messages from the queues
 they have been configured to consume.
 

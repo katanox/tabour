@@ -52,12 +52,12 @@ Concurrency indicates the number of coroutines that will be spawned in parallel
 ### Available configuration options and default values
 
 ```kotlin
-/** The number of max messages to fetch. Default is 1 with max being 10 */
-var maxMessages: Int = 1
+/** The number of max messages to fetch. Default is 10 which is also the max numbers allowed */
+var maxMessages: Int = 10
 
 /**
- * Unit of concurrency. In combination with [maxMessages] determines the max number of messages
- * that can be received every [sleepTime]. The upper bound of messages every [sleepTime] is
+ * Unit of concurrency. In combination with [maxMessages] determines the max number of messages that
+ * can be received every [sleepTime]. The upper bound of messages every [sleepTime] is
  * [maxMessages] * [concurrency]
  */
 var concurrency: Int = 1
@@ -70,10 +70,9 @@ var concurrency: Int = 1
 var sleepTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
 
 /**
- * The duration for which the call waits for a message to arrive in the queue before returning.
- * If a message is available, the call returns sooner than WaitTimeSeconds. If no messages are
- * available and the wait time expires, the call returns successfully with an empty list of
- * messages.
+ * The duration for which the call waits for a message to arrive in the queue before returning. If a
+ * message is available, the call returns sooner than WaitTimeSeconds. If no messages are available
+ * and the wait time expires, the call returns successfully with an empty list of messages.
  *
  * Default is 10 seconds
  */
@@ -92,4 +91,5 @@ var retries: Int = 1
  * Default is true, which means that the consumer will start normally by default
  */
 var consumeWhile: () -> Boolean = { true }
+
 ```

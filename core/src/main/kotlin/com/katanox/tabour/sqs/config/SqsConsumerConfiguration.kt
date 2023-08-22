@@ -6,8 +6,8 @@ import java.time.temporal.ChronoUnit
 
 class SqsConsumerConfiguration internal constructor() : Config {
 
-    /** The number of max messages to fetch. Default is 1 with max being 10 */
-    var maxMessages: Int = 1
+    /** The number of max messages to fetch. Default is 10 which is also the max numbers allowed */
+    var maxMessages: Int = 10
         @Throws(IllegalArgumentException::class)
         set(value) {
             require(value < 10 || value > 0)

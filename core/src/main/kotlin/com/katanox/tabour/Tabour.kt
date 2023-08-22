@@ -3,6 +3,7 @@ package com.katanox.tabour
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.sqs.SqsRegistry
+import com.katanox.tabour.sqs.production.SqsDataForProduction
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -58,7 +59,7 @@ class Tabour internal constructor(configuration: Configuration) {
     suspend fun <T, K> produceSqsMessage(
         registryKey: K,
         producerKey: T,
-        produceFn: () -> Pair<String?, String>
+        produceFn: () -> SqsDataForProduction
     ) {
         when (val registry = registries.find { it.key == registryKey }) {
             is SqsRegistry ->

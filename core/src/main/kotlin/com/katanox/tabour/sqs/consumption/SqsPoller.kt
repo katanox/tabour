@@ -77,7 +77,7 @@ internal class SqsPoller(
                                             pipeline.transformer(message).also {
                                                 transformationResult ->
                                                 consumedFromPipeline =
-                                                    !transformationResult.first.isNullOrEmpty()
+                                                    !transformationResult.message.isNullOrEmpty()
                                             }
                                         }
 

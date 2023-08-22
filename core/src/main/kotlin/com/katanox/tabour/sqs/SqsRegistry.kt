@@ -3,6 +3,7 @@ package com.katanox.tabour.sqs
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
+import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -63,7 +64,7 @@ internal constructor(
         sqsPoller.stopPolling()
     }
 
-    suspend fun <T> produce(producerKey: T, produceFn: () -> Pair<String?, String>) {
+    suspend fun <T> produce(producerKey: T, produceFn: () -> SqsDataForProduction) {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {

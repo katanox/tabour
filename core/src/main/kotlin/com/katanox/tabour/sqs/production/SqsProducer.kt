@@ -18,3 +18,5 @@ internal constructor(
 
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }
+
+data class SqsDataForProduction(val message: String?, val messageGroupId: String = "")

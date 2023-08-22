@@ -16,5 +16,5 @@ class SqsConsumer internal constructor(val queueUri: URL) :
 
     var pipeline: SqsPipeline? = null
 
-    var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 1 }
+    var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 10 }
 }

@@ -6,6 +6,7 @@ import com.katanox.tabour.configuration.sqs.sqsPipeline
 import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
+import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -14,7 +15,6 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import java.net.URL
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -54,7 +54,7 @@ class SqsPollerTest {
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
                 .queueUrl("https://katanox.com")
-                .maxNumberOfMessages(1)
+                .maxNumberOfMessages(10)
                 .waitTimeSeconds(0)
                 .build()
 
@@ -81,7 +81,7 @@ class SqsPollerTest {
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
         var counter = 0
-        val transformer = mockk<(Message) -> Pair<String?, String>>()
+        val transformer = mockk<(Message) -> SqsDataForProduction>()
         val pipelineProducer = sqsProducer(URL("https://katanox.com"), "prod-key")
 
         val configuration =
@@ -105,7 +105,7 @@ class SqsPollerTest {
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
                 .queueUrl("https://katanox.com")
-                .maxNumberOfMessages(1)
+                .maxNumberOfMessages(10)
                 .waitTimeSeconds(0)
                 .build()
 
@@ -118,7 +118,7 @@ class SqsPollerTest {
         coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
-        every { transformer(message) }.returns(Pair("value", "groupid"))
+        every { transformer(message) }.returns(SqsDataForProduction("value", "groupid"))
 
         sqsPoller.poll(listOf(configuration))
 
@@ -132,7 +132,9 @@ class SqsPollerTest {
             val sqs: SqsAsyncClient = mockk()
             val executor = SqsProducerExecutor(sqs)
             val sqsPoller = SqsPoller(sqs, executor)
-            val transformer: (Message) -> Pair<String?, String> = { Pair(null, "") }
+            val transformer: (Message) -> SqsDataForProduction = {
+                SqsDataForProduction(message = null, messageGroupId = "")
+            }
             var counter = 0
             val pipelineProducer = sqsProducer(URL("https://katanox.com"), "prod-key")
 
@@ -158,7 +160,7 @@ class SqsPollerTest {
             val request: ReceiveMessageRequest =
                 ReceiveMessageRequest.builder()
                     .queueUrl("https://katanox.com")
-                    .maxNumberOfMessages(1)
+                    .maxNumberOfMessages(10)
                     .waitTimeSeconds(0)
                     .build()
 
@@ -199,8 +201,8 @@ class SqsPollerTest {
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
                 .queueUrl("https://katanox.com")
+                .maxNumberOfMessages(10)
                 .waitTimeSeconds(0)
-                .maxNumberOfMessages(1)
                 .build()
 
         val message: Message =
@@ -243,7 +245,7 @@ class SqsPollerTest {
         val request: ReceiveMessageRequest =
             ReceiveMessageRequest.builder()
                 .queueUrl("https://katanox.com")
-                .maxNumberOfMessages(1)
+                .maxNumberOfMessages(10)
                 .waitTimeSeconds(0)
                 .build()
 

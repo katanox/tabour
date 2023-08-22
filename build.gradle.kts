@@ -24,7 +24,7 @@ subprojects {
                     name = "GitHubPackages"
                     url = uri("https://maven.pkg.github.com/katanox/tabour")
                     credentials {
-                        username = "gpopides"
+                        username = "KatanoxDevelopers"
                         password = System.getenv("TABOUR_TOKEN")
                     }
                 }
