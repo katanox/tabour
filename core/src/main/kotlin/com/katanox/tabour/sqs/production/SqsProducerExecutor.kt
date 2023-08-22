@@ -7,15 +7,23 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 internal class SqsProducerExecutor(private val sqs: SqsAsyncClient) {
     suspend fun <T> produce(producer: SqsProducer<T>, produceFn: () -> SqsDataForProduction) {
-        val (body, messageGroupId) = produceFn()
+        val produceData = produceFn()
+
         val url = producer.queueUrl.toString()
 
-        if (!body.isNullOrEmpty() && url.isNotEmpty()) {
+        if (!produceData.message.isNullOrEmpty() && url.isNotEmpty()) {
             val request =
                 SendMessageRequest.builder()
-                    .messageBody(body)
                     .queueUrl(url)
-                    .messageGroupId(messageGroupId)
+                    .apply {
+                        when (produceData) {
+                            is FifoQueueData -> {
+                                this.messageBody(produceData.message)
+                                this.messageGroupId(produceData.messageGroupId)
+                            }
+                            is NonFifoQueueData -> this.messageBody(produceData.message)
+                        }
+                    }
                     .build()
 
             retry(

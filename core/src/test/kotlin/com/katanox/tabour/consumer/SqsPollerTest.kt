@@ -6,6 +6,7 @@ import com.katanox.tabour.configuration.sqs.sqsPipeline
 import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
+import com.katanox.tabour.sqs.production.FifoQueueData
 import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.coEvery
@@ -118,7 +119,7 @@ class SqsPollerTest {
         coEvery { sqs.receiveMessage(request) }.returns(CompletableFuture.completedFuture(response))
         coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
             .returns(CompletableFuture.completedFuture(mockk<DeleteMessageBatchResponse>()))
-        every { transformer(message) }.returns(SqsDataForProduction("value", "groupid"))
+        every { transformer(message) }.returns(FifoQueueData("value", "groupid"))
 
         sqsPoller.poll(listOf(configuration))
 
@@ -133,7 +134,7 @@ class SqsPollerTest {
             val executor = SqsProducerExecutor(sqs)
             val sqsPoller = SqsPoller(sqs, executor)
             val transformer: (Message) -> SqsDataForProduction = {
-                SqsDataForProduction(message = null, messageGroupId = "")
+                FifoQueueData(message = null, messageGroupId = "")
             }
             var counter = 0
             val pipelineProducer = sqsProducer(URL("https://katanox.com"), "prod-key")
