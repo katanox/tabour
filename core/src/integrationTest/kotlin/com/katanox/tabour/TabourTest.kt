@@ -10,7 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -23,7 +23,6 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
-import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 @ExperimentalCoroutinesApi
@@ -53,7 +52,7 @@ class TabourTest {
 
         queueUrl =
             sqsClient
-                .createQueue(CreateQueueRequest.builder().queueName("test-queue").build())
+                .createQueue(CreateQueueRequest.builder().queueName("my-queue").build())
                 .queueUrl()
 
         scope.launch { container.start() }
@@ -63,41 +62,44 @@ class TabourTest {
     fun cleanup() {
         //        localstack.stop()
         scope.launch { container.stop() }
-        sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build())
+        //
+        // sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build())
     }
 
     @Test
-    fun `produce a message to a non fifo queue`() = runTest {
-        val config =
-            sqsRegistryConfiguration(
-                "test-registry",
-                StaticCredentialsProvider.create(credentials),
-                Region.of(localstack.region)
-            ) {
-                this.endpointOverride =
-                    localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+    fun `produce a message to a non fifo queue`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val config =
+                sqsRegistryConfiguration(
+                    "test-registry",
+                    StaticCredentialsProvider.create(credentials),
+                    Region.of(localstack.region)
+                ) {
+                    this.endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+
+            val producer = sqsProducer(URL(queueUrl), "test-producer") { onError = { println(it) } }
+
+            sqsRegistry.addProducer(producer)
+            container.register(sqsRegistry)
+
+            container.produceSqsMessage("test-registry", "test-producer") {
+                NonFifoQueueData("this is a test message")
             }
 
-        val sqsRegistry = sqsRegistry(config)
-
-        val producer = sqsProducer(URL(queueUrl), "test-producer") { onError = { println(it) } }
-
-        sqsRegistry.addProducer(producer)
-        container.register(sqsRegistry)
-
-        container.produceSqsMessage("test-registry", "test-producer") {
-            NonFifoQueueData("this is a test message")
+            val receiveMessagesResponse =
+                sqsClient.receiveMessage(
+                    ReceiveMessageRequest.builder()
+                        .queueUrl(queueUrl)
+                        .maxNumberOfMessages(5)
+                        .build()
+                )
+            //
+            //        assertEquals(1, receiveMessagesResponse.messages().size)
+            //        assertEquals("this is a test message",
+            println(receiveMessagesResponse.messages())
         }
-
-        advanceUntilIdle()
-
-        val receiveMessagesResponse =
-            sqsClient.receiveMessage(
-                ReceiveMessageRequest.builder().queueUrl(queueUrl).maxNumberOfMessages(5).build()
-            )
-        //
-        //        assertEquals(1, receiveMessagesResponse.messages().size)
-        //        assertEquals("this is a test message",
-        println(receiveMessagesResponse.messages())
-    }
 }
