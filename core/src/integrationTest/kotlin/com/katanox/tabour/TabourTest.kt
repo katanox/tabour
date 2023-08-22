@@ -1,6 +1,8 @@
 package com.katanox.tabour
 
 import com.katanox.tabour.configuration.core.tabour
+import com.katanox.tabour.configuration.sqs.sqsConsumer
+import com.katanox.tabour.configuration.sqs.sqsConsumerConfiguration
 import com.katanox.tabour.configuration.sqs.sqsProducer
 import com.katanox.tabour.configuration.sqs.sqsRegistry
 import com.katanox.tabour.configuration.sqs.sqsRegistryConfiguration
@@ -13,10 +15,11 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.withPollDelay
 import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -86,6 +89,53 @@ class TabourTest {
         sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(nonFifoQueueUrl).build())
         sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(fifoQueueUrl).build())
     }
+
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consume messages`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration(
+                    "test-registry",
+                    StaticCredentialsProvider.create(credentials),
+                    Region.of(localstack.region)
+                ) {
+                    this.endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var counter = 0
+
+            val producer =
+                sqsProducer(URL(nonFifoQueueUrl), "test-producer") { onError = { println(it) } }
+            val consumer =
+                sqsConsumer(URL(nonFifoQueueUrl)) {
+                    this.onSuccess = {
+                        counter++
+                        true
+                    }
+                    this.onError = ::println
+                    this.config = sqsConsumerConfiguration {
+                        sleepTime = Duration.ofMillis(200)
+                        consumeWhile = { counter < 1 }
+                    }
+                }
+
+            sqsRegistry.addConsumer(consumer).addProducer(producer)
+            container.register(sqsRegistry)
+            container.start()
+
+            container.produceSqsMessage("test-registry", "test-producer") {
+                NonFifoQueueData("this is a test message")
+            }
+
+            // after 2 seconds, assert that we fetched the 1 message we produced earlier
+            await.withPollDelay(Duration.ofSeconds(2)).untilAsserted {
+                assertEquals(1, counter)
+            }
+        }
 
     @Test
     @Tag("sqs-producer-test")
