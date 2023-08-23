@@ -19,7 +19,7 @@ open class TabourConfigurer {
 
     @Bean
     @Lazy(false)
-    open fun t(context: ConfigurableApplicationContext): Tabour {
+    open fun setupTabour(context: ConfigurableApplicationContext): Tabour {
         val annotatedBeans: Map<String, Any> =
             context.getBeansWithAnnotation(AutoconfigureTabour::class.java)
 
@@ -27,27 +27,32 @@ open class TabourConfigurer {
         return if (annotatedBeans.isNotEmpty() && annotatedBeans.size == 1) {
             val mainClass = ClassUtils.getUserClass(annotatedBeans.values.first())
 
-            val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
-
             val beanFactory = context.beanFactory
 
-            if (annotation != null) {
-                val registries = beanFactory.getBeansOfType(Registry::class.java).values.toList()
-                val threads =
-                    context.environment.getProperty("tabour.config.num-of-threads", Int::class.java)
-                        ?: 2
+            val threads =
+                context.environment.getProperty("tabour.config.num-of-threads", Int::class.java)
+                    ?: 2
 
-                if (registries.isNotEmpty()) {
-                    tabourBean(registries, threads)
-                } else {
-                    tabourBean(emptyList(), 0)
-                }
-            } else {
-                tabourBean(emptyList(), 0)
+            constructTabourContainer(mainClass, threads) {
+                beanFactory.getBeansOfType(Registry::class.java).values.toList()
             }
         } else {
-            tabourBean(emptyList(), 0)
+            tabourBean(emptyList(), 1)
         }
+    }
+}
+
+internal fun <T> constructTabourContainer(
+    c: Class<T>,
+    numOfThreads: Int = 1,
+    registriesProvider: () -> List<Registry<*>>
+): Tabour {
+    val annotation = c.getAnnotation(AutoconfigureTabour::class.java)
+
+    return if (annotation != null) {
+        tabourBean(registriesProvider(), numOfThreads)
+    } else {
+        tabourBean(emptyList(), numOfThreads)
     }
 }
 

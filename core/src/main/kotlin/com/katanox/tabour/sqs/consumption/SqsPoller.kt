@@ -101,7 +101,7 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
         }
     }
 
-    private suspend fun acknowledge(messages: List<Message>, queueUrl: URL) {
+    private fun acknowledge(messages: List<Message>, queueUrl: URL) {
         val entries =
             messages.map {
                 DeleteMessageBatchRequestEntry.builder()

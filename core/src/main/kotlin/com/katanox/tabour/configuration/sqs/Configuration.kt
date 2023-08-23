@@ -11,12 +11,22 @@ import java.net.URL
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 
-/** Creates a new [SqsRegistry] */
-fun <T> sqsRegistry(
+fun <T> sqsRegistryConfiguration(
+    key: T,
+    credentialsProvider: AwsCredentialsProvider,
+    region: Region,
+    init: SqsRegistry.Configuration<T>.() -> Unit
+): SqsRegistry.Configuration<T> =
+    config(SqsRegistry.Configuration(key, credentialsProvider, region), init)
+
+fun <T> sqsRegistryConfiguration(
     key: T,
     credentialsProvider: AwsCredentialsProvider,
     region: Region
-): SqsRegistry<T> = SqsRegistry(SqsRegistry.Configuration(key, credentialsProvider, region))
+): SqsRegistry.Configuration<T> = SqsRegistry.Configuration(key, credentialsProvider, region)
+
+/** Creates a new [SqsRegistry] */
+fun <T> sqsRegistry(config: SqsRegistry.Configuration<T>): SqsRegistry<T> = SqsRegistry(config)
 
 /**
  * Creates a new [SqsConsumer] which can be registered to [SqsRegistry]. The [url] is the url of the
