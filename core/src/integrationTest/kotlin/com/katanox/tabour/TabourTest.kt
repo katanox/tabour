@@ -16,7 +16,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
-import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.withPollDelay
 import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.AfterAll
@@ -124,7 +123,7 @@ class TabourTest {
             container.register(sqsRegistry)
             container.start()
 
-            container.produceSqsMessage("test-registry", "test-producer") {
+            container.produceMessage("test-registry", "test-producer") {
                 NonFifoQueueData("this is a test message")
             }
 
@@ -173,7 +172,7 @@ class TabourTest {
             container.start()
 
             repeat(50) {
-                container.produceSqsMessage("test-registry", "test-producer") {
+                container.produceMessage("test-registry", "test-producer") {
                     NonFifoQueueData("this is a test message - $it")
                 }
             }
@@ -206,7 +205,7 @@ class TabourTest {
             container.register(sqsRegistry)
             container.start()
 
-            container.produceSqsMessage("test-registry", "test-producer") {
+            container.produceMessage("test-registry", "test-producer") {
                 NonFifoQueueData("this is a test message")
             }
 
@@ -256,7 +255,7 @@ class TabourTest {
             container.register(sqsRegistry)
             container.start()
 
-            container.produceSqsMessage("test-registry", "fifo-test-producer") {
+            container.produceMessage("test-registry", "fifo-test-producer") {
                 FifoQueueData("this is a fifo test message", "group1")
             }
 

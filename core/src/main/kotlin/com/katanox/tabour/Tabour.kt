@@ -56,7 +56,7 @@ class Tabour internal constructor(val config: Configuration) {
      *
      * Note: If the registry is not found (either wrong Registry or Producer key), nothing happens.
      */
-    suspend fun <T, K> produceSqsMessage(
+    suspend fun <T, K> produceMessage(
         registryKey: K,
         producerKey: T,
         produceFn: () -> SqsDataForProduction

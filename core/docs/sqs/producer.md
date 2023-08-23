@@ -36,9 +36,12 @@ Example
 ```kotlin
 val tabourContainer = tabour {}
 // setup and register registries...
-tabourContainer.produceSqsMessage("registry-key", "producer-key") {
-    Pair("message", "message-group-id")
+tabourContainer.produceMessage("registry-key", "producer-key") {
+    FifoQueueData("message", "message-group-id")
+    // or
+    NonFifoQueueData("message")
 }
+
 ```
 
 This will search for the appropriate registry and producer and use its configuration to produce the message
