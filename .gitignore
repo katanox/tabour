@@ -27,8 +27,14 @@ buildNumber.properties
 .springBeans
 .sts4-cache
 
+core/build
+spring/build
+proto/build
+.gradle
+
 ### IntelliJ IDEA ###
 .idea
 *.iws
 *.iml
 *.ipr
+proto

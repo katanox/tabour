@@ -1,4 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.katanox.tabour.config.TabourAutoConfigs,\
-com.katanox.tabour.integration.sqs.config.SqsConfiguration,\
-com.katanox.tabour.integration.sqs.config.SqsConsumptionConfiguration
