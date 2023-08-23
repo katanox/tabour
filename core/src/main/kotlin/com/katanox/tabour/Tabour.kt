@@ -24,12 +24,12 @@ import kotlinx.coroutines.newFixedThreadPoolContext
  *
  * By default, the container will allocate 4 threads which can be configured using [Configuration]
  */
-class Tabour internal constructor(configuration: Configuration) {
+class Tabour internal constructor(val config: Configuration) {
     private val registries: MutableSet<Registry<*>> = mutableSetOf()
 
     @OptIn(DelicateCoroutinesApi::class)
     private val dispatcher: CoroutineDispatcher =
-        newFixedThreadPoolContext(configuration.numOfThreads, "tabour")
+        newFixedThreadPoolContext(config.numOfThreads, "tabour")
 
     private var consumptionStarted: Boolean = false
 
@@ -82,6 +82,8 @@ class Tabour internal constructor(configuration: Configuration) {
             registries.forEach { scope.launch { it.stopConsumption() } }
         }
     }
+
+    fun running(): Boolean = consumptionStarted
 
     class Configuration : Config {
         var numOfThreads: Int = 4
