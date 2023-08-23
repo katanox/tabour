@@ -6,6 +6,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -49,7 +50,7 @@ class TabourConfigurerTest(private val context: ApplicationContext) {
 
     @Test
     fun `test constructTabourContainer with annotation and registries starts the container`() =
-        runTest {
+        runTest(UnconfinedTestDispatcher()) {
             val tabourContainer =
                 constructTabourContainer(ClassWithAnnotation::class.java, 2) {
                     listOf(
