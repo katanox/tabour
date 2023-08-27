@@ -5,6 +5,8 @@ import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URL
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -18,22 +20,31 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsProducerExecutor) {
     private var consume: Boolean = false
+    private val jobs: MutableList<Job> = mutableListOf()
+
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consume = true
         // for each consumer, spawn a new coroutine
         consumers.forEach {
             launch {
-                while (consume && it.config.consumeWhile()) {
-                    accept(it)
-                    delay(it.config.sleepTime.toMillis())
+                    while (consume && it.config.consumeWhile()) {
+                        accept(it)
+                        delay(it.config.sleepTime.toMillis())
+                    }
                 }
-            }
+                .also(jobs::add)
         }
     }
 
-    fun stopPolling() {
+    suspend fun stopPolling() {
         consume = false
+        jobs.forEach { it.cancelAndJoin() }
+        jobs.clear()
     }
+
+    internal fun isPolling() = consume
+
+    internal fun jobs() = jobs
 
     private suspend fun accept(consumer: SqsConsumer) = coroutineScope {
         repeat(consumer.config.concurrency) {

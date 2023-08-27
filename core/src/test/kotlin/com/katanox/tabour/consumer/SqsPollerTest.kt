@@ -16,6 +16,11 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import java.net.URL
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
@@ -27,6 +32,7 @@ import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 
+@ExperimentalCoroutinesApi
 class SqsPollerTest {
     val successFunc: suspend (Message) -> Boolean = mockk()
     val errorFunc: (ConsumptionError) -> Unit = mockk()
@@ -261,4 +267,54 @@ class SqsPollerTest {
             errorFunc(ConsumptionError.AwsError(AwsErrorDetails.builder().build()))
         }
     }
+
+    @Test
+    fun `start polling`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val sqs: SqsClient = mockk()
+            val executor = SqsProducerExecutor(sqs)
+            val sqsPoller = SqsPoller(sqs, executor)
+            var counter = 0
+            val consumer =
+                sqsConsumer(URL("https://katanox.com")) {
+                    config = sqsConsumerConfiguration {
+                        consumeWhile = {
+                            counter++
+                            counter < 2
+                        }
+                    }
+                }
+
+            sqsPoller.poll(listOf(consumer))
+
+            assertTrue(sqsPoller.isPolling())
+            assertEquals(1, sqsPoller.jobs().size)
+
+            sqsPoller.stopPolling()
+        }
+
+    @Test
+    fun `stop polling`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val sqs: SqsClient = mockk()
+            val executor = SqsProducerExecutor(sqs)
+            val sqsPoller = SqsPoller(sqs, executor)
+            var counter = 0
+            val consumer =
+                sqsConsumer(URL("https://katanox.com")) {
+                    config = sqsConsumerConfiguration {
+                        consumeWhile = {
+                            counter++
+                            counter < 2
+                        }
+                    }
+                }
+
+            sqsPoller.poll(listOf(consumer))
+
+            sqsPoller.stopPolling()
+
+            assertFalse(sqsPoller.isPolling())
+            assertEquals(0, sqsPoller.jobs().size)
+        }
 }
