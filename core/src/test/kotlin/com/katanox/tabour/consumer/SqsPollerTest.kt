@@ -31,6 +31,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
+import java.time.Duration
 
 @ExperimentalCoroutinesApi
 class SqsPollerTest {
@@ -303,9 +304,10 @@ class SqsPollerTest {
             val consumer =
                 sqsConsumer(URL("https://katanox.com")) {
                     config = sqsConsumerConfiguration {
+                        sleepTime = Duration.ofSeconds(2)
                         consumeWhile = {
                             counter++
-                            counter < 2
+                            counter < 1000
                         }
                     }
                 }
