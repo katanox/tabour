@@ -6,57 +6,53 @@ import com.katanox.tabour.configuration.core.tabour
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.springframework.boot.autoconfigure.AutoConfiguration
-import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Lazy
+import org.springframework.context.event.ContextRefreshedEvent
+import org.springframework.stereotype.Component
 import org.springframework.util.ClassUtils
 
 val scope = CoroutineScope(Dispatchers.IO)
 
-@AutoConfiguration
-open class TabourConfigurer {
+@Component
+class ContextRefreshedEventListener(
+    @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int
+) : ApplicationListener<ContextRefreshedEvent?> {
+    override fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
+        if (contextRefreshedEvent?.applicationContext != null) {
+            setupTabour(contextRefreshedEvent.applicationContext)
+        }
+    }
 
-    @Bean
-    @Lazy(false)
-    open fun setupTabour(context: ConfigurableApplicationContext): Tabour {
+    @Bean @Lazy(false) fun tabourBean(): Tabour = tabourSetup(emptyList(), threadsCount)
+
+    private fun setupTabour(context: ApplicationContext) {
         val annotatedBeans: Map<String, Any> =
             context.getBeansWithAnnotation(AutoconfigureTabour::class.java)
 
         // only one class should be annotated with this annotation
-        return if (annotatedBeans.isNotEmpty() && annotatedBeans.size == 1) {
+        if (annotatedBeans.isNotEmpty() && annotatedBeans.size == 1) {
             val mainClass = ClassUtils.getUserClass(annotatedBeans.values.first())
 
-            val beanFactory = context.beanFactory
+            val tabourContainers = context.getBeansOfType(Tabour::class.java)
 
-            val threads =
-                context.environment.getProperty("tabour.config.num-of-threads", Int::class.java)
-                    ?: 2
+            val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
 
-            constructTabourContainer(mainClass, threads) {
-                beanFactory.getBeansOfType(Registry::class.java).values.toList()
+            if (annotation != null && tabourContainers.size == 1) {
+                val container = tabourContainers.values.toList().first()
+
+                container.updateRegistries(
+                    context.getBeansOfType(Registry::class.java).values.toList()
+                )
             }
-        } else {
-            tabourBean(emptyList(), 1)
         }
     }
 }
 
-internal fun <T> constructTabourContainer(
-    c: Class<T>,
-    numOfThreads: Int = 1,
-    registriesProvider: () -> List<Registry<*>>
-): Tabour {
-    val annotation = c.getAnnotation(AutoconfigureTabour::class.java)
-
-    return if (annotation != null) {
-        tabourBean(registriesProvider(), numOfThreads)
-    } else {
-        tabourBean(emptyList(), numOfThreads)
-    }
-}
-
-private fun tabourBean(registries: List<Registry<*>>, threads: Int): Tabour {
+private fun tabourSetup(registries: List<Registry<*>>, threads: Int): Tabour {
     val container = tabour { this.numOfThreads = threads }
 
     registries.fold(container) { tabourContainer, registry ->

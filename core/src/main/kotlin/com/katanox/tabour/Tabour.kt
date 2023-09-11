@@ -42,6 +42,12 @@ class Tabour internal constructor(val config: Configuration) {
      */
     fun <T> register(registry: Registry<T>): Tabour = this.apply { registries.add(registry) }
 
+    fun updateRegistries(registries: Iterable<Registry<*>>) =
+        this.apply {
+            this.registries.clear()
+            this.registries.addAll(registries.toMutableSet())
+        }
+
     /**
      * Uses a registered SqsProducer to produce a message. The producer must be part of a sqs
      * registry that has been itself registered
