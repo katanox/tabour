@@ -17,6 +17,8 @@ import org.springframework.util.ClassUtils
 
 val scope = CoroutineScope(Dispatchers.IO)
 
+class TabourConfigurer
+
 @Component
 class ContextRefreshedEventListener(
     @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int
@@ -27,7 +29,7 @@ class ContextRefreshedEventListener(
         }
     }
 
-    @Bean @Lazy(false) fun tabourBean(): Tabour = tabourSetup(emptyList(), threadsCount)
+    @Bean @Lazy(false) fun tabourBean(): Tabour = tabour { this.numOfThreads = threadsCount }
 
     private fun setupTabour(context: ApplicationContext) {
         val annotatedBeans: Map<String, Any> =
@@ -47,21 +49,9 @@ class ContextRefreshedEventListener(
                 container.updateRegistries(
                     context.getBeansOfType(Registry::class.java).values.toList()
                 )
+
+                scope.launch { container.start() }
             }
         }
     }
-}
-
-private fun tabourSetup(registries: List<Registry<*>>, threads: Int): Tabour {
-    val container = tabour { this.numOfThreads = threads }
-
-    registries.fold(container) { tabourContainer, registry ->
-        tabourContainer.apply { this.register(registry) }
-    }
-
-    if (registries.isNotEmpty()) {
-        scope.launch { container.start() }
-    }
-
-    return container
 }
