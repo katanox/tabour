@@ -45,7 +45,7 @@ class Tabour internal constructor(val config: Configuration) {
     fun updateRegistries(registries: Iterable<Registry<*>>) =
         this.apply {
             this.registries.clear()
-            this.registries.addAll(registries.toMutableSet())
+            this.registries.addAll(registries)
         }
 
     /**
