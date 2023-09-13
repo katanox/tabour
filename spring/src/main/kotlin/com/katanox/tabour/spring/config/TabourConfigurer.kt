@@ -56,11 +56,14 @@ internal fun maybeLaunchTabour(
     registriesProvider: () -> List<Registry<*>>
 ) {
     val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
-    val registries = registriesProvider()
 
-    if (annotation != null && registries.isNotEmpty()) {
-        tabourContainer.updateRegistries(registries)
+    if (annotation != null) {
+        val registries = registriesProvider()
 
-        scope.launch { tabourContainer.start() }
+        if (registries.isNotEmpty()) {
+            tabourContainer.updateRegistries(registries)
+
+            scope.launch { tabourContainer.start() }
+        }
     }
 }
