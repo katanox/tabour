@@ -41,17 +41,26 @@ class ContextRefreshedEventListener(
 
             val tabourContainers = context.getBeansOfType(Tabour::class.java)
 
-            val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
-
-            if (annotation != null && tabourContainers.size == 1) {
-                val container = tabourContainers.values.toList().first()
-
-                container.updateRegistries(
+            if (tabourContainers.size == 1) {
+                maybeLaunchTabour(mainClass, tabourContainers.values.first()) {
                     context.getBeansOfType(Registry::class.java).values.toList()
-                )
-
-                scope.launch { container.start() }
+                }
             }
         }
+    }
+}
+
+internal fun maybeLaunchTabour(
+    mainClass: Class<*>,
+    tabourContainer: Tabour,
+    registriesProvider: () -> List<Registry<*>>
+) {
+    val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
+    val registries = registriesProvider()
+
+    if (annotation != null && registries.isNotEmpty()) {
+        tabourContainer.updateRegistries(registries)
+
+        scope.launch { tabourContainer.start() }
     }
 }
