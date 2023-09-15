@@ -42,7 +42,7 @@ class ContextRefreshedEventListener(
             val tabourContainers = context.getBeansOfType(Tabour::class.java)
 
             if (tabourContainers.size == 1) {
-                maybeLaunchTabour(mainClass, tabourContainers.values.first()) {
+                launchTabour(mainClass, tabourContainers.values.first()) {
                     context.getBeansOfType(Registry::class.java).values.toList()
                 }
             }
@@ -50,7 +50,11 @@ class ContextRefreshedEventListener(
     }
 }
 
-internal fun maybeLaunchTabour(
+/**
+ * starts the tabour container only if the annotation [AutoconfigureTabour] is present and there are
+ * [Registry] instances available in the spring context
+ */
+internal fun launchTabour(
     mainClass: Class<*>,
     tabourContainer: Tabour,
     registriesProvider: () -> List<Registry<*>>

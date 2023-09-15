@@ -19,7 +19,7 @@ class TabourConfigurerTest {
     fun `test constructTabourContainer without annotation does not start tabour`() {
         val tabourContainer = tabour { numOfThreads = 1 }
 
-        maybeLaunchTabour(ClassWithoutAnnotation::class.java, tabourContainer) { emptyList() }
+        launchTabour(ClassWithoutAnnotation::class.java, tabourContainer) { emptyList() }
 
         assertFalse(tabourContainer.running())
     }
@@ -29,7 +29,7 @@ class TabourConfigurerTest {
         runTest {
             val tabourContainer = tabour { numOfThreads = 1 }
 
-            maybeLaunchTabour(ClassWithoutAnnotation::class.java, tabourContainer) { emptyList() }
+            launchTabour(ClassWithoutAnnotation::class.java, tabourContainer) { emptyList() }
 
             assertFalse(tabourContainer.running())
         }
@@ -39,7 +39,7 @@ class TabourConfigurerTest {
         runTest(UnconfinedTestDispatcher()) {
             val tabourContainer = tabour { numOfThreads = 1 }
 
-            maybeLaunchTabour(ClassWithAnnotation::class.java, tabourContainer) {
+            launchTabour(ClassWithAnnotation::class.java, tabourContainer) {
                 listOf(
                     sqsRegistry(
                         sqsRegistryConfiguration(
