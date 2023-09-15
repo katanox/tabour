@@ -61,9 +61,12 @@ internal fun maybeLaunchTabour(
         val registries = registriesProvider()
 
         if (registries.isNotEmpty()) {
-            tabourContainer.updateRegistries(registries)
-
-            scope.launch { tabourContainer.start() }
+            registries
+                .fold(tabourContainer) { container, registry -> container.register(registry) }
+                .apply {
+                    val container = this
+                    scope.launch { container.start() }
+                }
         }
     }
 }
