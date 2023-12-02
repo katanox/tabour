@@ -8,6 +8,7 @@ import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsMessageProduced
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URL
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -19,10 +20,15 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
+private data class ToBeAcknowledged(val url: URL, val message: Message)
+
 internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsProducerExecutor) {
     private var consume: Boolean = false
+    private val toAcknowledge = Channel<ToBeAcknowledged>()
+
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consume = true
+
         // for each consumer, spawn a new coroutine
         consumers.forEach {
             launch {
@@ -32,6 +38,8 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                 }
             }
         }
+
+        launch { startAcknowledger() }
     }
 
     fun stopPolling() {
@@ -65,77 +73,82 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                     val messages = sqs.receiveMessage(request).messages()
 
                     if (messages.isNotEmpty()) {
-                        val pipeline = consumer.pipeline
-                        val toAcknowledge: MutableList<Message> = mutableListOf()
-
-                        // consume the messages in parallel
-                        messages.forEach { message ->
-                            launch {
-                                val consumed =
-                                    pipeline?.producer?.let {
-                                        var consumedFromPipeline = false
-
-                                        val produceData: () -> SqsDataForProduction = {
-                                            pipeline.transformer(message).also {
-                                                transformationResult ->
-                                                consumedFromPipeline =
-                                                    !transformationResult.message.isNullOrEmpty()
-                                            }
-                                        }
-
-                                        val messageProduced:
-                                            (SqsDataForProduction, SqsMessageProduced) -> Unit =
-                                            { _, _ ->
-                                                Unit
-                                            }
-                                        val failedToProduceData = pipeline.failedHandler
-
-                                        executor.produce(
-                                            it,
-                                            DataProductionConfiguration(
-                                                produceData,
-                                                messageProduced,
-                                                failedToProduceData
-                                            )
-                                        )
-
-                                        consumedFromPipeline
-                                    }
-                                        ?: consumer.onSuccess(message)
-
-                                if (consumed) {
-                                    toAcknowledge.add(message)
-                                } else {
-                                    // otherwise, we use the error handler of the consumer
-                                    consumer.onError(
-                                        ConsumptionError.UnsuccessfulConsumption(message)
-                                    )
-                                }
-
-                                toAcknowledge.acknowledge(consumer.queueUri)
-                            }
-                        }
+                        handleMessages(messages, consumer)
                     }
                 }
             }
         }
     }
 
-    private fun List<Message>.acknowledge(queueUrl: URL) {
-        val entries =
-            this.map {
-                DeleteMessageBatchRequestEntry.builder()
-                    .id(it.messageId())
-                    .receiptHandle(it.receiptHandle())
-                    .build()
+    private suspend fun handleMessages(messages: List<Message>, consumer: SqsConsumer) =
+        coroutineScope {
+            val pipeline = consumer.pipeline
+
+            messages.forEach { message ->
+                launch {
+                    val consumed =
+                        pipeline?.producer?.let {
+                            var consumedFromPipeline = false
+
+                            val produceData: () -> SqsDataForProduction = {
+                                pipeline.transformer(message).also { transformationResult ->
+                                    consumedFromPipeline =
+                                        !transformationResult.message.isNullOrEmpty()
+                                }
+                            }
+
+                            val messageProduced:
+                                (SqsDataForProduction, SqsMessageProduced) -> Unit =
+                                { _, _ ->
+                                }
+                            val failedToProduceData = pipeline.failedHandler
+
+                            executor.produce(
+                                it,
+                                DataProductionConfiguration(
+                                    produceData,
+                                    messageProduced,
+                                    failedToProduceData
+                                )
+                            )
+
+                            consumedFromPipeline
+                        }
+                            ?: consumer.onSuccess(message)
+
+                    if (consumed) {
+                        toAcknowledge.send(ToBeAcknowledged(consumer.queueUri, message))
+                    } else {
+                        // otherwise, we use the error handler of the consumer
+                        consumer.onError(ConsumptionError.UnsuccessfulConsumption(message))
+                    }
+                }
             }
+        }
 
-        val request =
-            DeleteMessageBatchRequest.builder()
-                .queueUrl(queueUrl.toString())
-                .entries(entries)
-                .build()
+    private suspend fun startAcknowledger() {
+        while (consume) {
+            buildList { repeat(10) { this.add(toAcknowledge.receive()) } }
+                .groupBy(ToBeAcknowledged::url)
+                .forEach { (url, messages) ->
+                    val entries =
+                        messages.map {
+                            DeleteMessageBatchRequestEntry.builder()
+                                .id(it.message.messageId())
+                                .receiptHandle(it.message.receiptHandle())
+                                .build()
+                        }
 
-        sqs.deleteMessageBatch(request)
+                    val request =
+                        DeleteMessageBatchRequest.builder()
+                            .queueUrl(url.toString())
+                            .entries(entries)
+                            .build()
+
+                    sqs.deleteMessageBatch(request)
+                }
+
+            delay(5_000)
+        }
     }
 }

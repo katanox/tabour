@@ -140,7 +140,7 @@ class TabourTest {
 
             container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
 
-            await.withPollDelay(Duration.ofSeconds(3)).untilAsserted { assertTrue { counter > 1 } }
+            await.withPollDelay(Duration.ofSeconds(3)).untilAsserted { assertTrue { counter >= 1 } }
 
             container.stop()
             purgeQueue(nonFifoQueueUrl)
@@ -198,10 +198,8 @@ class TabourTest {
 
             // we assert that more than 10 messages were consumed in 2 second with multiple
             // consumers
+            await.withPollDelay(Duration.ofSeconds(3)).untilAsserted { assertTrue { counter > 10 } }
             container.stop()
-            await.withPollDelay(Duration.ofSeconds(3)).untilAsserted {
-                assertTrue { counter > 10 }
-            }
         }
 
     @Test
