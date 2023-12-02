@@ -2,9 +2,10 @@ package com.katanox.tabour.sqs
 
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
+import com.katanox.tabour.error.ProducerNotFound
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
-import com.katanox.tabour.sqs.production.SqsDataForProduction
+import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
@@ -71,11 +72,16 @@ internal constructor(
         sqsPoller.stopPolling()
     }
 
-    suspend fun <T> produce(producerKey: T, produceFn: () -> SqsDataForProduction) {
+    suspend fun <T> produce(
+        producerKey: T,
+        productionConfiguration: SqsDataProductionConfiguration
+    ) {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
-            sqsProducerExecutor.produce(producer, produceFn)
+            sqsProducerExecutor.produce(producer, productionConfiguration)
+        } else {
+            productionConfiguration.resourceNotFound(ProducerNotFound(producerKey))
         }
     }
 

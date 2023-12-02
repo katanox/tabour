@@ -1,12 +1,18 @@
 package com.katanox.tabour.sqs.production
 
 import com.katanox.tabour.retry
+import java.time.Instant
+import software.amazon.awssdk.awscore.exception.AwsServiceException
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 internal class SqsProducerExecutor(private val sqs: SqsClient) {
-    suspend fun <T> produce(producer: SqsProducer<T>, produceFn: () -> SqsDataForProduction) {
-        val produceData = produceFn()
+    suspend fun <T> produce(
+        producer: SqsProducer<T>,
+        productionConfiguration: SqsDataProductionConfiguration
+    ) {
+        val produceData = productionConfiguration.produceData()
 
         val url = producer.queueUrl.toString()
 
@@ -28,16 +34,54 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
             retry(
                 producer.config.retries,
                 {
-                    producer.onError(
-                        ProducerError(
-                            producerKey = producer.key,
-                            message = it.message
-                                    ?: "Unknown exception during production (producer key: [${producer.key}])"
-                        )
-                    )
+                    val error =
+                        when (it) {
+                            is AwsServiceException ->
+                                ProductionError.AwsError(details = it.awsErrorDetails())
+                            is SdkClientException -> ProductionError.AwsSdkClientError(it)
+                            else -> ProductionError.UnrecognizedError(it)
+                        }
+
+                    producer.onError(error)
+                    producer.notifyPlugs(produceData.message, error)
                 }
             ) {
-                sqs.sendMessage(request)
+                val response = sqs.sendMessage(request)
+
+                if (response.messageId().isNotEmpty()) {
+                    productionConfiguration.dataProduced(
+                        produceData,
+                        SqsMessageProduced(response.messageId(), Instant.now())
+                    )
+                }
+
+                producer.notifyPlugs(produceData.message)
+            }
+        } else {
+            val error =
+                when {
+                    url.isEmpty() -> ProductionError.EmptyUrl(producer.queueUrl)
+                    produceData.message.isNullOrEmpty() -> ProductionError.EmptyMessage(produceData)
+                    else -> null
+                }
+
+            if (error != null) {
+                producer.notifyPlugs(produceData.message, error)
+            }
+        }
+    }
+
+    private suspend fun <T> SqsProducer<T>.notifyPlugs(
+        message: String?,
+        error: ProductionError? = null
+    ) {
+        if (this.plugs.isNotEmpty()) {
+            this.plugs.forEach { plug ->
+                if (error == null) {
+                    plug.onSuccess(message)
+                } else {
+                    plug.onFailure(message, error)
+                }
             }
         }
     }

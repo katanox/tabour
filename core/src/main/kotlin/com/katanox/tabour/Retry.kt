@@ -2,7 +2,7 @@ package com.katanox.tabour
 
 suspend inline fun retry(
     repeatTimes: Int,
-    onError: (Exception) -> Unit,
+    onError: (Throwable) -> Unit,
     crossinline f: suspend () -> Unit
 ) {
     var tries = 0
@@ -11,7 +11,7 @@ suspend inline fun retry(
         try {
             f()
             break
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             tries++
 
             if (tries == repeatTimes) {

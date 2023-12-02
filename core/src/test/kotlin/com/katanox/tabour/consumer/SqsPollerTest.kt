@@ -16,6 +16,10 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import java.net.URL
+import kotlin.test.assertEquals
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
@@ -27,56 +31,63 @@ import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 
+@ExperimentalCoroutinesApi
 class SqsPollerTest {
-    val successFunc: suspend (Message) -> Boolean = mockk()
-    val errorFunc: (ConsumptionError) -> Unit = mockk()
 
     @Test
-    fun `test accept with one worker for one message runs once the successFn`() = runTest {
-        val sqs: SqsClient = mockk()
-        val executor = SqsProducerExecutor(sqs)
-        val sqsPoller = SqsPoller(sqs, executor)
-        var counter = 0
-        val configuration =
-            spyk(
-                sqsConsumer(URL("https://katanox.com")) {
-                    onSuccess = successFunc
-                    onError = errorFunc
-                    config = sqsConsumerConfiguration {
-                        concurrency = 1
-                        consumeWhile = {
+    fun `test accept with one worker for one message runs once the successFn`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val successFunc: suspend (Message) -> Boolean = mockk()
+            val errorFunc: (ConsumptionError) -> Unit = mockk()
+
+            val sqs: SqsClient = mockk()
+            val executor = SqsProducerExecutor(sqs)
+            val sqsPoller = SqsPoller(sqs, executor)
+            var counter = 0
+            val configuration =
+                spyk(
+                    sqsConsumer(URL("https://katanox.com")) {
+                        onSuccess = {
                             counter++
-                            counter < 2
+                            true
+                        }
+                        onError = errorFunc
+
+                        config = sqsConsumerConfiguration {
+                            concurrency = 1
+                            consumeWhile = { counter < 1 }
                         }
                     }
-                }
-            )
-        val request: ReceiveMessageRequest =
-            ReceiveMessageRequest.builder()
-                .queueUrl("https://katanox.com")
-                .maxNumberOfMessages(10)
-                .waitTimeSeconds(0)
-                .build()
+                )
+            val request: ReceiveMessageRequest =
+                ReceiveMessageRequest.builder()
+                    .queueUrl("https://katanox.com")
+                    .maxNumberOfMessages(10)
+                    .waitTimeSeconds(0)
+                    .build()
 
-        val message: Message =
-            Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+            val message: Message =
+                Message.builder().body("body").receiptHandle("1").messageId("12345").build()
 
-        val response: ReceiveMessageResponse =
-            ReceiveMessageResponse.builder().messages(message).build()
+            val response: ReceiveMessageResponse =
+                ReceiveMessageResponse.builder().messages(message).build()
 
-        coEvery { sqs.receiveMessage(request) }.returns(response)
-        coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
-            .returns(mockk<DeleteMessageBatchResponse>())
-        coEvery { successFunc(message) }.returns(true)
+            coEvery { sqs.receiveMessage(request) }.returns(response)
+            coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
+                .returns(mockk<DeleteMessageBatchResponse>())
+            coEvery { successFunc(message) }.returns(true)
 
-        sqsPoller.poll(listOf(configuration))
+            launch { sqsPoller.poll(listOf(configuration)) }
 
-        coVerify(exactly = 1) { successFunc(message) }
-        verify(exactly = 0) { errorFunc(any()) }
-    }
+            launch { sqsPoller.stopPolling() }
+
+            verify(exactly = 0) { errorFunc(any()) }
+            assertEquals(1, counter)
+        }
 
     @Test
     fun `test accept with pipeline`() = runTest {
+        val errorFunc: (ConsumptionError) -> Unit = mockk()
         val sqs: SqsClient = mockk()
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
@@ -129,6 +140,8 @@ class SqsPollerTest {
     @Test
     fun `test accept with pipeline which returns null as body does not consider the message consumed`() =
         runTest {
+            val errorFunc: (ConsumptionError) -> Unit = mockk()
+
             val sqs: SqsClient = mockk()
             val executor = SqsProducerExecutor(sqs)
             val sqsPoller = SqsPoller(sqs, executor)
@@ -178,51 +191,57 @@ class SqsPollerTest {
             verify(exactly = 1) { errorFunc(ConsumptionError.UnsuccessfulConsumption(message)) }
         }
     @Test
-    fun `test accept with 5 workers for one message runs twice the successFn`() = runTest {
-        val sqs: SqsClient = mockk()
-        val executor = SqsProducerExecutor(sqs)
-        val sqsPoller = SqsPoller(sqs, executor)
-        var counter = 0
-        val configuration =
-            spyk(
-                sqsConsumer(URL("https://katanox.com")) {
-                    onSuccess = successFunc
-                    onError = errorFunc
-                    config = sqsConsumerConfiguration {
-                        concurrency = 5
-                        consumeWhile = {
+    fun `test accept with 5 workers for one message runs 5 times the successFn`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val successFunc: suspend (Message) -> Boolean = mockk()
+            val errorFunc: (ConsumptionError) -> Unit = mockk()
+
+            val sqs: SqsClient = mockk()
+            val executor = SqsProducerExecutor(sqs)
+            val sqsPoller = SqsPoller(sqs, executor)
+            var counter = 0
+            val configuration =
+                spyk(
+                    sqsConsumer(URL("https://katanox.com")) {
+                        onSuccess = {
                             counter++
-                            counter < 2
+                            true
+                        }
+                        onError = errorFunc
+                        config = sqsConsumerConfiguration {
+                            concurrency = 5
+                            consumeWhile = { counter < 5 }
                         }
                     }
-                }
-            )
-        val request: ReceiveMessageRequest =
-            ReceiveMessageRequest.builder()
-                .queueUrl("https://katanox.com")
-                .maxNumberOfMessages(10)
-                .waitTimeSeconds(0)
-                .build()
+                )
+            val request: ReceiveMessageRequest =
+                ReceiveMessageRequest.builder()
+                    .queueUrl("https://katanox.com")
+                    .maxNumberOfMessages(10)
+                    .waitTimeSeconds(0)
+                    .build()
 
-        val message: Message =
-            Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+            val message: Message =
+                Message.builder().body("body").receiptHandle("1").messageId("12345").build()
 
-        val response: ReceiveMessageResponse =
-            ReceiveMessageResponse.builder().messages(message).build()
+            val response: ReceiveMessageResponse =
+                ReceiveMessageResponse.builder().messages(message).build()
 
-        coEvery { sqs.receiveMessage(request) }.returns(response)
-        coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
-            .returns(mockk<DeleteMessageBatchResponse>())
-        coEvery { successFunc(message) }.returns(true)
+            coEvery { sqs.receiveMessage(request) }.returns(response)
+            coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
+                .returns(mockk<DeleteMessageBatchResponse>())
+            coEvery { successFunc(message) }.returns(true)
 
-        sqsPoller.poll(listOf(configuration))
+            sqsPoller.poll(listOf(configuration))
 
-        coVerify(exactly = 5) { successFunc(message) }
-        verify(exactly = 0) { errorFunc(any()) }
-    }
+            assertEquals(5, counter)
+            verify(exactly = 0) { errorFunc(any()) }
+        }
 
     @Test
     fun `test accept an exception calls error fn`() = runTest {
+        val successFunc: suspend (Message) -> Boolean = mockk()
+        val errorFunc: (ConsumptionError) -> Unit = mockk()
         val sqs: SqsClient = mockk()
         val executor = SqsProducerExecutor(sqs)
         val sqsPoller = SqsPoller(sqs, executor)
