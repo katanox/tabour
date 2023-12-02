@@ -66,6 +66,7 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
 
                     if (messages.isNotEmpty()) {
                         val pipeline = consumer.pipeline
+                        val toAcknowledge: MutableList<Message> = mutableListOf()
 
                         // consume the messages in parallel
                         messages.forEach { message ->
@@ -103,15 +104,15 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                                         ?: consumer.onSuccess(message)
 
                                 if (consumed) {
-                                    // we acknowledge the message only if the consumption
-                                    // succeeded
-                                    acknowledge(messages, consumer.queueUri)
+                                    toAcknowledge.add(message)
                                 } else {
                                     // otherwise, we use the error handler of the consumer
                                     consumer.onError(
                                         ConsumptionError.UnsuccessfulConsumption(message)
                                     )
                                 }
+
+                                toAcknowledge.acknowledge(consumer.queueUri)
                             }
                         }
                     }
@@ -120,9 +121,9 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
         }
     }
 
-    private fun acknowledge(messages: List<Message>, queueUrl: URL) {
+    private fun List<Message>.acknowledge(queueUrl: URL) {
         val entries =
-            messages.map {
+            this.map {
                 DeleteMessageBatchRequestEntry.builder()
                     .id(it.messageId())
                     .receiptHandle(it.receiptHandle())
