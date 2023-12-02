@@ -200,7 +200,6 @@ class TabourTest {
             // consumers
             container.stop()
             await.withPollDelay(Duration.ofSeconds(3)).untilAsserted {
-                println(counter)
                 assertTrue { counter > 10 }
             }
         }
