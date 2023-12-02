@@ -56,7 +56,6 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
 
             if (startedConsumerIndexes.none { !it }) {
                 consume = false
-                break
             }
 
             delay(1000)
