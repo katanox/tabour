@@ -191,7 +191,7 @@ class SqsPollerTest {
             verify(exactly = 1) { errorFunc(ConsumptionError.UnsuccessfulConsumption(message)) }
         }
     @Test
-    fun `test accept with 5 workers for one message runs twice the successFn`() =
+    fun `test accept with 5 workers for one message runs 5 times the successFn`() =
         runTest(UnconfinedTestDispatcher()) {
             val successFunc: suspend (Message) -> Boolean = mockk()
             val errorFunc: (ConsumptionError) -> Unit = mockk()
@@ -203,14 +203,14 @@ class SqsPollerTest {
             val configuration =
                 spyk(
                     sqsConsumer(URL("https://katanox.com")) {
-                        onSuccess = successFunc
+                        onSuccess = {
+                            counter++
+                            true
+                        }
                         onError = errorFunc
                         config = sqsConsumerConfiguration {
                             concurrency = 5
-                            consumeWhile = {
-                                counter++
-                                counter < 2
-                            }
+                            consumeWhile = { counter < 5 }
                         }
                     }
                 )
@@ -234,7 +234,7 @@ class SqsPollerTest {
 
             sqsPoller.poll(listOf(configuration))
 
-            coVerify(exactly = 5) { successFunc(message) }
+            assertEquals(5, counter)
             verify(exactly = 0) { errorFunc(any()) }
         }
 

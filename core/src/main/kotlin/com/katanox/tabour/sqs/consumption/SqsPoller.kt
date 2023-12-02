@@ -8,6 +8,8 @@ import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsMessageProduced
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URL
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.coroutineScope
@@ -29,33 +31,34 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
 
     suspend fun poll(consumers: List<SqsConsumer>) = coroutineScope {
         consume = true
-
-        // for each consumer, spawn a new coroutine
-        //        consumers.forEach {
-        //            launch {
-        //                while (consume && it.config.consumeWhile()) {
-        //                    accept(it)
-        //                    delay(it.config.sleepTime.toMillis())
-        //                }
-        //            }
-        //        }
+        val startedConsumerIndexes = Array(consumers.size) { false }
+        val jobIndexes: Array<Job?> = Array(consumers.size) { null }
 
         launch { startAcknowledging() }
 
         while (consume) {
-            consumers.forEach {
-                if (it.config.consumeWhile()) {
-                    launch { accept(it) }
-                    delay(it.config.sleepTime.toMillis())
+            consumers.forEachIndexed { index, consumer ->
+                if (!startedConsumerIndexes[index] && consumer.config.consumeWhile()) {
+                    val job = launch {
+                        accept(consumer)
+                        delay(consumer.config.sleepTime.toMillis())
+                    }
+
+                    startedConsumerIndexes[index] = true
+                    jobIndexes[index] = job
+                } else if (startedConsumerIndexes[index] && !consumer.config.consumeWhile()) {
+                    jobIndexes[index]?.cancelAndJoin()
+
+                    startedConsumerIndexes[index] = false
+                    jobIndexes[index] = null
                 }
             }
 
-            println(consumers.none { it.config.consumeWhile() })
-
-            if (consumers.none { it.config.consumeWhile() }) {
+            if (startedConsumerIndexes.none { !it }) {
                 consume = false
                 break
             }
+
             delay(1000)
         }
     }
@@ -66,6 +69,7 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
 
     private suspend fun accept(consumer: SqsConsumer) = coroutineScope {
         repeat(consumer.config.concurrency) {
+            print(it)
             launch {
                 retry(
                     consumer.config.retries,
