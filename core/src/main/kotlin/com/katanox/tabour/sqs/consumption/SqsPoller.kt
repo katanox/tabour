@@ -139,16 +139,18 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                                 .build()
                         }
 
-                    val request =
-                        DeleteMessageBatchRequest.builder()
-                            .queueUrl(url.toString())
-                            .entries(entries)
-                            .build()
+                    if (entries.isNotEmpty()) {
+                        val request =
+                            DeleteMessageBatchRequest.builder()
+                                .queueUrl(url.toString())
+                                .entries(entries)
+                                .build()
 
-                    sqs.deleteMessageBatch(request)
+                        sqs.deleteMessageBatch(request)
+                    }
                 }
 
-            delay(5_000)
+            delay(1_000)
         }
     }
 }
