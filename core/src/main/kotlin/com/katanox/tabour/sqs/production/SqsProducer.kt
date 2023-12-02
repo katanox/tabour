@@ -2,6 +2,7 @@ package com.katanox.tabour.sqs.production
 
 import com.katanox.tabour.configuration.sqs.sqsProducerConfiguration
 import com.katanox.tabour.consumption.Config
+import com.katanox.tabour.plug.ProducerPlug
 import java.net.URL
 
 class SqsProducer<K>
@@ -15,6 +16,8 @@ internal constructor(
 ) : Config, TabourProducer<K> {
 
     override var onError: (ProductionError) -> Unit = {}
+
+    override var plugs: MutableList<ProducerPlug> = mutableListOf()
 
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }

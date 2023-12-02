@@ -8,8 +8,11 @@ import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 internal class SqsProducerExecutor(private val sqs: SqsClient) {
-    suspend fun <T> produce(producer: SqsProducer<T>, f: SqsDataProductionConfiguration) {
-        val produceData = f.produceData()
+    suspend fun <T> produce(
+        producer: SqsProducer<T>,
+        productionConfiguration: SqsDataProductionConfiguration
+    ) {
+        val produceData = productionConfiguration.produceData()
 
         val url = producer.queueUrl.toString()
 
@@ -31,31 +34,54 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
             retry(
                 producer.config.retries,
                 {
-                    when (it) {
-                        is AwsServiceException ->
-                            producer.onError(
+                    val error =
+                        when (it) {
+                            is AwsServiceException ->
                                 ProductionError.AwsError(details = it.awsErrorDetails())
-                            )
-                        is SdkClientException ->
-                            producer.onError(ProductionError.AwsSdkClientError(it))
-                        else -> producer.onError(ProductionError.UnrecognizedError(it))
-                    }
+                            is SdkClientException -> ProductionError.AwsSdkClientError(it)
+                            else -> ProductionError.UnrecognizedError(it)
+                        }
+
+                    producer.onError(error)
+                    producer.notifyPlugs(produceData.message, error)
                 }
             ) {
                 val response = sqs.sendMessage(request)
 
                 if (response.messageId().isNotEmpty()) {
-                    f.dataProduced(
+                    productionConfiguration.dataProduced(
                         produceData,
                         SqsMessageProduced(response.messageId(), Instant.now())
                     )
                 }
+
+                producer.notifyPlugs(produceData.message)
             }
         } else {
-            when {
-                url.isEmpty() -> producer.onError(ProductionError.EmptyUrl(producer.queueUrl))
-                produceData.message.isNullOrEmpty() ->
-                    producer.onError(ProductionError.EmptyMessage(produceData))
+            val error =
+                when {
+                    url.isEmpty() -> ProductionError.EmptyUrl(producer.queueUrl)
+                    produceData.message.isNullOrEmpty() -> ProductionError.EmptyMessage(produceData)
+                    else -> null
+                }
+
+            if (error != null) {
+                producer.notifyPlugs(produceData.message, error)
+            }
+        }
+    }
+
+    private suspend fun <T> SqsProducer<T>.notifyPlugs(
+        message: String?,
+        error: ProductionError? = null
+    ) {
+        if (this.plugs.isNotEmpty()) {
+            this.plugs.forEach { plug ->
+                if (error == null) {
+                    plug.succ(message)
+                } else {
+                    plug.fail(message, error)
+                }
             }
         }
     }

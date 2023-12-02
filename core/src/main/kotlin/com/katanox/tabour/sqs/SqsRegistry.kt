@@ -72,13 +72,16 @@ internal constructor(
         sqsPoller.stopPolling()
     }
 
-    suspend fun <T> produce(producerKey: T, f: SqsDataProductionConfiguration) {
+    suspend fun <T> produce(
+        producerKey: T,
+        productionConfiguration: SqsDataProductionConfiguration
+    ) {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
-            sqsProducerExecutor.produce(producer, f)
+            sqsProducerExecutor.produce(producer, productionConfiguration)
         } else {
-            f.resourceNotFound(ProducerNotFound(producerKey))
+            productionConfiguration.resourceNotFound(ProducerNotFound(producerKey))
         }
     }
 

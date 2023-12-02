@@ -9,6 +9,7 @@ import com.katanox.tabour.sqs.production.SqsMessageProduced
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URL
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.onSuccess
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -30,16 +31,33 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
         consume = true
 
         // for each consumer, spawn a new coroutine
-        consumers.forEach {
-            launch {
-                while (consume && it.config.consumeWhile()) {
-                    accept(it)
+        //        consumers.forEach {
+        //            launch {
+        //                while (consume && it.config.consumeWhile()) {
+        //                    accept(it)
+        //                    delay(it.config.sleepTime.toMillis())
+        //                }
+        //            }
+        //        }
+
+        launch { startAcknowledging() }
+
+        while (consume) {
+            consumers.forEach {
+                if (it.config.consumeWhile()) {
+                    launch { accept(it) }
                     delay(it.config.sleepTime.toMillis())
                 }
             }
-        }
 
-        launch { startAcknowledger() }
+            println(consumers.none { it.config.consumeWhile() })
+
+            if (consumers.none { it.config.consumeWhile() }) {
+                consume = false
+                break
+            }
+            delay(1000)
+        }
     }
 
     fun stopPolling() {
@@ -52,15 +70,15 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                 retry(
                     consumer.config.retries,
                     {
-                        when (it) {
-                            is AwsServiceException ->
-                                consumer.onError(
+                        val error =
+                            when (it) {
+                                is AwsServiceException ->
                                     ConsumptionError.AwsError(details = it.awsErrorDetails())
-                                )
-                            is SdkClientException ->
-                                consumer.onError(ConsumptionError.AwsSdkClientError(it))
-                            else -> consumer.onError(ConsumptionError.UnrecognizedError(it))
-                        }
+                                is SdkClientException -> ConsumptionError.AwsSdkClientError(it)
+                                else -> ConsumptionError.UnrecognizedError(it)
+                            }
+
+                        consumer.onError(error)
                     }
                 ) {
                     val request =
@@ -117,18 +135,37 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                             ?: consumer.onSuccess(message)
 
                     if (consumed) {
-                        toAcknowledge.send(ToBeAcknowledged(consumer.queueUri, message))
+                        toAcknowledge.trySend(ToBeAcknowledged(consumer.queueUri, message))
+                        consumer.notifyPlugs(message)
                     } else {
-                        // otherwise, we use the error handler of the consumer
-                        consumer.onError(ConsumptionError.UnsuccessfulConsumption(message))
+                        val error = ConsumptionError.UnsuccessfulConsumption(message)
+                        consumer.onError(error)
+                        consumer.notifyPlugs(message, error)
                     }
                 }
             }
         }
 
-    private suspend fun startAcknowledger() {
+    private suspend fun SqsConsumer.notifyPlugs(message: Message, error: ConsumptionError? = null) {
+        if (this.plugs.isNotEmpty()) {
+            this.plugs.forEach { plug ->
+                if (error == null) {
+                    plug.succ(message)
+                } else {
+                    plug.fail(message, error)
+                }
+            }
+        }
+    }
+
+    private suspend fun startAcknowledging() {
         while (consume) {
-            buildList { repeat(10) { this.add(toAcknowledge.receive()) } }
+            buildList {
+                    repeat(10) {
+                        val result = toAcknowledge.tryReceive()
+                        result.onSuccess { this.add(it) }
+                    }
+                }
                 .groupBy(ToBeAcknowledged::url)
                 .forEach { (url, messages) ->
                     val entries =
@@ -150,7 +187,7 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                     }
                 }
 
-            delay(1_000)
+            delay(100)
         }
     }
 }
