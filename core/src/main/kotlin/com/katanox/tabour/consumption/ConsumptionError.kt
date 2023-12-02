@@ -8,5 +8,5 @@ sealed interface ConsumptionError {
     data class AwsError(val details: AwsErrorDetails) : ConsumptionError
     data class AwsSdkClientError(val exception: SdkClientException) : ConsumptionError
     data class UnsuccessfulConsumption(val message: Message) : ConsumptionError
-    data class UnrecognizedError(val exception: Exception) : ConsumptionError
+    data class UnrecognizedError(val error: Throwable) : ConsumptionError
 }

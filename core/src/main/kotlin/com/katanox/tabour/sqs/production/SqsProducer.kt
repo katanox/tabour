@@ -14,7 +14,7 @@ internal constructor(
     val queueUrl: URL
 ) : Config, TabourProducer<K> {
 
-    override var onError: (ProducerError<K>) -> Unit = {}
+    override var onError: (ProductionError) -> Unit = {}
 
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }

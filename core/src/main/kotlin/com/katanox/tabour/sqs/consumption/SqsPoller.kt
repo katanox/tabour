@@ -1,8 +1,11 @@
 package com.katanox.tabour.sqs.consumption
 
+import com.katanox.tabour.configuration.core.DataProductionConfiguration
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
+import com.katanox.tabour.sqs.production.SqsDataForProduction
+import com.katanox.tabour.sqs.production.SqsMessageProduced
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URL
 import kotlinx.coroutines.coroutineScope
@@ -71,13 +74,29 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                                     pipeline?.producer?.let {
                                         var consumedFromPipeline = false
 
-                                        executor.produce(it) {
+                                        val produceData: () -> SqsDataForProduction = {
                                             pipeline.transformer(message).also {
                                                 transformationResult ->
                                                 consumedFromPipeline =
                                                     !transformationResult.message.isNullOrEmpty()
                                             }
                                         }
+
+                                        val messageProduced:
+                                            (SqsDataForProduction, SqsMessageProduced) -> Unit =
+                                            { _, _ ->
+                                                Unit
+                                            }
+                                        val failedToProduceData = pipeline.failedHandler
+
+                                        executor.produce(
+                                            it,
+                                            DataProductionConfiguration(
+                                                produceData,
+                                                messageProduced,
+                                                failedToProduceData
+                                            )
+                                        )
 
                                         consumedFromPipeline
                                     }

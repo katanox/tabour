@@ -1,12 +1,15 @@
 package com.katanox.tabour.sqs.production
 
 import com.katanox.tabour.retry
+import java.time.Instant
+import software.amazon.awssdk.awscore.exception.AwsServiceException
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 internal class SqsProducerExecutor(private val sqs: SqsClient) {
-    suspend fun <T> produce(producer: SqsProducer<T>, produceFn: () -> SqsDataForProduction) {
-        val produceData = produceFn()
+    suspend fun <T> produce(producer: SqsProducer<T>, f: SqsDataProductionConfiguration) {
+        val produceData = f.produceData()
 
         val url = producer.queueUrl.toString()
 
@@ -28,16 +31,31 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
             retry(
                 producer.config.retries,
                 {
-                    producer.onError(
-                        ProducerError(
-                            producerKey = producer.key,
-                            message = it.message
-                                    ?: "Unknown exception during production (producer key: [${producer.key}])"
-                        )
-                    )
+                    when (it) {
+                        is AwsServiceException ->
+                            producer.onError(
+                                ProductionError.AwsError(details = it.awsErrorDetails())
+                            )
+                        is SdkClientException ->
+                            producer.onError(ProductionError.AwsSdkClientError(it))
+                        else -> producer.onError(ProductionError.UnrecognizedError(it))
+                    }
                 }
             ) {
-                sqs.sendMessage(request)
+                val response = sqs.sendMessage(request)
+
+                if (response.messageId().isNotEmpty()) {
+                    f.dataProduced(
+                        produceData,
+                        SqsMessageProduced(response.messageId(), Instant.now())
+                    )
+                }
+            }
+        } else {
+            when {
+                url.isEmpty() -> producer.onError(ProductionError.EmptyUrl(producer.queueUrl))
+                produceData.message.isNullOrEmpty() ->
+                    producer.onError(ProductionError.EmptyMessage(produceData))
             }
         }
     }

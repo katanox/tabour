@@ -1,6 +1,7 @@
 package com.katanox.tabour.sqs.config
 
 import com.katanox.tabour.consumption.Config
+import com.katanox.tabour.error.ProductionResourceNotFound
 import com.katanox.tabour.sqs.production.NonFifoQueueData
 import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsProducer
@@ -14,4 +15,6 @@ class SqsPipeline internal constructor() : Config {
      * consumed sqs message
      */
     var transformer: (Message) -> SqsDataForProduction = { NonFifoQueueData(message = null) }
+
+    val failedHandler: (ProductionResourceNotFound) -> Unit = {}
 }

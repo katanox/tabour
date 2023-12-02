@@ -2,12 +2,12 @@ package com.katanox.tabour
 
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
+import com.katanox.tabour.error.RegistryNotFound
 import com.katanox.tabour.sqs.SqsRegistry
-import com.katanox.tabour.sqs.production.SqsDataForProduction
+import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
 
@@ -50,21 +50,20 @@ class Tabour internal constructor(val config: Configuration) {
      *
      * [producerKey]: the key of the producer itself
      *
-     * [produceFn]: A function that returns a Pair<String?, String>. The first part of the pair is
-     * the body of the message and the second part is the message group id. If the body is null, a
-     * message is not produced
+     * [f]: A function that returns a Pair<String?, String>. The first part of the pair is the body
+     * of the message and the second part is the message group id. If the body is null, a message is
+     * not produced
      *
      * Note: If the registry is not found (either wrong Registry or Producer key), nothing happens.
      */
     suspend fun <T, K> produceMessage(
         registryKey: K,
         producerKey: T,
-        produceFn: () -> SqsDataForProduction
+        f: SqsDataProductionConfiguration
     ) {
         when (val registry = registries.find { it.key == registryKey }) {
-            is SqsRegistry ->
-                scope.launch { coroutineScope { registry.produce(producerKey, produceFn) } }
-            else -> {}
+            is SqsRegistry -> scope.launch { registry.produce(producerKey, f) }
+            else -> f.resourceNotFound(RegistryNotFound(registryKey))
         }
     }
 
