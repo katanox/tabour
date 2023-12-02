@@ -68,7 +68,6 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
 
     private suspend fun accept(consumer: SqsConsumer) = coroutineScope {
         repeat(consumer.config.concurrency) {
-            print(it)
             launch {
                 retry(
                     consumer.config.retries,
