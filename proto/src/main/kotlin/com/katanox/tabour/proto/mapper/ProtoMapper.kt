@@ -2,18 +2,27 @@ package com.katanox.tabour.proto.mapper
 
 import com.google.protobuf.Message as ProtobufMessage
 import com.google.protobuf.util.JsonFormat
+import kotlin.jvm.Throws
 import software.amazon.awssdk.services.sqs.model.Message
 
 private val printer: JsonFormat.Printer = JsonFormat.printer()
 val parser: JsonFormat.Parser = JsonFormat.parser()
 
-/** Converts a SQS message to a Protobuf message using the builder of the Protobuf message */
+/**
+ * Deserializes a [message] to a protobuf object. The function can throw an exception if the
+ * deserialization fails
+ */
+@Throws(Throwable::class)
 inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessage(message: Message): K {
     parser.merge(message.body(), this)
     return this.build() as K
 }
 
 @JvmName("fromSqsMessageOrNullWithError")
+/**
+ * Deserializes a [message] to a protobuf object. The function returns a null if the deserialization
+ * fails and invokes [onError]
+ */
 inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessageOrNull(
     message: Message,
     onError: (Throwable) -> Unit
@@ -25,6 +34,11 @@ inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessageOrNull(
         null
     }
 
+/**
+ * Deserializes a [message] to a protobuf object. The function returns a null if the deserialization
+ * fails and invokes [onError]. If the message is successfully deserialized, [map] is invoked with
+ * the deserialized value
+ */
 inline fun <T : ProtobufMessage.Builder, reified K, A> T.fromSqsMessageOrNull(
     message: Message,
     onError: (Throwable) -> Unit,
@@ -37,6 +51,10 @@ inline fun <T : ProtobufMessage.Builder, reified K, A> T.fromSqsMessageOrNull(
         null
     }
 
+/**
+ * Deserializes a [message] to a protobuf object. The function returns a null if the deserialization
+ * fails.
+ */
 inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessageOrNull(message: Message): K? =
     try {
         fromSqsMessage<T, K>(message)
@@ -45,6 +63,11 @@ inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessageOrNull(messa
     }
 
 @JvmName("fromSqsMessageOrNullWithMap")
+/**
+ * Deserializes a [message] to a protobuf object and invokes [map] with the deserialized value. The
+ * function can throw an exception during deserialization
+ */
+@Throws(Throwable::class)
 inline fun <T : ProtobufMessage.Builder, reified K, A> T.fromSqsMessageOrNull(
     message: Message,
     map: (K) -> A

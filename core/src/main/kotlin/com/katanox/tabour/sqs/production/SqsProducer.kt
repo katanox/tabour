@@ -15,6 +15,10 @@ internal constructor(
     val queueUrl: URL
 ) : Config, TabourProducer<K> {
 
+    /**
+     * This function is invoked if the message is not successfully produced after
+     * [SqsProducerConfiguration.retries] times
+     */
     override var onError: (ProductionError) -> Unit = {}
 
     override var plugs: MutableList<ProducerPlug> = mutableListOf()
@@ -22,6 +26,11 @@ internal constructor(
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }
 
+/**
+ * SQS producers use instances of this interfaces in order to produce messages to queues.
+ * - For FIFO queues use [FifoQueueData]
+ * - For Non FIFO queues use [NonFifoQueueData]
+ */
 sealed interface SqsDataForProduction {
     val message: String?
 }
