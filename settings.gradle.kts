@@ -6,9 +6,9 @@
 
 rootProject.name = "tabour"
 
-include("core", "proto", "spring")
+include("core", "proto", "spring", "plug")
 
-val kotlinVersion = "1.9.0"
+val kotlinVersion = "1.9.20"
 val coroutinesVersion = "1.7.3"
 
 dependencyResolutionManagement {
@@ -29,7 +29,7 @@ dependencyResolutionManagement {
             library("mockk", "io.mockk:mockk:1.13.5")
             library(
                 "kotlin-test-coroutines",
-                "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4"
+                "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
             )
 
             bundle(

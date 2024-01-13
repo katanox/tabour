@@ -2,7 +2,7 @@ plugins { `jvm-test-suite` }
 
 dependencies {
     implementation(project(":core"))
-    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.0")
+    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.20")
     implementation(libs.kotlin.coroutines)
     implementation(libs.kotlin.coroutines.jdk)
     implementation("org.springframework.boot:spring-boot-autoconfigure:3.1.2")
