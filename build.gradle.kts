@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "1.9.20"
     `maven-publish`
     id("com.ncorti.ktfmt.gradle") version "0.12.0"
 }
@@ -13,7 +13,7 @@ subprojects {
 
     repositories { mavenCentral() }
 
-    dependencies { implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0") }
+    dependencies { implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.20") }
 
     kotlin { jvmToolchain(17) }
 

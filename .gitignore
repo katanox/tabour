@@ -30,6 +30,7 @@ buildNumber.properties
 core/build
 spring/build
 proto/build
+plug/build
 .gradle
 
 ### IntelliJ IDEA ###
