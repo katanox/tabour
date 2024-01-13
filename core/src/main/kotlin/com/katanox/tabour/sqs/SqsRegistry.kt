@@ -43,10 +43,7 @@ internal constructor(
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
     private val sqsPoller = SqsPoller(sqs, sqsProducerExecutor)
 
-    /**
-     * Adds a consumer to the registry which can be later started with other consumers, using
-     * [startConsumption]
-     */
+    /** Adds a consumer to the registry */
     fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> =
         this.apply { consumers.add(consumer) }
 
@@ -54,6 +51,7 @@ internal constructor(
     fun addConsumers(consumers: List<SqsConsumer<*>>): SqsRegistry<T> =
         this.apply { consumers.fold(this) { registry, consumer -> registry.addConsumer(consumer) } }
 
+    /** Adds a producer to the registry */
     fun <K> addProducer(producer: SqsProducer<K>): SqsRegistry<T> =
         this.apply { producers.add(producer) }
 
@@ -87,10 +85,17 @@ internal constructor(
     }
 
     class Configuration<T>(
+        /** Key of the registry */
         val key: T,
+        /** Credentials to be used with the AWS SDK in order to perform AWS operations */
         val credentialsProvider: AwsCredentialsProvider,
+        /** The region of the credentials */
         val region: Region,
     ) : Config {
+        /**
+         * Can be used to change the endpoint of the SQS queue. Usually this is for testing purposes
+         * with Localstack
+         */
         var endpointOverride: URI? = null
     }
 }

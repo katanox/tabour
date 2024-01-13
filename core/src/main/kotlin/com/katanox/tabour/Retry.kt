@@ -1,6 +1,6 @@
 package com.katanox.tabour
 
-suspend inline fun retry(
+internal suspend inline fun retry(
     repeatTimes: Int,
     onError: (Throwable) -> Unit,
     crossinline f: suspend () -> Unit

@@ -54,7 +54,7 @@ class ContextRefreshedEventListener(
  * starts the tabour container only if the annotation [AutoconfigureTabour] is present and there are
  * [Registry] instances available in the spring context
  */
-internal fun launchTabour(
+private fun launchTabour(
     mainClass: Class<*>,
     tabourContainer: Tabour,
     registriesProvider: () -> List<Registry<*>>
