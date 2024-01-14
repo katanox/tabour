@@ -5,7 +5,6 @@ import com.katanox.tabour.plug.FailurePlugRecord
 import com.katanox.tabour.plug.SuccessPlugRecord
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
-import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URL
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -23,7 +22,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 private data class ToBeAcknowledged(val url: URL, val message: Message)
 
-internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsProducerExecutor) {
+internal class SqsPoller(private val sqs: SqsClient) {
     private var consume: Boolean = false
     private var acknowledge: Boolean = true
     private val toAcknowledge = Channel<ToBeAcknowledged>()
@@ -65,7 +64,7 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
                     acknowledge = false
                 }
 
-                delay(3000)
+                delay(5000)
             }
         }
         jobs = jobIndexes
@@ -110,25 +109,22 @@ internal class SqsPoller(private val sqs: SqsClient, private val executor: SqsPr
         }
     }
 
-    private suspend fun <T> handleMessages(messages: List<Message>, consumer: SqsConsumer<T>) =
-        coroutineScope {
-            messages.forEach { message ->
-                launch {
-                    try {
-                        if (consumer.onSuccess(message)) {
-                            consumer.notifyPlugs(message)
-                            toAcknowledge.send(ToBeAcknowledged(consumer.queueUri, message))
-                        } else {
-                            val error = ConsumptionError.UnsuccessfulConsumption(message)
-                            consumer.onError(error)
-                            consumer.notifyPlugs(message, error)
-                        }
-                    } catch (e: Throwable) {
-                        consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
-                    }
+    private suspend fun <T> handleMessages(messages: List<Message>, consumer: SqsConsumer<T>) {
+        messages.forEach { message ->
+            try {
+                if (consumer.onSuccess(message)) {
+                    consumer.notifyPlugs(message)
+                    toAcknowledge.send(ToBeAcknowledged(consumer.queueUri, message))
+                } else {
+                    val error = ConsumptionError.UnsuccessfulConsumption(message)
+                    consumer.onError(error)
+                    consumer.notifyPlugs(message, error)
                 }
+            } catch (e: Throwable) {
+                consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
             }
         }
+    }
 
     private suspend fun <T> SqsConsumer<T>.notifyPlugs(
         message: Message,
