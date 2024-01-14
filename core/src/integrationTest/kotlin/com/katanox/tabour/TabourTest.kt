@@ -19,10 +19,12 @@ import com.katanox.tabour.sqs.production.FifoQueueData
 import com.katanox.tabour.sqs.production.NonFifoQueueData
 import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsMessageProduced
+import java.net.URI
 import java.net.URL
 import java.time.Duration
 import kotlin.test.DefaultAsserter.assertNotNull
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -100,6 +102,22 @@ class TabourTest {
     }
 
     @Test
+    fun isRunningIsTrue() = runTest {
+        val container = tabour { numOfThreads = 1 }
+        container.start()
+        assertTrue { container.running() }
+        container.stop()
+    }
+
+    @Test
+    fun isRunningIsFalse() = runTest {
+        val container = tabour { numOfThreads = 1 }
+        container.start()
+        container.stop()
+        assertFalse { container.running() }
+    }
+
+    @Test
     @Tag("sqs-consumer-test")
     fun `consume messages`() =
         runTest(UnconfinedTestDispatcher()) {
@@ -124,14 +142,19 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL(nonFifoQueueUrl), "test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
+                    onError = { println(it) }
+                }
             val consumer =
-                sqsConsumer(URL(nonFifoQueueUrl), key = "my-consumer") {
-                    this.onSuccess = {
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = {
                         counter++
                         true
-                    }
-                    this.onError = ::println
+                    },
+                    onError = ::println
+                ) {
                     this.config = sqsConsumerConfiguration {
                         sleepTime = Duration.ofMillis(200)
                         consumeWhile = { counter < 1 }
@@ -186,14 +209,19 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL(nonFifoQueueUrl), "test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
+                    onError = { println(it) }
+                }
             val consumer =
-                sqsConsumer(URL(nonFifoQueueUrl), key = "my-consumer") {
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
                     onSuccess = {
                         counter++
                         true
-                    }
+                    },
                     onError = ::println
+                ) {
                     this.config = sqsConsumerConfiguration {
                         sleepTime = Duration.ofMillis(200)
                         consumeWhile = { counter < 1 }
@@ -237,14 +265,19 @@ class TabourTest {
             var counter = 0
 
             val producer =
-                sqsProducer(URL(nonFifoQueueUrl), "test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
+                    onError = { println(it) }
+                }
             val consumer =
-                sqsConsumer(URL(nonFifoQueueUrl), key = "my-consumer") {
-                    this.onSuccess = {
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = {
                         counter++
                         true
-                    }
-                    this.onError = ::println
+                    },
+                    onError = ::println
+                ) {
                     this.config = sqsConsumerConfiguration {
                         sleepTime = Duration.ofMillis(200)
                         consumeWhile = { counter < 50 }
@@ -296,7 +329,9 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL(nonFifoQueueUrl), "test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
+                    onError = { println(it) }
+                }
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
@@ -351,7 +386,9 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL(fifoQueueUrl), "fifo-test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    onError = { println(it) }
+                }
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
@@ -419,7 +456,7 @@ class TabourTest {
                     }
                 }
             val producer =
-                sqsProducer(URL(fifoQueueUrl), "fifo-test-producer") {
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
                     onError = { println(it) }
                     plugs.add(plug)
                 }
@@ -486,7 +523,9 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL(fifoQueueUrl), "fifo-test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    onError = { println(it) }
+                }
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
@@ -536,7 +575,9 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL(fifoQueueUrl), "fifo-test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    onError = { println(it) }
+                }
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
@@ -579,7 +620,9 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL(fifoQueueUrl), "fifo-test-producer") { onError = { println(it) } }
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    onError = { println(it) }
+                }
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)

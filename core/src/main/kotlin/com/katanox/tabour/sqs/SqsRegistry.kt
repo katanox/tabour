@@ -41,7 +41,7 @@ internal constructor(
             .build()
 
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
-    private val sqsPoller = SqsPoller(sqs, sqsProducerExecutor)
+    private val sqsPoller = SqsPoller(sqs)
 
     /** Adds a consumer to the registry */
     fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> =

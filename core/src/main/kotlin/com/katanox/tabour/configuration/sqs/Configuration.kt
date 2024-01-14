@@ -1,6 +1,7 @@
 package com.katanox.tabour.configuration.sqs
 
 import com.katanox.tabour.configuration.core.config
+import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.SqsRegistry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.config.SqsConsumerConfiguration
@@ -9,6 +10,7 @@ import com.katanox.tabour.sqs.production.SqsProducerConfiguration
 import java.net.URL
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sqs.model.Message
 
 fun <T> sqsRegistryConfiguration(
     key: T,
@@ -31,8 +33,13 @@ fun <T> sqsRegistry(config: SqsRegistry.Configuration<T>): SqsRegistry<T> = SqsR
  * Creates a new [SqsConsumer] which can be registered to [SqsRegistry]. The [url] is the url of the
  * queue
  */
-fun <T> sqsConsumer(url: URL, key: T, init: SqsConsumer<T>.() -> Unit): SqsConsumer<T> =
-    config(SqsConsumer(url, key), init)
+fun <T> sqsConsumer(
+    url: URL,
+    key: T,
+    onSuccess: suspend (Message) -> Boolean,
+    onError: (ConsumptionError) -> Unit,
+    init: SqsConsumer<T>.() -> Unit
+): SqsConsumer<T> = config(SqsConsumer(url, key, onSuccess, onError), init)
 
 /**
  * Creates a new [SqsProducer] which can be registered to [SqsRegistry]. The [url] is the url of the

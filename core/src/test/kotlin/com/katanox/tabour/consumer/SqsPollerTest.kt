@@ -4,7 +4,6 @@ import com.katanox.tabour.configuration.sqs.sqsConsumer
 import com.katanox.tabour.configuration.sqs.sqsConsumerConfiguration
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.consumption.SqsPoller
-import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -39,18 +38,19 @@ class SqsPollerTest {
             every { errorFunc(any()) }.returns(Unit)
 
             val sqs: SqsClient = mockk()
-            val executor = SqsProducerExecutor(sqs)
-            val sqsPoller = SqsPoller(sqs, executor)
+            val sqsPoller = SqsPoller(sqs)
             var counter = 0
             val configuration =
                 spyk(
-                    sqsConsumer(URL("https://katanox.com"), "my-key") {
+                    sqsConsumer(
+                        URL("https://katanox.com"),
+                        "my-key",
                         onSuccess = {
                             counter++
                             true
-                        }
+                        },
                         onError = errorFunc
-
+                    ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 1
                             consumeWhile = { counter < 1 }
@@ -91,17 +91,19 @@ class SqsPollerTest {
             every { errorFunc(any()) }.returns(Unit)
 
             val sqs: SqsClient = mockk()
-            val executor = SqsProducerExecutor(sqs)
-            val sqsPoller = SqsPoller(sqs, executor)
+            val sqsPoller = SqsPoller(sqs)
             var counter = 0
             val configuration =
                 spyk(
-                    sqsConsumer(URL("https://katanox.com"), "my-key") {
+                    sqsConsumer(
+                        URL("https://katanox.com"),
+                        "my-key",
                         onSuccess = {
                             counter++
                             true
-                        }
+                        },
                         onError = errorFunc
+                    ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 5
                             consumeWhile = { counter < 5 }
@@ -139,14 +141,16 @@ class SqsPollerTest {
             val successFunc: suspend (Message) -> Boolean = mockk()
             val errorFunc: (ConsumptionError) -> Unit = mockk()
             val sqs: SqsClient = mockk()
-            val executor = SqsProducerExecutor(sqs)
-            val sqsPoller = SqsPoller(sqs, executor)
+            val sqsPoller = SqsPoller(sqs)
             var counter = 0
             val configuration =
                 spyk(
-                    sqsConsumer(URL("https://katanox.com"), "my-key") {
-                        onSuccess = successFunc
+                    sqsConsumer(
+                        URL("https://katanox.com"),
+                        "my-key",
+                        onSuccess = successFunc,
                         onError = errorFunc
+                    ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 1
                             consumeWhile = {
@@ -188,14 +192,16 @@ class SqsPollerTest {
             val successFunc: suspend (Message) -> Boolean = { throw Exception("Random") }
             val errorFunc: (ConsumptionError) -> Unit = { expectedError = it }
             val sqs: SqsClient = mockk()
-            val executor = SqsProducerExecutor(sqs)
-            val sqsPoller = SqsPoller(sqs, executor)
+            val sqsPoller = SqsPoller(sqs)
             var counter = 0
             val configuration =
                 spyk(
-                    sqsConsumer(URL("https://katanox.com"), "my-key") {
-                        onSuccess = successFunc
+                    sqsConsumer(
+                        URL("https://katanox.com"),
+                        "my-key",
+                        onSuccess = successFunc,
                         onError = errorFunc
+                    ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 1
                             consumeWhile = {

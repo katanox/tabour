@@ -39,3 +39,7 @@ testing {
 }
 
 tasks.named("check") { dependsOn(testing.suites.named("integrationTest")) }
+
+kotlin.target.compilations
+    .getByName("integrationTest")
+    .associateWith(kotlin.target.compilations.getByName("main"))

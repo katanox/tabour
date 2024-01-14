@@ -58,5 +58,6 @@ class TabourConfigurerTest {
         }
 
     private class ClassWithoutAnnotation
+
     @AutoconfigureTabour private class ClassWithAnnotation
 }
