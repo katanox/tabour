@@ -1,5 +1,6 @@
 syntax = "proto3";
 package com.katanox.tabour;
+option java_package = "com.katanox.tabour.proto.person";
 
 message Person {
   string name = 1;

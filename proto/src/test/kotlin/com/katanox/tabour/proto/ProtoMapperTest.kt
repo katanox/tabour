@@ -1,8 +1,8 @@
 package com.katanox.tabour.proto
 
-import com.katanox.tabour.Hello.Person
 import com.katanox.tabour.proto.mapper.fromSqsMessage
 import com.katanox.tabour.proto.mapper.fromSqsMessageOrNull
+import com.katanox.tabour.proto.person.Hello.Person
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import org.junit.jupiter.api.Test

@@ -1,6 +1,6 @@
 package com.katanox.tabour.proto.mapper
 
-import com.katanox.tabour.person.Hello.Person
+import com.katanox.tabour.proto.person.Hello.Person
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull

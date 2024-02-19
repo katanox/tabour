@@ -8,7 +8,7 @@ rootProject.name = "tabour"
 
 include("core", "proto", "spring", "plug")
 
-val kotlinVersion = "1.9.20"
+val kotlinVersion = "1.9.22"
 val coroutinesVersion = "1.7.3"
 
 dependencyResolutionManagement {
