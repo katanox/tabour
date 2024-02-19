@@ -1,9 +1,11 @@
 plugins {
     kotlin("jvm") version "1.9.22"
     `maven-publish`
-    id("com.ncorti.ktfmt.gradle") version "0.12.0"
+    id("com.ncorti.ktfmt.gradle") version "0.17.0"
     id("org.jetbrains.dokka") version "1.9.10"
 }
+
+val tabourVersion = rootProject.file("version").readText().trim()
 
 repositories { mavenCentral() }
 
@@ -12,6 +14,8 @@ subprojects {
     apply(plugin = "maven-publish")
     apply(plugin = "com.ncorti.ktfmt.gradle")
     apply(plugin = "org.jetbrains.dokka")
+
+    version = tabourVersion
 
     repositories { mavenCentral() }
 
