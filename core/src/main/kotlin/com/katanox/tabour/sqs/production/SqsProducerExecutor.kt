@@ -25,10 +25,10 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                     .apply {
                         when (produceData) {
                             is FifoQueueData -> {
-                                this.messageBody(produceData.message)
-                                this.messageGroupId(produceData.messageGroupId)
+                                messageBody(produceData.message)
+                                messageGroupId(produceData.messageGroupId)
                             }
-                            is NonFifoQueueData -> this.messageBody(produceData.message)
+                            is NonFifoQueueData -> messageBody(produceData.message)
                         }
                     }
                     .build()
@@ -77,12 +77,12 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
         message: String?,
         error: ProductionError? = null
     ) {
-        if (this.plugs.isNotEmpty()) {
-            this.plugs.forEach { plug ->
+        if (plugs.isNotEmpty()) {
+            plugs.forEach { plug ->
                 if (error == null) {
-                    plug.handle(SuccessPlugRecord(message, this.key))
+                    plug.handle(SuccessPlugRecord(message, key))
                 } else {
-                    plug.handle(FailurePlugRecord(message, this.key, error))
+                    plug.handle(FailurePlugRecord(message, key, error))
                 }
             }
         }
