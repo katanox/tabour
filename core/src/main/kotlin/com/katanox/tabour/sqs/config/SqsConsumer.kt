@@ -13,7 +13,7 @@ internal constructor(
     val queueUri: URL,
     val key: T,
     override val onSuccess: suspend (Message) -> Boolean,
-    override val onError: (ConsumptionError) -> Unit
+    override val onError: suspend (ConsumptionError) -> Unit
 ) : Consumer<Message, ConsumptionError>, Config {
     override val plugs: MutableList<ConsumerPlug> = mutableListOf()
     var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 10 }

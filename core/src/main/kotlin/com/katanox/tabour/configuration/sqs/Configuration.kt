@@ -37,7 +37,7 @@ fun <T> sqsConsumer(
     url: URL,
     key: T,
     onSuccess: suspend (Message) -> Boolean,
-    onError: (ConsumptionError) -> Unit,
+    onError: suspend (ConsumptionError) -> Unit,
     init: SqsConsumer<T>.() -> Unit
 ): SqsConsumer<T> = config(SqsConsumer(url, key, onSuccess, onError), init)
 
