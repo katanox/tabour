@@ -6,6 +6,7 @@ import com.katanox.tabour.configuration.core.tabour
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationListener
@@ -47,6 +48,13 @@ class ContextRefreshedEventListener(
                 }
             }
         }
+    }
+}
+
+@Component
+class TabourDisposer(private val tabour: Tabour) : DisposableBean {
+    override fun destroy() {
+        tabour.stop()
     }
 }
 

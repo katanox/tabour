@@ -5,7 +5,7 @@ dependencies {
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.22")
     implementation(libs.kotlin.coroutines)
     implementation(libs.kotlin.coroutines.jdk)
-    implementation("org.springframework.boot:spring-boot-autoconfigure:3.1.2")
+    implementation("org.springframework.boot:spring-boot-autoconfigure:3.2.1")
 }
 
 group = "com.katanox.tabour"

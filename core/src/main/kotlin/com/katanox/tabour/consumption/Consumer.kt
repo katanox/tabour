@@ -20,7 +20,7 @@ internal interface Consumer<T, K : ConsumptionError> {
      *
      * If onError is invoked, the message is not acknowledged.
      */
-    val onError: (K) -> Unit
+    val onError: suspend (K) -> Unit
 
     val plugs: MutableList<ConsumerPlug>
 }

@@ -57,6 +57,23 @@ class TabourConfigurerTest {
             tabourContainer.stop()
         }
 
+    @Test
+    fun `test shutdown hook`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val tabourContainer = tabour { numOfThreads = 1 }
+            val disposer = TabourDisposer(tabourContainer)
+
+            tabourContainer.start()
+
+            advanceUntilIdle()
+
+            assertTrue(tabourContainer.running())
+
+            disposer.destroy()
+
+            assertFalse(tabourContainer.running())
+        }
+
     private class ClassWithoutAnnotation
 
     @AutoconfigureTabour private class ClassWithAnnotation

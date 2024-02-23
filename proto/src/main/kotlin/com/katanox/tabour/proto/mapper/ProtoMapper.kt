@@ -51,7 +51,7 @@ inline fun <T : ProtobufMessage.Builder, reified K, A> T.fromSqsMessageOrNull(
         null
     }
 
-/**
+/*
  * Deserializes a [message] to a protobuf object. The function returns a null if the deserialization
  * fails.
  */
