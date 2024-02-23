@@ -8,4 +8,5 @@ dependencies {
 }
 
 group = "com.katanox.tabour"
+
 description = "Tabour Proto"

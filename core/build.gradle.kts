@@ -15,6 +15,7 @@ dependencies {
 group = "com.katanox.tabour"
 description = "Tabour Core"
 
+@Suppress("UnstableApiUsage")
 testing {
     suites {
         val test by getting(JvmTestSuite::class) { useJUnitJupiter() }
@@ -35,6 +36,7 @@ testing {
     }
 }
 
+@Suppress("UnstableApiUsage")
 tasks.named("check") { dependsOn(testing.suites.named("integrationTest")) }
 
 kotlin.target.compilations

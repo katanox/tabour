@@ -9,10 +9,13 @@ dependencies {
 }
 
 group = "com.katanox.tabour"
+
 description = "Tabour Spring Boot"
 
+@Suppress("UnstableApiUsage")
 testing {
-    suites {
+    suites @Suppress("UnstableApiUsage")
+{
         val test by getting(JvmTestSuite::class) { useJUnitJupiter() }
 
         register("integrationTest", JvmTestSuite::class) {
@@ -29,6 +32,7 @@ testing {
     }
 }
 
+@Suppress("UnstableApiUsage")
 tasks.named("check") { dependsOn(testing.suites.named("integrationTest")) }
 
 kotlin.target.compilations
