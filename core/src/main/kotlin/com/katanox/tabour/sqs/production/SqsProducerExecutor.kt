@@ -19,20 +19,6 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
         val url = producer.queueUrl.toString()
 
         if (!produceData.message.isNullOrEmpty() && url.isNotEmpty()) {
-            val request =
-                SendMessageRequest.builder()
-                    .queueUrl(url)
-                    .apply {
-                        when (produceData) {
-                            is FifoQueueData -> {
-                                messageBody(produceData.message)
-                                messageGroupId(produceData.messageGroupId)
-                            }
-                            is NonFifoQueueData -> messageBody(produceData.message)
-                        }
-                    }
-                    .build()
-
             retry(
                 producer.config.retries,
                 {
@@ -48,7 +34,11 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                     producer.notifyPlugs(produceData.message, error)
                 }
             ) {
-                val response = sqs.sendMessage(request)
+                val response =
+                    sqs.sendMessage {
+                        produceData.buildMessageRequest(it)
+                        it.queueUrl(url)
+                    }
 
                 if (response.messageId().isNotEmpty()) {
                     productionConfiguration.dataProduced(
@@ -86,5 +76,20 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                 }
             }
         }
+    }
+}
+
+private fun SqsDataForProduction.buildMessageRequest(builder: SendMessageRequest.Builder) {
+
+    when (this) {
+        is FifoQueueData -> {
+            builder.messageBody(message)
+            builder.messageGroupId(messageGroupId)
+
+            if (messageDeduplicationId != null) {
+                builder.messageDeduplicationId(messageDeduplicationId)
+            }
+        }
+        is NonFifoQueueData -> builder.messageBody(message)
     }
 }

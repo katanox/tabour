@@ -12,15 +12,14 @@ internal constructor(
      * producing a message through a Registry
      */
     override val key: K,
-    val queueUrl: URL
+    val queueUrl: URL,
+    override val onError: suspend (ProductionError) -> Unit
 ) : Config, TabourProducer<K> {
 
     /**
      * This function is invoked if the message is not successfully produced after
      * [SqsProducerConfiguration.retries] times
      */
-    override var onError: (ProductionError) -> Unit = {}
-
     override var plugs: MutableList<ProducerPlug> = mutableListOf()
 
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
@@ -35,7 +34,10 @@ sealed interface SqsDataForProduction {
     val message: String?
 }
 
-data class FifoQueueData(override val message: String?, val messageGroupId: String = "") :
-    SqsDataForProduction
+data class FifoQueueData(
+    override val message: String?,
+    val messageGroupId: String = "",
+    val messageDeduplicationId: String? = null
+) : SqsDataForProduction
 
 data class NonFifoQueueData(override val message: String?) : SqsDataForProduction

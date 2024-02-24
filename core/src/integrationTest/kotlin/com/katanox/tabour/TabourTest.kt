@@ -143,7 +143,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
             val consumer =
                 sqsConsumer(
@@ -210,7 +210,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
             val consumer =
                 sqsConsumer(
@@ -266,7 +266,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
             val consumer =
                 sqsConsumer(
@@ -330,7 +330,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
 
             sqsRegistry.addProducer(producer)
@@ -387,7 +387,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
 
             sqsRegistry.addProducer(producer)
@@ -456,8 +456,11 @@ class TabourTest {
                     }
                 }
             val producer =
-                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    onError = { println(it) }
+                sqsProducer(
+                    URL.of(URI.create(fifoQueueUrl), null),
+                    "fifo-test-producer",
+                    { println(it) }
+                ) {
                     plugs.add(plug)
                 }
 
@@ -524,7 +527,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
 
             sqsRegistry.addProducer(producer)
@@ -576,7 +579,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
 
             sqsRegistry.addProducer(producer)
@@ -621,7 +624,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    onError = { println(it) }
+                    println(it)
                 }
 
             sqsRegistry.addProducer(producer)
