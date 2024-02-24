@@ -1,6 +1,7 @@
 package com.katanox.tabour.sqs.production
 
 import com.katanox.tabour.configuration.sqs.sqsProducer
+import java.net.URI
 import java.net.URL
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -74,7 +75,8 @@ class SqsProducerExecutorTest {
     fun testProduceToFifoQueue() = runTest {
         val executor = SqsProducerExecutor(sqsClient)
 
-        val producer = sqsProducer(URL(fifoQueueUrl), "fifo-queue-producer")
+        val producer =
+            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer", ::println)
         var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(
@@ -93,10 +95,50 @@ class SqsProducerExecutorTest {
     }
 
     @Test
+    fun testProduceToFifoQueueWithDeduplicationId() = runTest {
+        val executor = SqsProducerExecutor(sqsClient)
+
+        val producer =
+            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer", ::println)
+        var producedCount = 0
+        val pfc =
+            SqsDataProductionConfiguration(
+                dataProduced = { _, _ -> producedCount++ },
+                produceData = {
+                    FifoQueueData("my message", "groupid", messageDeduplicationId = "dedup")
+                },
+                resourceNotFound = { _ -> }
+            )
+
+        val pfc2 =
+            SqsDataProductionConfiguration(
+                dataProduced = { _, _ -> producedCount++ },
+                produceData = {
+                    FifoQueueData("my message", "groupid", messageDeduplicationId = "dedup")
+                },
+                resourceNotFound = { _ -> }
+            )
+
+        executor.produce(producer, pfc)
+        executor.produce(producer, pfc2)
+
+        val response =
+            sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(fifoQueueUrl).build())
+
+        assertEquals(2, producedCount)
+        assertEquals(1, response.messages().size)
+    }
+
+    @Test
     fun testProduceToNonFifoQueue() = runTest {
         val executor = SqsProducerExecutor(sqsClient)
 
-        val producer = sqsProducer(URL(nonFifoQueueUrl), "non-fifo-queue-producer")
+        val producer =
+            sqsProducer(
+                URL.of(URI.create(nonFifoQueueUrl), null),
+                "non-fifo-queue-producer",
+                ::println
+            )
         var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(

@@ -5,6 +5,7 @@ import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.SqsRegistry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.config.SqsConsumerConfiguration
+import com.katanox.tabour.sqs.production.ProductionError
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerConfiguration
 import java.net.URL
@@ -45,10 +46,15 @@ fun <T> sqsConsumer(
  * Creates a new [SqsProducer] which can be registered to [SqsRegistry]. The [url] is the url of the
  * queue
  */
-fun <T> sqsProducer(url: URL, key: T, init: SqsProducer<T>.() -> Unit): SqsProducer<T> =
-    config(SqsProducer(key, url), init)
+fun <T> sqsProducer(
+    url: URL,
+    key: T,
+    onError: suspend (ProductionError) -> Unit,
+    init: SqsProducer<T>.() -> Unit
+): SqsProducer<T> = config(SqsProducer(key, url, onError), init)
 
-fun <T> sqsProducer(url: URL, key: T): SqsProducer<T> = SqsProducer(key, url)
+fun <T> sqsProducer(url: URL, key: T, onError: (ProductionError) -> Unit): SqsProducer<T> =
+    SqsProducer(key, url, onError)
 
 /** Creates a new [SqsConsumerConfiguration] which can be used to configure a [SqsConsumer] */
 fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsConsumerConfiguration =
