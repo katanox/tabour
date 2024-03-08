@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
+import java.net.URI
 
 @ExperimentalCoroutinesApi
 class SqsPollerTest {
@@ -43,7 +44,7 @@ class SqsPollerTest {
             val configuration =
                 spyk(
                     sqsConsumer(
-                        URL("https://katanox.com"),
+                        URL.of(URI.create("https://katanox.com"), null),
                         "my-key",
                         onSuccess = {
                             counter++
@@ -96,7 +97,7 @@ class SqsPollerTest {
             val configuration =
                 spyk(
                     sqsConsumer(
-                        URL("https://katanox.com"),
+                        URL.of(URI.create("https://katanox.com"), null),
                         "my-key",
                         onSuccess = {
                             counter++
@@ -146,7 +147,7 @@ class SqsPollerTest {
             val configuration =
                 spyk(
                     sqsConsumer(
-                        URL("https://katanox.com"),
+                        URL.of(URI.create("https://katanox.com"), null),
                         "my-key",
                         onSuccess = successFunc,
                         onError = errorFunc
@@ -197,7 +198,7 @@ class SqsPollerTest {
             val configuration =
                 spyk(
                     sqsConsumer(
-                        URL("https://katanox.com"),
+                        URL.of(URI.create("https://katanox.com"), null),
                         "my-key",
                         onSuccess = successFunc,
                         onError = errorFunc
