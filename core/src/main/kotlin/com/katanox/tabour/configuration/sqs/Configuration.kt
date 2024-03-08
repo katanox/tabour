@@ -32,7 +32,7 @@ fun <T> sqsRegistry(config: SqsRegistry.Configuration<T>): SqsRegistry<T> = SqsR
 
 /**
  * Creates a new [SqsConsumer] which can be registered to [SqsRegistry]. The [url] is the url of the
- * queue
+ * queue and uses [init] to configure the consumers properties
  */
 fun <T> sqsConsumer(
     url: URL,
@@ -41,6 +41,17 @@ fun <T> sqsConsumer(
     onError: suspend (ConsumptionError) -> Unit,
     init: SqsConsumer<T>.() -> Unit
 ): SqsConsumer<T> = config(SqsConsumer(url, key, onSuccess, onError), init)
+
+/**
+ * Creates a new [SqsConsumer] which can be registered to [SqsRegistry]. The [url] is the url of the
+ * queue
+ */
+fun <T> sqsConsumer(
+    url: URL,
+    key: T,
+    onSuccess: suspend (Message) -> Boolean,
+    onError: suspend (ConsumptionError) -> Unit
+): SqsConsumer<T> = SqsConsumer(url, key, onSuccess, onError)
 
 /**
  * Creates a new [SqsProducer] which can be registered to [SqsRegistry]. The [url] is the url of the

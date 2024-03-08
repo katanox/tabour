@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 plugins { `jvm-test-suite` }
 
 dependencies {
