@@ -142,9 +142,8 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    println(it)
-                }
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+
             val consumer =
                 sqsConsumer(
                     URL.of(URI.create(nonFifoQueueUrl), null),
@@ -209,9 +208,8 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    println(it)
-                }
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+
             val consumer =
                 sqsConsumer(
                     URL.of(URI.create(nonFifoQueueUrl), null),
@@ -329,9 +327,7 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    println(it)
-                }
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
@@ -459,7 +455,7 @@ class TabourTest {
                 sqsProducer(
                     URL.of(URI.create(fifoQueueUrl), null),
                     "fifo-test-producer",
-                    { println(it) }
+                    ::println
                 ) {
                     plugs.add(plug)
                 }
@@ -526,9 +522,7 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    println(it)
-                }
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer", ::println)
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
@@ -623,9 +617,7 @@ class TabourTest {
                 )
 
             val producer =
-                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    println(it)
-                }
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer", ::println)
 
             sqsRegistry.addProducer(producer)
             container.register(sqsRegistry)
