@@ -10,6 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
+import java.net.URI
 import java.net.URL
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -26,7 +27,6 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
-import java.net.URI
 
 @ExperimentalCoroutinesApi
 class SqsPollerTest {
