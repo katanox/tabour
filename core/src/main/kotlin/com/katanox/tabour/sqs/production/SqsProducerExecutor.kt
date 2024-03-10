@@ -51,7 +51,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                             }
                             .let { response ->
                                 if (response.messageId().isNotEmpty()) {
-                                    productionConfiguration.dataProduced(
+                                    productionConfiguration.dataProduced?.invoke(
                                         produceData,
                                         SqsMessageProduced(response.messageId(), Instant.now())
                                     )
@@ -89,7 +89,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                                 if (!response.hasFailed()) {
                                     response.successful().zip(produceData.data).forEach {
                                         (entry, data) ->
-                                        productionConfiguration.dataProduced(
+                                        productionConfiguration.dataProduced?.invoke(
                                             data,
                                             SqsMessageProduced(entry.messageId(), Instant.now())
                                         )

@@ -14,7 +14,7 @@ data class DataProductionConfiguration<T, K>(
     /** The function responsible to return the data that should be produced */
     val produceData: () -> T,
     /** A callback function which is invoked after the message is produced */
-    val dataProduced: (T, K) -> Unit = { _, _ -> },
+    val dataProduced: ((T, K) -> Unit)? = null,
     /** In case of the Producer not being found, this function is invoked */
     val resourceNotFound: (ProductionResourceNotFound) -> Unit
 )
