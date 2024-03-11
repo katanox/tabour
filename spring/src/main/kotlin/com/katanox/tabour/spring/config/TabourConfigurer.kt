@@ -22,7 +22,8 @@ class TabourConfigurer
 
 @Component
 class ContextRefreshedEventListener(
-    @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int
+    @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int,
+    @Value("\${tabour.config.enabled:true}") val enabled: Boolean
 ) : ApplicationListener<ContextRefreshedEvent?> {
     override fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
         if (contextRefreshedEvent?.applicationContext != null) {
@@ -42,7 +43,7 @@ class ContextRefreshedEventListener(
 
             val tabourContainers = context.getBeansOfType(Tabour::class.java)
 
-            if (tabourContainers.size == 1) {
+            if (tabourContainers.size == 1 && enabled) {
                 launchTabour(mainClass, tabourContainers.values.first()) {
                     context.getBeansOfType(Registry::class.java).values.toList()
                 }
