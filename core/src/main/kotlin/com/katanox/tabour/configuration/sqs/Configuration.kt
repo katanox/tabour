@@ -1,15 +1,17 @@
 package com.katanox.tabour.configuration.sqs
 
 import com.katanox.tabour.configuration.core.config
+import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.SqsRegistry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.config.SqsConsumerConfiguration
-import com.katanox.tabour.sqs.config.SqsPipeline
+import com.katanox.tabour.sqs.production.ProductionError
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerConfiguration
 import java.net.URL
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sqs.model.Message
 
 fun <T> sqsRegistryConfiguration(
     key: T,
@@ -30,19 +32,40 @@ fun <T> sqsRegistry(config: SqsRegistry.Configuration<T>): SqsRegistry<T> = SqsR
 
 /**
  * Creates a new [SqsConsumer] which can be registered to [SqsRegistry]. The [url] is the url of the
+ * queue and uses [init] to configure the consumers properties
+ */
+fun <T> sqsConsumer(
+    url: URL,
+    key: T,
+    onSuccess: suspend (Message) -> Boolean,
+    onError: suspend (ConsumptionError) -> Unit,
+    init: SqsConsumer<T>.() -> Unit
+): SqsConsumer<T> = config(SqsConsumer(url, key, onSuccess, onError), init)
+
+/**
+ * Creates a new [SqsConsumer] which can be registered to [SqsRegistry]. The [url] is the url of the
  * queue
  */
-fun sqsConsumer(url: URL, init: SqsConsumer.() -> Unit): SqsConsumer =
-    config(SqsConsumer(url), init)
+fun <T> sqsConsumer(
+    url: URL,
+    key: T,
+    onSuccess: suspend (Message) -> Boolean,
+    onError: suspend (ConsumptionError) -> Unit
+): SqsConsumer<T> = SqsConsumer(url, key, onSuccess, onError)
 
 /**
  * Creates a new [SqsProducer] which can be registered to [SqsRegistry]. The [url] is the url of the
  * queue
  */
-fun <T> sqsProducer(url: URL, key: T, init: SqsProducer<T>.() -> Unit): SqsProducer<T> =
-    config(SqsProducer(key, url), init)
+fun <T> sqsProducer(
+    url: URL,
+    key: T,
+    onError: suspend (ProductionError) -> Unit,
+    init: SqsProducer<T>.() -> Unit
+): SqsProducer<T> = config(SqsProducer(key, url, onError), init)
 
-fun <T> sqsProducer(url: URL, key: T): SqsProducer<T> = SqsProducer(key, url)
+fun <T> sqsProducer(url: URL, key: T, onError: (ProductionError) -> Unit): SqsProducer<T> =
+    SqsProducer(key, url, onError)
 
 /** Creates a new [SqsConsumerConfiguration] which can be used to configure a [SqsConsumer] */
 fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsConsumerConfiguration =
@@ -51,9 +74,3 @@ fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsCons
 /** Creates a new [SqsProducerConfiguration] which can be used to configure a [SqsProducer] */
 fun sqsProducerConfiguration(init: SqsProducerConfiguration.() -> Unit): SqsProducerConfiguration =
     config(SqsProducerConfiguration(), init)
-
-/**
- * Creates a new [SqsPipeline] which can be used on a [SqsConsumer] to build a pipeline of messages
- * consumption-production
- */
-fun sqsPipeline(init: SqsPipeline.() -> Unit): SqsPipeline = config(SqsPipeline(), init)

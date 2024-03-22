@@ -30,11 +30,12 @@ buildNumber.properties
 core/build
 spring/build
 proto/build
+plug/build
 .gradle
+build/
 
 ### IntelliJ IDEA ###
 .idea
 *.iws
 *.iml
 *.ipr
-proto

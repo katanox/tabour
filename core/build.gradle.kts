@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 plugins { `jvm-test-suite` }
 
 dependencies {
@@ -5,6 +7,7 @@ dependencies {
     implementation(libs.kotlin.coroutines.jdk)
 
     api(libs.aws.sqs)
+    api(project(":plug"))
 
     testImplementation(testLibs.kotlin.test.coroutines)
     testImplementation(testLibs.bundles.kotlin.test)
@@ -12,11 +15,9 @@ dependencies {
 }
 
 group = "com.katanox.tabour"
-
-version = "1.0-beta"
-
 description = "Tabour Core"
 
+@Suppress("UnstableApiUsage")
 testing {
     suites {
         val test by getting(JvmTestSuite::class) { useJUnitJupiter() }
@@ -37,4 +38,9 @@ testing {
     }
 }
 
+@Suppress("UnstableApiUsage")
 tasks.named("check") { dependsOn(testing.suites.named("integrationTest")) }
+
+kotlin.target.compilations
+    .getByName("integrationTest")
+    .associateWith(kotlin.target.compilations.getByName("main"))

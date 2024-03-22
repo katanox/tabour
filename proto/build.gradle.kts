@@ -1,3 +1,5 @@
+plugins { id("com.google.protobuf") version ("0.9.4") }
+
 dependencies {
     api(libs.aws.sqs)
     implementation(project(":core"))
@@ -6,7 +8,5 @@ dependencies {
 }
 
 group = "com.katanox.tabour"
-
-version = "1.0-beta"
 
 description = "Tabour Proto"

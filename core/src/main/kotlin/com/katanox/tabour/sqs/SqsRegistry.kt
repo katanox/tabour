@@ -2,9 +2,10 @@ package com.katanox.tabour.sqs
 
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
+import com.katanox.tabour.error.ProducerNotFound
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
-import com.katanox.tabour.sqs.production.SqsDataForProduction
+import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
@@ -26,7 +27,7 @@ internal constructor(
     override val key: T
         get() = configuration.key
 
-    private val consumers: MutableList<SqsConsumer> = mutableListOf()
+    private val consumers: MutableList<SqsConsumer<*>> = mutableListOf()
     private val producers: MutableSet<SqsProducer<*>> = mutableSetOf()
     private val sqs: SqsClient =
         SqsClient.builder()
@@ -40,18 +41,17 @@ internal constructor(
             .build()
 
     private val sqsProducerExecutor = SqsProducerExecutor(sqs)
-    private val sqsPoller = SqsPoller(sqs, sqsProducerExecutor)
+    private val sqsPoller = SqsPoller(sqs)
 
-    /**
-     * Adds a consumer to the registry which can be later started with other consumers, using
-     * [startConsumption]
-     */
-    fun addConsumer(consumer: SqsConsumer): SqsRegistry<T> = this.apply { consumers.add(consumer) }
+    /** Adds a consumer to the registry */
+    fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> =
+        this.apply { consumers.add(consumer) }
 
     /** Adds a collection of consumers to the registry */
-    fun addConsumers(consumers: List<SqsConsumer>): SqsRegistry<T> =
+    fun addConsumers(consumers: List<SqsConsumer<*>>): SqsRegistry<T> =
         this.apply { consumers.fold(this) { registry, consumer -> registry.addConsumer(consumer) } }
 
+    /** Adds a producer to the registry */
     fun <K> addProducer(producer: SqsProducer<K>): SqsRegistry<T> =
         this.apply { producers.add(producer) }
 
@@ -71,19 +71,31 @@ internal constructor(
         sqsPoller.stopPolling()
     }
 
-    suspend fun <T> produce(producerKey: T, produceFn: () -> SqsDataForProduction) {
+    suspend fun <T> produce(
+        producerKey: T,
+        productionConfiguration: SqsDataProductionConfiguration
+    ) {
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
-            sqsProducerExecutor.produce(producer, produceFn)
+            sqsProducerExecutor.produce(producer, productionConfiguration)
+        } else {
+            productionConfiguration.resourceNotFound(ProducerNotFound(producerKey))
         }
     }
 
     class Configuration<T>(
+        /** Key of the registry */
         val key: T,
+        /** Credentials to be used with the AWS SDK in order to perform AWS operations */
         val credentialsProvider: AwsCredentialsProvider,
+        /** The region of the credentials */
         val region: Region,
     ) : Config {
+        /**
+         * Can be used to change the endpoint of the SQS queue. Usually this is for testing purposes
+         * with Localstack
+         */
         var endpointOverride: URI? = null
     }
 }

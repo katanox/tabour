@@ -6,10 +6,10 @@
 
 rootProject.name = "tabour"
 
-include("core", "proto", "spring")
+include("core", "proto", "spring", "plug")
 
-val kotlinVersion = "1.9.0"
-val coroutinesVersion = "1.7.3"
+val kotlinVersion = "1.9.22"
+val coroutinesVersion = "1.8.0"
 
 dependencyResolutionManagement {
     versionCatalogs {
@@ -26,10 +26,10 @@ dependencyResolutionManagement {
         create("testLibs") {
             library("kotlin-test-junit", "org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
             library("kotlin-test-main", "org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
-            library("mockk", "io.mockk:mockk:1.13.5")
+            library("mockk", "io.mockk:mockk:1.13.9")
             library(
                 "kotlin-test-coroutines",
-                "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4"
+                "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
             )
 
             bundle(

@@ -6,6 +6,7 @@ import com.katanox.tabour.configuration.core.tabour
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationListener
@@ -21,7 +22,8 @@ class TabourConfigurer
 
 @Component
 class ContextRefreshedEventListener(
-    @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int
+    @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int,
+    @Value("\${tabour.config.enabled:true}") val enabled: Boolean
 ) : ApplicationListener<ContextRefreshedEvent?> {
     override fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
         if (contextRefreshedEvent?.applicationContext != null) {
@@ -41,12 +43,19 @@ class ContextRefreshedEventListener(
 
             val tabourContainers = context.getBeansOfType(Tabour::class.java)
 
-            if (tabourContainers.size == 1) {
+            if (tabourContainers.size == 1 && enabled) {
                 launchTabour(mainClass, tabourContainers.values.first()) {
                     context.getBeansOfType(Registry::class.java).values.toList()
                 }
             }
         }
+    }
+}
+
+@Component
+class TabourDisposer(private val tabour: Tabour) : DisposableBean {
+    override fun destroy() {
+        tabour.stop()
     }
 }
 

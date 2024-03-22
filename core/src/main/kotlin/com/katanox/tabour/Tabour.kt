@@ -2,17 +2,17 @@ package com.katanox.tabour
 
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
+import com.katanox.tabour.error.RegistryNotFound
 import com.katanox.tabour.sqs.SqsRegistry
-import com.katanox.tabour.sqs.production.SqsDataForProduction
+import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
 
 /**
- * A container of a collection of [Registry]. This class is the entrypoint for interacting with
+ * A container for collection of [Registry]. This class is the entrypoint for interacting with
  * consumers and producers.
  *
  * Consumers and producers are added to a [Registry] and then the registry itself must be added to a
@@ -36,35 +36,32 @@ class Tabour internal constructor(val config: Configuration) {
     private val scope = CoroutineScope(dispatcher)
 
     /**
-     * Adds a new registry to the Tabour Container
-     *
-     * All registries must be registered before starting the tabour container.
+     * Adds a new registry to the Tabour Container. All registries must be registered before
+     * starting the tabour container.
      */
     fun <T> register(registry: Registry<T>): Tabour = this.apply { registries.add(registry) }
 
     /**
-     * Uses a registered SqsProducer to produce a message. The producer must be part of a sqs
-     * registry that has been itself registered
+     * Produces a message using one of the registered producers
      *
      * [registryKey]: the key of the registry which the producer is part of
      *
      * [producerKey]: the key of the producer itself
      *
-     * [produceFn]: A function that returns a Pair<String?, String>. The first part of the pair is
-     * the body of the message and the second part is the message group id. If the body is null, a
-     * message is not produced
-     *
-     * Note: If the registry is not found (either wrong Registry or Producer key), nothing happens.
+     * [productionConfiguration]: The object that provides the handlers to
+     * - produce data
+     * - callback for when the data is produced
+     * - handle the case where the production is not possible because the producer is not found
      */
     suspend fun <T, K> produceMessage(
         registryKey: K,
         producerKey: T,
-        produceFn: () -> SqsDataForProduction
+        productionConfiguration: SqsDataProductionConfiguration
     ) {
         when (val registry = registries.find { it.key == registryKey }) {
             is SqsRegistry ->
-                scope.launch { coroutineScope { registry.produce(producerKey, produceFn) } }
-            else -> {}
+                scope.launch { registry.produce(producerKey, productionConfiguration) }
+            else -> productionConfiguration.resourceNotFound(RegistryNotFound(registryKey))
         }
     }
 
@@ -76,16 +73,18 @@ class Tabour internal constructor(val config: Configuration) {
         }
     }
     /** Stops the consumers of the registered registries. */
-    suspend fun stop() {
+    fun stop() {
         if (consumptionStarted) {
             consumptionStarted = false
             registries.forEach { scope.launch { it.stopConsumption() } }
         }
     }
 
+    /** Indicates if tabour has started all the consumers */
     fun running(): Boolean = consumptionStarted
 
     class Configuration : Config {
+        /** The thread pool size for tabour. Default is 4 */
         var numOfThreads: Int = 4
     }
 }
