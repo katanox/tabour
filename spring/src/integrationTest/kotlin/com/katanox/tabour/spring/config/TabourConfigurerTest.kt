@@ -45,7 +45,7 @@ class TabourConfigurerTest {
                         sqsRegistryConfiguration(
                             "",
                             EnvironmentVariableCredentialsProvider.create(),
-                            Region.US_EAST_1
+                            Region.US_EAST_1,
                         )
                     )
                 )

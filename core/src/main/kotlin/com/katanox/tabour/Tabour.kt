@@ -56,7 +56,7 @@ class Tabour internal constructor(val config: Configuration) {
     suspend fun <T, K> produceMessage(
         registryKey: K,
         producerKey: T,
-        productionConfiguration: SqsDataProductionConfiguration
+        productionConfiguration: SqsDataProductionConfiguration,
     ) {
         when (val registry = registries.find { it.key == registryKey }) {
             is SqsRegistry ->
@@ -72,6 +72,7 @@ class Tabour internal constructor(val config: Configuration) {
             registries.forEach { scope.launch { it.startConsumption() } }
         }
     }
+
     /** Stops the consumers of the registered registries. */
     fun stop() {
         if (consumptionStarted) {

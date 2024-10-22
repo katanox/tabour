@@ -3,7 +3,7 @@ package com.katanox.tabour
 internal suspend inline fun retry(
     repeatTimes: Int,
     onError: (Throwable) -> Unit,
-    crossinline f: suspend () -> Unit
+    crossinline f: suspend () -> Unit,
 ) {
     var tries = 0
 

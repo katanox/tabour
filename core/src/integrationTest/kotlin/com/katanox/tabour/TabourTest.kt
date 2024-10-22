@@ -55,7 +55,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TabourTest {
     private val localstack =
-        LocalStackContainer(DockerImageName.parse("localstack/localstack:2.2.0"))
+        LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8.1"))
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 
@@ -127,7 +127,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -139,7 +139,7 @@ class TabourTest {
                 DataProductionConfiguration<SqsDataForProduction, SqsMessageProduced>(
                     produceData = { NonFifoDataProduction("this is a test message") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") }
+                    resourceNotFound = { _ -> println("Resource not found") },
                 )
 
             val producer =
@@ -153,7 +153,7 @@ class TabourTest {
                         counter++
                         true
                     },
-                    onError = ::println
+                    onError = ::println,
                 ) {
                     this.config = sqsConsumerConfiguration {
                         sleepTime = Duration.ofMillis(200)
@@ -182,7 +182,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -205,7 +205,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = { NonFifoDataProduction("this is a test message") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") }
+                    resourceNotFound = { _ -> println("Resource not found") },
                 )
 
             val producer =
@@ -219,7 +219,7 @@ class TabourTest {
                         counter++
                         true
                     },
-                    onError = ::println
+                    onError = ::println,
                 ) {
                     this.config = sqsConsumerConfiguration {
                         sleepTime = Duration.ofMillis(200)
@@ -254,7 +254,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -275,7 +275,7 @@ class TabourTest {
                         counter++
                         true
                     },
-                    onError = ::println
+                    onError = ::println,
                 ) {
                     this.config = sqsConsumerConfiguration {
                         sleepTime = Duration.ofMillis(200)
@@ -293,7 +293,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = { NonFifoDataProduction("this is a test message") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") }
+                    resourceNotFound = { _ -> println("Resource not found") },
                 )
 
             repeat(50) {
@@ -313,7 +313,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -324,7 +324,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = { NonFifoDataProduction("this is a test message") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") }
+                    resourceNotFound = { _ -> println("Resource not found") },
                 )
 
             val producer =
@@ -351,7 +351,7 @@ class TabourTest {
                     assertTrue(receiveMessagesResponse.messages().isNotEmpty())
                     assertEquals(
                         receiveMessagesResponse.messages().first().body(),
-                        "this is a test message"
+                        "this is a test message",
                     )
                 }
 
@@ -368,7 +368,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -379,7 +379,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = { FifoDataProduction("this is a fifo test message", "group1") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") }
+                    resourceNotFound = { _ -> println("Resource not found") },
                 )
 
             val producer =
@@ -394,7 +394,7 @@ class TabourTest {
             container.produceMessage(
                 "test-registry",
                 "fifo-test-producer",
-                sqsProducerConfiguration
+                sqsProducerConfiguration,
             )
 
             await
@@ -412,7 +412,7 @@ class TabourTest {
                     assertTrue(receiveMessagesResponse.messages().isNotEmpty())
                     assertEquals(
                         receiveMessagesResponse.messages().first().body(),
-                        "this is a fifo test message"
+                        "this is a fifo test message",
                     )
                 }
             purgeQueue(fifoQueueUrl)
@@ -428,7 +428,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -439,7 +439,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = { FifoDataProduction("this is a fifo test message", "group1") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") }
+                    resourceNotFound = { _ -> println("Resource not found") },
                 )
             var plugCounter = 0
 
@@ -456,7 +456,7 @@ class TabourTest {
                 sqsProducer(
                     URL.of(URI.create(fifoQueueUrl), null),
                     "fifo-test-producer",
-                    ::println
+                    ::println,
                 ) {
                     plugs.add(plug)
                 }
@@ -468,7 +468,7 @@ class TabourTest {
             container.produceMessage(
                 "test-registry",
                 "fifo-test-producer",
-                sqsProducerConfiguration
+                sqsProducerConfiguration,
             )
 
             await
@@ -486,7 +486,7 @@ class TabourTest {
                     assertTrue(receiveMessagesResponse.messages().isNotEmpty())
                     assertEquals(
                         receiveMessagesResponse.messages().first().body(),
-                        "this is a fifo test message"
+                        "this is a fifo test message",
                     )
                 }
             purgeQueue(fifoQueueUrl)
@@ -502,7 +502,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -519,7 +519,7 @@ class TabourTest {
                         expectedProduceData = data
                         producedDataEvent = event
                     },
-                    resourceNotFound = { _ -> println("Resource not found") }
+                    resourceNotFound = { _ -> println("Resource not found") },
                 )
 
             val producer =
@@ -532,7 +532,7 @@ class TabourTest {
             container.produceMessage(
                 "test-registry",
                 "fifo-test-producer",
-                sqsProducerConfiguration
+                sqsProducerConfiguration,
             )
 
             purgeQueue(fifoQueueUrl)
@@ -540,7 +540,7 @@ class TabourTest {
             await.withPollDelay(Duration.ofSeconds(1)).untilAsserted {
                 assertEquals(
                     FifoDataProduction("this is a fifo test message", "group1"),
-                    expectedProduceData
+                    expectedProduceData,
                 )
                 assertNotNull("Message group id is null", producedDataEvent?.messageGroupId)
                 assertNotEquals("", producedDataEvent?.messageGroupId)
@@ -557,7 +557,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -569,7 +569,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = { FifoDataProduction("this is a fifo test message", "group1") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { error -> resourceNotFound = error }
+                    resourceNotFound = { error -> resourceNotFound = error },
                 )
 
             val producer =
@@ -584,7 +584,7 @@ class TabourTest {
             container.produceMessage(
                 "wrong-registry",
                 "fifo-test-producer",
-                sqsProducerConfiguration
+                sqsProducerConfiguration,
             )
 
             await.withPollDelay(Duration.ofSeconds(1)).untilAsserted {
@@ -602,7 +602,7 @@ class TabourTest {
                 sqsRegistryConfiguration(
                     "test-registry",
                     StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region)
+                    Region.of(localstack.region),
                 ) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
@@ -614,7 +614,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = { FifoDataProduction("this is a fifo test message", "group1") },
                     dataProduced = { _, _ -> },
-                    resourceNotFound = { error -> resourceNotFound = error }
+                    resourceNotFound = { error -> resourceNotFound = error },
                 )
 
             val producer =
