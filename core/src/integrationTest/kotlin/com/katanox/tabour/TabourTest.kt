@@ -55,7 +55,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TabourTest {
     private val localstack =
-        LocalStackContainer(DockerImageName.parse("localstack/localstack:2.2.0"))
+        LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8.1"))
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 
@@ -79,8 +79,6 @@ class TabourTest {
             sqsClient
                 .createQueue(CreateQueueRequest.builder().queueName("my-queue").build())
                 .queueUrl()
-
-        println(nonFifoQueueUrl)
 
         fifoQueueUrl =
             sqsClient
