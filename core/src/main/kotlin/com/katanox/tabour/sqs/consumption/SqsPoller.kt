@@ -91,7 +91,7 @@ internal class SqsPoller(private val sqs: SqsClient) {
                             }
 
                         consumer.onError(error)
-                    }
+                    },
                 ) {
                     val request =
                         ReceiveMessageRequest.builder()
@@ -128,7 +128,7 @@ internal class SqsPoller(private val sqs: SqsClient) {
 
     private suspend fun <T> SqsConsumer<T>.notifyPlugs(
         message: Message,
-        error: ConsumptionError? = null
+        error: ConsumptionError? = null,
     ) {
         if (this.plugs.isNotEmpty()) {
             this.plugs.forEach { plug ->

@@ -16,5 +16,5 @@ data class DataProductionConfiguration<T, K>(
     /** A callback function which is invoked after the message is produced */
     val dataProduced: ((T, K) -> Unit)? = null,
     /** In case of the Producer not being found, this function is invoked */
-    val resourceNotFound: (ProductionResourceNotFound) -> Unit
+    val resourceNotFound: (ProductionResourceNotFound) -> Unit,
 )

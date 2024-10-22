@@ -27,6 +27,7 @@ class SqsConsumerConfiguration internal constructor() : Config {
             require(value <= 50 || value > 0)
             field = value
         }
+
     /**
      * The delay between subsequent requests
      *

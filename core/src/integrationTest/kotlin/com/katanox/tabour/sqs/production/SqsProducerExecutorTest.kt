@@ -90,7 +90,7 @@ class SqsProducerExecutorTest {
             SqsDataProductionConfiguration(
                 dataProduced = { _, _ -> producedCount++ },
                 produceData = { FifoDataProduction("my message", "groupid") },
-                resourceNotFound = { _ -> }
+                resourceNotFound = { _ -> },
             )
 
         executor.produce(producer, pfc)
@@ -116,10 +116,10 @@ class SqsProducerExecutorTest {
                     FifoDataProduction(
                         "my message dedup",
                         "groupid",
-                        messageDeduplicationId = "dedup"
+                        messageDeduplicationId = "dedup",
                     )
                 },
-                resourceNotFound = { _ -> }
+                resourceNotFound = { _ -> },
             )
 
         val pfc2 =
@@ -129,10 +129,10 @@ class SqsProducerExecutorTest {
                     FifoDataProduction(
                         "my message dedup",
                         "groupid",
-                        messageDeduplicationId = "dedup"
+                        messageDeduplicationId = "dedup",
                     )
                 },
-                resourceNotFound = { _ -> }
+                resourceNotFound = { _ -> },
             )
 
         executor.produce(producer, pfc)
@@ -153,14 +153,14 @@ class SqsProducerExecutorTest {
             sqsProducer(
                 URL.of(URI.create(nonFifoQueueUrl), null),
                 "non-fifo-queue-producer",
-                ::println
+                ::println,
             )
         var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(
                 dataProduced = { _, _ -> producedCount++ },
                 produceData = { NonFifoDataProduction("my message") },
-                resourceNotFound = { _ -> }
+                resourceNotFound = { _ -> },
             )
 
         executor.produce(producer, pfc)
@@ -188,11 +188,11 @@ class SqsProducerExecutorTest {
                     BatchDataForProduction(
                         listOf(
                             FifoDataProduction("batch message", messageGroupId = "ohello"),
-                            FifoDataProduction("batch message 2", messageGroupId = "ohello")
+                            FifoDataProduction("batch message 2", messageGroupId = "ohello"),
                         )
                     )
                 },
-                resourceNotFound = { _ -> }
+                resourceNotFound = { _ -> },
             )
 
         executor.produce(producer, pfc)

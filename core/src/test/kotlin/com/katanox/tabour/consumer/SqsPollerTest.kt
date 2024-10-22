@@ -50,7 +50,7 @@ class SqsPollerTest {
                             counter++
                             true
                         },
-                        onError = errorFunc
+                        onError = errorFunc,
                     ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 1
@@ -103,7 +103,7 @@ class SqsPollerTest {
                             counter++
                             true
                         },
-                        onError = errorFunc
+                        onError = errorFunc,
                     ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 5
@@ -150,7 +150,7 @@ class SqsPollerTest {
                         URL.of(URI.create("https://katanox.com"), null),
                         "my-key",
                         onSuccess = successFunc,
-                        onError = errorFunc
+                        onError = errorFunc,
                     ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 1
@@ -201,7 +201,7 @@ class SqsPollerTest {
                         URL.of(URI.create("https://katanox.com"), null),
                         "my-key",
                         onSuccess = successFunc,
-                        onError = errorFunc
+                        onError = errorFunc,
                     ) {
                         config = sqsConsumerConfiguration {
                             concurrency = 1

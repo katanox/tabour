@@ -17,14 +17,14 @@ fun <T> sqsRegistryConfiguration(
     key: T,
     credentialsProvider: AwsCredentialsProvider,
     region: Region,
-    init: SqsRegistry.Configuration<T>.() -> Unit
+    init: SqsRegistry.Configuration<T>.() -> Unit,
 ): SqsRegistry.Configuration<T> =
     config(SqsRegistry.Configuration(key, credentialsProvider, region), init)
 
 fun <T> sqsRegistryConfiguration(
     key: T,
     credentialsProvider: AwsCredentialsProvider,
-    region: Region
+    region: Region,
 ): SqsRegistry.Configuration<T> = SqsRegistry.Configuration(key, credentialsProvider, region)
 
 /** Creates a new [SqsRegistry] */
@@ -39,7 +39,7 @@ fun <T> sqsConsumer(
     key: T,
     onSuccess: suspend (Message) -> Boolean,
     onError: suspend (ConsumptionError) -> Unit,
-    init: SqsConsumer<T>.() -> Unit
+    init: SqsConsumer<T>.() -> Unit,
 ): SqsConsumer<T> = config(SqsConsumer(url, key, onSuccess, onError), init)
 
 /**
@@ -50,7 +50,7 @@ fun <T> sqsConsumer(
     url: URL,
     key: T,
     onSuccess: suspend (Message) -> Boolean,
-    onError: suspend (ConsumptionError) -> Unit
+    onError: suspend (ConsumptionError) -> Unit,
 ): SqsConsumer<T> = SqsConsumer(url, key, onSuccess, onError)
 
 /**
@@ -61,7 +61,7 @@ fun <T> sqsProducer(
     url: URL,
     key: T,
     onError: suspend (ProductionError) -> Unit,
-    init: SqsProducer<T>.() -> Unit
+    init: SqsProducer<T>.() -> Unit,
 ): SqsProducer<T> = config(SqsProducer(key, url, onError), init)
 
 fun <T> sqsProducer(url: URL, key: T, onError: (ProductionError) -> Unit): SqsProducer<T> =

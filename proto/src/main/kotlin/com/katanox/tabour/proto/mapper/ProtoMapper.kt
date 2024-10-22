@@ -25,7 +25,7 @@ inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessage(message: Me
  */
 inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessageOrNull(
     message: Message,
-    onError: (Throwable) -> Unit
+    onError: (Throwable) -> Unit,
 ): K? =
     try {
         fromSqsMessage<T, K>(message)
@@ -42,7 +42,7 @@ inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessageOrNull(
 inline fun <T : ProtobufMessage.Builder, reified K, A> T.fromSqsMessageOrNull(
     message: Message,
     onError: (Throwable) -> Unit,
-    map: (K) -> A
+    map: (K) -> A,
 ): A? =
     try {
         map(fromSqsMessage<T, K>(message))
@@ -70,7 +70,7 @@ inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessageOrNull(messa
 @Throws(Throwable::class)
 inline fun <T : ProtobufMessage.Builder, reified K, A> T.fromSqsMessageOrNull(
     message: Message,
-    map: (K) -> A
+    map: (K) -> A,
 ): A? =
     try {
         map(fromSqsMessage<T, K>(message))

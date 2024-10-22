@@ -91,7 +91,7 @@ class ProtoMapperTest {
         val person =
             Person.newBuilder().fromSqsMessageOrNull<Person.Builder, Person, Int>(
                 message,
-                errorHandler
+                errorHandler,
             ) {
                 it.name.length
             }
@@ -119,7 +119,7 @@ class ProtoMapperTest {
         val nameLength =
             Person.newBuilder().fromSqsMessageOrNull<Person.Builder, Person, Int>(
                 message,
-                errorHandler
+                errorHandler,
             ) {
                 it.name.length
             }
@@ -142,9 +142,7 @@ class ProtoMapperTest {
 
         val message = Message.builder().body(body).build()
         val nameLength =
-            Person.newBuilder().fromSqsMessageOrNull<Person.Builder, Person, Int>(
-                message,
-            ) {
+            Person.newBuilder().fromSqsMessageOrNull<Person.Builder, Person, Int>(message) {
                 it.name.length
             }
 

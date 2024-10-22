@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 internal class SqsProducerExecutor(private val sqs: SqsClient) {
     suspend fun <T> produce(
         producer: SqsProducer<T>,
-        productionConfiguration: SqsDataProductionConfiguration
+        productionConfiguration: SqsDataProductionConfiguration,
     ) {
         val produceData = productionConfiguration.produceData()
 
@@ -43,7 +43,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
 
                             producer.onError(error)
                             producer.notifyPlugs(produceData.message, error)
-                        }
+                        },
                     ) {
                         sqs.sendMessage {
                                 produceData.buildMessageRequest(it)
@@ -53,7 +53,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                                 if (response.messageId().isNotEmpty()) {
                                     productionConfiguration.dataProduced?.invoke(
                                         produceData,
-                                        SqsMessageProduced(response.messageId(), Instant.now())
+                                        SqsMessageProduced(response.messageId(), Instant.now()),
                                     )
 
                                     producer.notifyPlugs(produceData.message)
@@ -65,7 +65,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                         producer.onError(ProductionError.EmptyMessage(produceData))
                         producer.notifyPlugs(
                             produceData.message,
-                            ProductionError.EmptyMessage(produceData)
+                            ProductionError.EmptyMessage(produceData),
                         )
                     }
                 }
@@ -82,7 +82,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                         .forEach { request ->
                             retry(
                                 producer.config.retries,
-                                { producer.onError(throwableToError(it)) }
+                                { producer.onError(throwableToError(it)) },
                             ) {
                                 val response = sqs.sendMessageBatch(request)
 
@@ -91,14 +91,14 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                                         (entry, data) ->
                                         productionConfiguration.dataProduced?.invoke(
                                             data,
-                                            SqsMessageProduced(entry.messageId(), Instant.now())
+                                            SqsMessageProduced(entry.messageId(), Instant.now()),
                                         )
                                     }
                                 } else {
                                     response.failed().forEach {
                                         producer.notifyPlugs(
                                             it.message(),
-                                            throwableToError(RuntimeException(it.message()))
+                                            throwableToError(RuntimeException(it.message())),
                                         )
                                     }
                                 }
@@ -111,7 +111,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
 
     private suspend fun <T> SqsProducer<T>.notifyPlugs(
         message: String?,
-        error: ProductionError? = null
+        error: ProductionError? = null,
     ) {
         if (plugs.isNotEmpty()) {
             plugs.forEach { plug ->
