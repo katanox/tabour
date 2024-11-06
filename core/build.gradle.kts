@@ -25,11 +25,9 @@ testing {
         register("integrationTest", JvmTestSuite::class) {
             dependencies {
                 implementation(project())
-                implementation("org.testcontainers:testcontainers:1.18.3")
-                implementation("org.testcontainers:localstack:1.18.3")
-                implementation("org.awaitility:awaitility:4.2.0")
-                implementation("org.awaitility:awaitility-kotlin:4.2.0")
                 implementation(testLibs.kotlin.test.coroutines)
+                implementation.bundle(testLibs.bundles.testcontainers)
+                implementation.bundle(testLibs.bundles.awaitility)
                 implementation.bundle(testLibs.bundles.kotlin.test)
             }
 

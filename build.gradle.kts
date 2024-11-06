@@ -1,10 +1,10 @@
 import java.net.URI
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.0.21"
     `maven-publish`
-    id("com.ncorti.ktfmt.gradle") version "0.17.0"
-    id("org.jetbrains.dokka") version "1.9.10"
+    id("com.ncorti.ktfmt.gradle") version "0.20.1"
+    id("org.jetbrains.dokka") version "1.9.20"
     signing
 }
 
@@ -23,8 +23,6 @@ subprojects {
 
     repositories { mavenCentral() }
 
-    dependencies { implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22") }
-
     kotlin { jvmToolchain(21) }
 
     java {
@@ -36,18 +34,32 @@ subprojects {
         publications {
             repositories {
                 maven {
-                    url = URI.create("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                    url =
+                        URI.create(
+                            "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                        )
                     authentication {
                         credentials {
-                            username = System.getenv("OSSRH_USERNAME")
-                                ?.ifEmpty { throw RuntimeException("OSSRH_USERNAME environment variable is not set") }
-                                ?: throw RuntimeException("OSSRH_USERNAME environment variable is not set")
-                            password = System.getenv("OSSRH_PASSWORD")
-                                ?.ifEmpty { throw RuntimeException("OSSHR_PASSWORD environment variable is not set") }
-                                ?: throw RuntimeException("OSSHR_PASSWORD  environment variable is not set")
+                            username =
+                                System.getenv("OSSRH_USERNAME")?.ifEmpty {
+                                    throw RuntimeException(
+                                        "OSSRH_USERNAME environment variable is not set"
+                                    )
+                                }
+                                    ?: throw RuntimeException(
+                                        "OSSRH_USERNAME environment variable is not set"
+                                    )
+                            password =
+                                System.getenv("OSSRH_PASSWORD")?.ifEmpty {
+                                    throw RuntimeException(
+                                        "OSSHR_PASSWORD environment variable is not set"
+                                    )
+                                }
+                                    ?: throw RuntimeException(
+                                        "OSSHR_PASSWORD  environment variable is not set"
+                                    )
                         }
                     }
-
                 }
             }
             publications {
@@ -74,18 +86,14 @@ subprojects {
                                 email = "katanox@developers.com"
                             }
                         }
-                        scm {
-                            url = "https://github.com/katanox/tabour"
-                        }
+                        scm { url = "https://github.com/katanox/tabour" }
                     }
                 }
             }
         }
     }
 
-    signing {
-        sign(publishing.publications["gpr"])
-    }
+    signing { sign(publishing.publications["gpr"]) }
 
     ktfmt { kotlinLangStyle() }
 

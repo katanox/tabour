@@ -20,10 +20,8 @@ import software.amazon.awssdk.services.sqs.SqsClient
  *
  * Supports consumption and production of SQS messages
  */
-class SqsRegistry<T>
-internal constructor(
-    private val configuration: Configuration<T>,
-) : Registry<T> {
+class SqsRegistry<T> internal constructor(private val configuration: Configuration<T>) :
+    Registry<T> {
     override val key: T
         get() = configuration.key
 
@@ -73,7 +71,7 @@ internal constructor(
 
     suspend fun <T> produce(
         producerKey: T,
-        productionConfiguration: SqsDataProductionConfiguration
+        productionConfiguration: SqsDataProductionConfiguration,
     ) {
         val producer = producers.find { it.key == producerKey }
 

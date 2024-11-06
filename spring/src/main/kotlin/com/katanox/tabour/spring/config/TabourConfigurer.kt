@@ -23,7 +23,7 @@ class TabourConfigurer
 @Component
 class ContextRefreshedEventListener(
     @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int,
-    @Value("\${tabour.config.enabled:true}") val enabled: Boolean
+    @Value("\${tabour.config.enabled:true}") val enabled: Boolean,
 ) : ApplicationListener<ContextRefreshedEvent?> {
     override fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
         if (contextRefreshedEvent?.applicationContext != null) {
@@ -66,7 +66,7 @@ class TabourDisposer(private val tabour: Tabour) : DisposableBean {
 internal fun launchTabour(
     mainClass: Class<*>,
     tabourContainer: Tabour,
-    registriesProvider: () -> List<Registry<*>>
+    registriesProvider: () -> List<Registry<*>>,
 ) {
     val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
 

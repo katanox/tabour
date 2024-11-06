@@ -13,7 +13,7 @@ internal constructor(
      */
     override val key: K,
     val queueUrl: URL,
-    override val onError: suspend (ProductionError) -> Unit
+    override val onError: suspend (ProductionError) -> Unit,
 ) : Config, TabourProducer<K> {
 
     /**
@@ -39,7 +39,7 @@ sealed interface SqsProductionData : SqsDataForProduction {
 data class FifoDataProduction(
     override val message: String?,
     val messageGroupId: String,
-    val messageDeduplicationId: String? = null
+    val messageDeduplicationId: String? = null,
 ) : SqsProductionData
 
 data class NonFifoDataProduction(override val message: String?) : SqsProductionData
