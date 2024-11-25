@@ -2,10 +2,9 @@ plugins { `jvm-test-suite` }
 
 dependencies {
     implementation(project(":core"))
-    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.22")
-    implementation(libs.kotlin.coroutines)
-    implementation(libs.kotlin.coroutines.jdk)
-    implementation("org.springframework.boot:spring-boot-autoconfigure:3.2.1")
+    runtimeOnly(libs.kotlin.reflect)
+    implementation(libs.coroutines.core)
+    implementation(libs.spring.boot.autoconfigure)
 }
 
 group = "com.katanox.tabour"
@@ -23,7 +22,7 @@ testing {
                 implementation(project())
                 implementation(project(":core"))
                 implementation.bundle(testLibs.bundles.kotlin.test)
-                implementation("org.springframework.boot:spring-boot-starter-test:3.1.2")
+                implementation(testLibs.spring.boot.starter.test)
                 implementation(testLibs.kotlin.test.coroutines)
             }
 

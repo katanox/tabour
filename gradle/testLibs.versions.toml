@@ -1,0 +1,23 @@
+[versions]
+kotlin = "2.0.21"
+coroutines = "1.9.0"
+mockk = "1.13.13"
+testcontainers = "1.20.4"
+awaitility = "4.2.2"
+spring-boot = "3.4.0"
+
+[libraries]
+kotlin-test-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlin-test-main = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+testcontainer-localstack = { module = "org.testcontainers:localstack", version.ref = "testcontainers" }
+testcontainer-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+awaitility-core = { module = "org.awaitility:awaitility", version.ref = "awaitility" }
+awaitility-kotlin = { module = "org.awaitility:awaitility-kotlin", version.ref = "awaitility" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "spring-boot" }
+
+[bundles]
+kotlin-test = ["kotlin-test-main", "kotlin-test-junit"]
+awaitility = ["awaitility-core", "awaitility-kotlin"]
+testcontainers = ["testcontainer-core", "testcontainer-localstack"]
