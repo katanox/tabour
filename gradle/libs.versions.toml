@@ -1,0 +1,21 @@
+[versions]
+kotlin = "2.0.21"
+coroutines = "1.9.0"
+aws-sqs = "2.29.20"
+ktfmt = "0.20.1"
+dokka = "1.9.20"
+spring-boot = "3.4.0"
+protobuf-plugin = "0.9.4"
+protobuf-java = "4.28.2"
+
+[libraries]
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+aws-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "aws-sqs" }
+spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-java" }
+
+[plugins]
+ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }

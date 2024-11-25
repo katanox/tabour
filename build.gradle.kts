@@ -1,10 +1,10 @@
 import java.net.URI
 
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm").version(libs.versions.kotlin)
     `maven-publish`
-    id("com.ncorti.ktfmt.gradle") version "0.20.1"
-    id("org.jetbrains.dokka") version "1.9.20"
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.ktfmt)
     signing
 }
 
@@ -46,18 +46,18 @@ subprojects {
                                         "OSSRH_USERNAME environment variable is not set"
                                     )
                                 }
-                                    ?: throw RuntimeException(
-                                        "OSSRH_USERNAME environment variable is not set"
-                                    )
+//                                    ?: throw RuntimeException(
+//                                        "OSSRH_USERNAME environment variable is not set"
+//                                    )
                             password =
                                 System.getenv("OSSRH_PASSWORD")?.ifEmpty {
                                     throw RuntimeException(
                                         "OSSHR_PASSWORD environment variable is not set"
                                     )
                                 }
-                                    ?: throw RuntimeException(
-                                        "OSSHR_PASSWORD  environment variable is not set"
-                                    )
+//                                    ?: throw RuntimeException(
+//                                        "OSSHR_PASSWORD  environment variable is not set"
+//                                    )
                         }
                     }
                 }

@@ -1,9 +1,11 @@
-plugins { id("com.google.protobuf") version ("0.9.4") }
+plugins {
+    alias(libs.plugins.protobuf)
+}
 
 dependencies {
     api(libs.aws.sqs)
     implementation(project(":core"))
-    implementation("com.google.protobuf:protobuf-java-util:4.28.2")
+    implementation(libs.protobuf.java.util)
     testImplementation(testLibs.bundles.kotlin.test)
 }
 
