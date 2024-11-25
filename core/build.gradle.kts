@@ -3,8 +3,7 @@
 plugins { `jvm-test-suite` }
 
 dependencies {
-    implementation(libs.kotlin.coroutines)
-    implementation(libs.kotlin.coroutines.jdk)
+    implementation(libs.coroutines.core)
 
     api(libs.aws.sqs)
     api(project(":plug"))
