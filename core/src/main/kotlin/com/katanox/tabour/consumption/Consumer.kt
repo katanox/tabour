@@ -1,7 +1,5 @@
 package com.katanox.tabour.consumption
 
-import com.katanox.tabour.plug.ConsumerPlug
-
 internal interface Consumer<T, K : ConsumptionError> {
     /**
      * This is the handler for each message retrieved from SQS
@@ -21,6 +19,4 @@ internal interface Consumer<T, K : ConsumptionError> {
      * If onError is invoked, the message is not acknowledged.
      */
     val onError: suspend (K) -> Unit
-
-    val plugs: MutableList<ConsumerPlug>
 }

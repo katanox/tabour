@@ -8,8 +8,12 @@ import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.runBlocking
+
+const val TABOUR_SHUTDOWN_MESSAGE = "tabour shutdown"
 
 /**
  * A container for collection of [Registry]. This class is the entrypoint for interacting with
@@ -66,7 +70,7 @@ class Tabour internal constructor(val config: Configuration) {
     }
 
     /** Starts the consumers of the registered registries. */
-    suspend fun start() {
+    fun start() {
         if (!consumptionStarted) {
             consumptionStarted = true
             registries.forEach { scope.launch { it.startConsumption() } }
@@ -75,9 +79,11 @@ class Tabour internal constructor(val config: Configuration) {
 
     /** Stops the consumers of the registered registries. */
     fun stop() {
-        if (consumptionStarted) {
-            consumptionStarted = false
-            registries.forEach { scope.launch { it.stopConsumption() } }
+        runBlocking {
+            if (consumptionStarted) {
+                consumptionStarted = false
+                scope.cancel(TABOUR_SHUTDOWN_MESSAGE)
+            }
         }
     }
 
