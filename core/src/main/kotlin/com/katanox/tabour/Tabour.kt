@@ -83,10 +83,6 @@ class Tabour internal constructor(val config: Configuration) {
             if (consumptionStarted) {
                 consumptionStarted = false
                 scope.cancel(TABOUR_SHUTDOWN_MESSAGE)
-                //                registries.forEach {
-                //                     scope.launch { it.stopConsumption() }
-                //                         .join()
-                //                }
             }
         }
     }
