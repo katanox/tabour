@@ -1,8 +1,7 @@
 package com.katanox.tabour.sqs.consumption
 
+import com.katanox.tabour.TABOUR_SHUTDOWN_MESSAGE
 import com.katanox.tabour.consumption.ConsumptionError
-import com.katanox.tabour.plug.FailurePlugRecord
-import com.katanox.tabour.plug.SuccessPlugRecord
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import java.net.URL
@@ -12,6 +11,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -73,7 +73,10 @@ internal class SqsPoller(private val sqs: SqsClient) {
     suspend fun stopPolling() {
         consume = false
         acknowledge = false
-        jobs.forEach { it?.cancelAndJoin() }
+        jobs.forEach {
+            it?.cancelAndJoin()
+            yield()
+        }
     }
 
     private suspend fun <T> accept(consumer: SqsConsumer<T>) = coroutineScope {
@@ -113,29 +116,14 @@ internal class SqsPoller(private val sqs: SqsClient) {
         messages.forEach { message ->
             try {
                 if (consumer.onSuccess(message)) {
-                    consumer.notifyPlugs(message)
                     toAcknowledge.send(ToBeAcknowledged(consumer.queueUri, message))
                 } else {
                     val error = ConsumptionError.UnsuccessfulConsumption(message)
                     consumer.onError(error)
-                    consumer.notifyPlugs(message, error)
                 }
             } catch (e: Throwable) {
-                consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
-            }
-        }
-    }
-
-    private suspend fun <T> SqsConsumer<T>.notifyPlugs(
-        message: Message,
-        error: ConsumptionError? = null,
-    ) {
-        if (this.plugs.isNotEmpty()) {
-            this.plugs.forEach { plug ->
-                if (error == null) {
-                    plug.handle(SuccessPlugRecord(message.body(), this.key))
-                } else {
-                    plug.handle(FailurePlugRecord(message.body(), this.key, error))
+                if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
+                    consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
                 }
             }
         }

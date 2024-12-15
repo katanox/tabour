@@ -6,7 +6,6 @@ dependencies {
     implementation(libs.coroutines.core)
 
     api(libs.aws.sqs)
-    api(project(":plug"))
 
     testImplementation(testLibs.kotlin.test.coroutines)
     testImplementation(testLibs.bundles.kotlin.test)

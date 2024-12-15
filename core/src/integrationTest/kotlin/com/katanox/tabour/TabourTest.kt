@@ -10,11 +10,6 @@ import com.katanox.tabour.configuration.sqs.sqsRegistryConfiguration
 import com.katanox.tabour.error.ProducerNotFound
 import com.katanox.tabour.error.ProductionResourceNotFound
 import com.katanox.tabour.error.RegistryNotFound
-import com.katanox.tabour.plug.ConsumerPlug
-import com.katanox.tabour.plug.FailurePlugRecord
-import com.katanox.tabour.plug.PlugRecord
-import com.katanox.tabour.plug.ProducerPlug
-import com.katanox.tabour.plug.SuccessPlugRecord
 import com.katanox.tabour.sqs.production.FifoDataProduction
 import com.katanox.tabour.sqs.production.NonFifoDataProduction
 import com.katanox.tabour.sqs.production.SqsDataForProduction
@@ -55,7 +50,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TabourTest {
     private val localstack =
-        LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8.1"))
+        LocalStackContainer(DockerImageName.parse("localstack/localstack:4.0"))
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 
@@ -170,78 +165,6 @@ class TabourTest {
             await.withPollDelay(Duration.ofSeconds(3)).untilAsserted { assertTrue { counter >= 1 } }
 
             purgeQueue(nonFifoQueueUrl)
-            container.stop()
-        }
-
-    @Test
-    @Tag("sqs-consumer-test")
-    fun `consume messages with consumer plug, triggers the plug`() =
-        runTest(UnconfinedTestDispatcher()) {
-            val container = tabour { numOfThreads = 1 }
-            val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
-                    this.endpointOverride =
-                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-                }
-            var plugCounter = 0
-
-            val plug =
-                object : ConsumerPlug {
-                    override suspend fun <T> handle(record: PlugRecord<T>) {
-                        when (record) {
-                            is FailurePlugRecord<*, *, *> -> plugCounter--
-                            is SuccessPlugRecord<*, *> -> plugCounter++
-                        }
-                    }
-                }
-
-            val sqsRegistry = sqsRegistry(config)
-            var counter = 0
-            val sqsProducerConfiguration =
-                SqsDataProductionConfiguration(
-                    produceData = { NonFifoDataProduction("this is a test message") },
-                    dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") },
-                )
-
-            val producer =
-                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
-
-            val consumer =
-                sqsConsumer(
-                    URL.of(URI.create(nonFifoQueueUrl), null),
-                    key = "my-consumer",
-                    onSuccess = {
-                        counter++
-                        true
-                    },
-                    onError = ::println,
-                ) {
-                    this.config = sqsConsumerConfiguration {
-                        sleepTime = Duration.ofMillis(200)
-                        consumeWhile = { counter < 1 }
-                    }
-
-                    plugs.add(plug)
-                }
-
-            sqsRegistry.addConsumer(consumer).addProducer(producer)
-            container.register(sqsRegistry)
-
-            container.start()
-
-            container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
-
-            purgeQueue(nonFifoQueueUrl)
-
-            await.withPollDelay(Duration.ofSeconds(2)).untilAsserted { assertTrue { counter >= 1 } }
-            await.withPollDelay(Duration.ofSeconds(2)).untilAsserted {
-                assertEquals(1, plugCounter)
-            }
             container.stop()
         }
 
@@ -385,80 +308,6 @@ class TabourTest {
             val producer =
                 sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
                     println(it)
-                }
-
-            sqsRegistry.addProducer(producer)
-            container.register(sqsRegistry)
-            container.start()
-
-            container.produceMessage(
-                "test-registry",
-                "fifo-test-producer",
-                sqsProducerConfiguration,
-            )
-
-            await
-                .withPollInterval(Duration.ofMillis(500))
-                .timeout(Duration.ofSeconds(5))
-                .untilAsserted {
-                    val receiveMessagesResponse =
-                        sqsClient.receiveMessage(
-                            ReceiveMessageRequest.builder()
-                                .queueUrl(fifoQueueUrl)
-                                .maxNumberOfMessages(5)
-                                .build()
-                        )
-
-                    assertTrue(receiveMessagesResponse.messages().isNotEmpty())
-                    assertEquals(
-                        receiveMessagesResponse.messages().first().body(),
-                        "this is a fifo test message",
-                    )
-                }
-            purgeQueue(fifoQueueUrl)
-            container.stop()
-        }
-
-    @Test
-    @Tag("sqs-producer-test")
-    fun `produce a message queue also triggers plugs`() =
-        runTest(UnconfinedTestDispatcher()) {
-            val container = tabour { numOfThreads = 1 }
-            val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
-                    this.endpointOverride =
-                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-                }
-
-            val sqsRegistry = sqsRegistry(config)
-            val sqsProducerConfiguration =
-                SqsDataProductionConfiguration(
-                    produceData = { FifoDataProduction("this is a fifo test message", "group1") },
-                    dataProduced = { _, _ -> },
-                    resourceNotFound = { _ -> println("Resource not found") },
-                )
-            var plugCounter = 0
-
-            val plug =
-                object : ProducerPlug {
-                    override suspend fun <T> handle(record: PlugRecord<T>) {
-                        when (record) {
-                            is FailurePlugRecord<*, *, *> -> plugCounter--
-                            is SuccessPlugRecord<*, *> -> plugCounter++
-                        }
-                    }
-                }
-            val producer =
-                sqsProducer(
-                    URL.of(URI.create(fifoQueueUrl), null),
-                    "fifo-test-producer",
-                    ::println,
-                ) {
-                    plugs.add(plug)
                 }
 
             sqsRegistry.addProducer(producer)

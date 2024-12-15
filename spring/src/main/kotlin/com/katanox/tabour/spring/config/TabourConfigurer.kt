@@ -25,6 +25,7 @@ class ContextRefreshedEventListener(
     @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int,
     @Value("\${tabour.config.enabled:true}") val enabled: Boolean,
 ) : ApplicationListener<ContextRefreshedEvent?> {
+    @Suppress("WRONG_NULLABILITY_FOR_JAVA_OVERRIDE")
     override fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
         if (contextRefreshedEvent?.applicationContext != null) {
             setupTabour(contextRefreshedEvent.applicationContext)

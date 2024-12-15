@@ -2,7 +2,6 @@ package com.katanox.tabour.sqs.production
 
 import com.katanox.tabour.configuration.sqs.sqsProducerConfiguration
 import com.katanox.tabour.consumption.Config
-import com.katanox.tabour.plug.ProducerPlug
 import java.net.URL
 
 class SqsProducer<K>
@@ -15,13 +14,6 @@ internal constructor(
     val queueUrl: URL,
     override val onError: suspend (ProductionError) -> Unit,
 ) : Config, TabourProducer<K> {
-
-    /**
-     * This function is invoked if the message is not successfully produced after
-     * [SqsProducerConfiguration.retries] times
-     */
-    override var plugs: MutableList<ProducerPlug> = mutableListOf()
-
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }
 

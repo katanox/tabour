@@ -1,7 +1,5 @@
 package com.katanox.tabour.sqs.production
 
-import com.katanox.tabour.plug.FailurePlugRecord
-import com.katanox.tabour.plug.SuccessPlugRecord
 import com.katanox.tabour.retry
 import java.time.Instant
 import software.amazon.awssdk.awscore.exception.AwsServiceException
@@ -36,15 +34,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
         when (produceData) {
             is SqsProductionData -> {
                 if (!produceData.message.isNullOrEmpty()) {
-                    retry(
-                        producer.config.retries,
-                        {
-                            val error = throwableToError(it)
-
-                            producer.onError(error)
-                            producer.notifyPlugs(produceData.message, error)
-                        },
-                    ) {
+                    retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
                         sqs.sendMessage {
                                 produceData.buildMessageRequest(it)
                                 it.queueUrl(url)
@@ -55,18 +45,12 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                                         produceData,
                                         SqsMessageProduced(response.messageId(), Instant.now()),
                                     )
-
-                                    producer.notifyPlugs(produceData.message)
                                 }
                             }
                     }
                 } else {
                     if (produceData.message.isNullOrEmpty()) {
                         producer.onError(ProductionError.EmptyMessage(produceData))
-                        producer.notifyPlugs(
-                            produceData.message,
-                            ProductionError.EmptyMessage(produceData),
-                        )
                     }
                 }
             }
@@ -94,31 +78,9 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                                             SqsMessageProduced(entry.messageId(), Instant.now()),
                                         )
                                     }
-                                } else {
-                                    response.failed().forEach {
-                                        producer.notifyPlugs(
-                                            it.message(),
-                                            throwableToError(RuntimeException(it.message())),
-                                        )
-                                    }
                                 }
                             }
                         }
-                }
-            }
-        }
-    }
-
-    private suspend fun <T> SqsProducer<T>.notifyPlugs(
-        message: String?,
-        error: ProductionError? = null,
-    ) {
-        if (plugs.isNotEmpty()) {
-            plugs.forEach { plug ->
-                if (error == null) {
-                    plug.handle(SuccessPlugRecord(message, key))
-                } else {
-                    plug.handle(FailurePlugRecord(message, key, error))
                 }
             }
         }

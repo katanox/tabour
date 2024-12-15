@@ -40,24 +40,24 @@ subprojects {
                         )
                     authentication {
                         credentials {
-                            username =
-                                System.getenv("OSSRH_USERNAME")?.ifEmpty {
-                                    throw RuntimeException(
-                                        "OSSRH_USERNAME environment variable is not set"
-                                    )
-                                }
-                                    ?: throw RuntimeException(
-                                        "OSSRH_USERNAME environment variable is not set"
-                                    )
-                            password =
-                                System.getenv("OSSRH_PASSWORD")?.ifEmpty {
-                                    throw RuntimeException(
-                                        "OSSHR_PASSWORD environment variable is not set"
-                                    )
-                                }
-                                    ?: throw RuntimeException(
-                                        "OSSHR_PASSWORD  environment variable is not set"
-                                    )
+//                            username =
+//                                System.getenv("OSSRH_USERNAME")?.ifEmpty {
+//                                    throw RuntimeException(
+//                                        "OSSRH_USERNAME environment variable is not set"
+//                                    )
+//                                }
+//                                    ?: throw RuntimeException(
+//                                        "OSSRH_USERNAME environment variable is not set"
+//                                    )
+//                            password =
+//                                System.getenv("OSSRH_PASSWORD")?.ifEmpty {
+//                                    throw RuntimeException(
+//                                        "OSSHR_PASSWORD environment variable is not set"
+//                                    )
+//                                }
+//                                    ?: throw RuntimeException(
+//                                        "OSSHR_PASSWORD  environment variable is not set"
+//                                    )
                         }
                     }
                 }
