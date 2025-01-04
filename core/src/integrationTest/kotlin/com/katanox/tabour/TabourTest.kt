@@ -23,6 +23,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -151,7 +152,7 @@ class TabourTest {
                     onError = ::println,
                 ) {
                     this.config = sqsConsumerConfiguration {
-                        sleepTime = Duration.ofMillis(200)
+                        sleepTime = 200.milliseconds
                         consumeWhile = { counter < 1 }
                     }
                 }
@@ -201,7 +202,7 @@ class TabourTest {
                     onError = ::println,
                 ) {
                     this.config = sqsConsumerConfiguration {
-                        sleepTime = Duration.ofMillis(200)
+                        sleepTime = 200.milliseconds
                         consumeWhile = { counter < 50 }
                         concurrency = 5
                         maxMessages = 2

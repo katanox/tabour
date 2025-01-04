@@ -7,12 +7,15 @@ dependencies {
 
     api(libs.aws.sqs)
 
+    api(libs.klogging)
+
     testImplementation(testLibs.kotlin.test.coroutines)
     testImplementation(testLibs.bundles.kotlin.test)
     testImplementation(testLibs.mockk)
 }
 
 group = "com.katanox.tabour"
+
 description = "Tabour Core"
 
 @Suppress("UnstableApiUsage")
