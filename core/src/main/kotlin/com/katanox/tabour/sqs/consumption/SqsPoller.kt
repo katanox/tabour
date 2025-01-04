@@ -140,9 +140,6 @@ internal class SqsPoller(private val sqs: SqsClient) {
                     acknowledgeChannels[consumerIndex]
                         ?.channel
                         ?.send(ToBeAcknowledged(consumer.queueUri, message))
-                    acknowledgeChannels[consumerIndex]
-                        ?.channel
-                        ?.send(ToBeAcknowledged(consumer.queueUri, message))
                 } else {
                     val error = ConsumptionError.UnsuccessfulConsumption(message)
                     consumer.onError(error)
