@@ -1,8 +1,8 @@
 package com.katanox.tabour.sqs.config
 
 import com.katanox.tabour.consumption.Config
-import java.time.Duration
-import java.time.temporal.ChronoUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class SqsConsumerConfiguration internal constructor() : Config {
 
@@ -33,7 +33,7 @@ class SqsConsumerConfiguration internal constructor() : Config {
      *
      * Default is 10 seconds
      */
-    var sleepTime: Duration = Duration.of(10L, ChronoUnit.SECONDS)
+    var sleepTime: Duration = 10.seconds
 
     /**
      * The duration for which the call waits for a message to arrive in the queue before returning.
@@ -41,9 +41,9 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * available and the wait time expires, the call returns successfully with an empty list of
      * messages.
      *
-     * Default is 10 seconds
+     * Default is 0 seconds
      */
-    var waitTime: Duration = Duration.of(0L, ChronoUnit.SECONDS)
+    var waitTime: Duration = 0.seconds
 
     /**
      * The number of attempts to receive a message if an exception occurs
@@ -63,4 +63,7 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * Default is true, which means that the consumer will start normally by default
      */
     var consumeWhile: () -> Boolean = { true }
+
+    /** The duration between requests to acknowledge received messages */
+    val acknowledgeTime: Duration = 1.seconds
 }

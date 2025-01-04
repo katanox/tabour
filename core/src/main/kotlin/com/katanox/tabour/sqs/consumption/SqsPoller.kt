@@ -4,7 +4,9 @@ import com.katanox.tabour.TABOUR_SHUTDOWN_MESSAGE
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
+import kotlin.time.Duration
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -22,11 +24,18 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 private data class ToBeAcknowledged(val url: URL, val message: Message)
 
+private data class AcknowledgeConfiguration(
+    val channel: Channel<ToBeAcknowledged>,
+    val acknowledgeTime: Duration,
+)
+
+private val logger = KotlinLogging.logger {}
+
 internal class SqsPoller(private val sqs: SqsClient) {
     private var consume: Boolean = false
     private var acknowledge: Boolean = true
-    private val toAcknowledge = Channel<ToBeAcknowledged>()
     private var jobs: Array<Job?> = arrayOf()
+    private val acknowledgeChannels: MutableMap<Int, AcknowledgeConfiguration> = mutableMapOf()
 
     suspend fun poll(consumers: List<SqsConsumer<*>>) = coroutineScope {
         consume = true
@@ -44,8 +53,13 @@ internal class SqsPoller(private val sqs: SqsClient) {
                     if (!startedConsumerIndexes[index] && consumer.config.consumeWhile()) {
                         val job = launch {
                             while (true) {
-                                accept(consumer)
-                                delay(consumer.config.sleepTime.toMillis())
+                                acknowledgeChannels[index] =
+                                    AcknowledgeConfiguration(
+                                        Channel(),
+                                        consumer.config.acknowledgeTime,
+                                    )
+                                accept(consumer, index)
+                                delay(consumer.config.sleepTime.inWholeMilliseconds)
                             }
                         }
 
@@ -73,13 +87,14 @@ internal class SqsPoller(private val sqs: SqsClient) {
     suspend fun stopPolling() {
         consume = false
         acknowledge = false
+        acknowledgeChannels.clear()
         jobs.forEach {
             it?.cancelAndJoin()
             yield()
         }
     }
 
-    private suspend fun <T> accept(consumer: SqsConsumer<T>) = coroutineScope {
+    private suspend fun <T> accept(consumer: SqsConsumer<T>, index: Int) = coroutineScope {
         repeat(consumer.config.concurrency) {
             launch {
                 retry(
@@ -100,23 +115,34 @@ internal class SqsPoller(private val sqs: SqsClient) {
                         ReceiveMessageRequest.builder()
                             .queueUrl(consumer.queueUri.toString())
                             .maxNumberOfMessages(consumer.config.maxMessages)
-                            .waitTimeSeconds(consumer.config.waitTime.toSecondsPart())
+                            .waitTimeSeconds(consumer.config.waitTime.inWholeSeconds.toInt())
                             .build()
+
                     val messages = sqs.receiveMessage(request).messages()
 
                     if (messages.isNotEmpty()) {
-                        handleMessages(messages, consumer)
+                        logger.debug { "Received $messages from ${consumer.queueUri}" }
+                        handleMessages(messages, consumer, index)
                     }
                 }
             }
         }
     }
 
-    private suspend fun <T> handleMessages(messages: List<Message>, consumer: SqsConsumer<T>) {
+    private suspend fun <T> handleMessages(
+        messages: List<Message>,
+        consumer: SqsConsumer<T>,
+        consumerIndex: Int,
+    ) {
         messages.forEach { message ->
             try {
                 if (consumer.onSuccess(message)) {
-                    toAcknowledge.send(ToBeAcknowledged(consumer.queueUri, message))
+                    acknowledgeChannels[consumerIndex]
+                        ?.channel
+                        ?.send(ToBeAcknowledged(consumer.queueUri, message))
+                    acknowledgeChannels[consumerIndex]
+                        ?.channel
+                        ?.send(ToBeAcknowledged(consumer.queueUri, message))
                 } else {
                     val error = ConsumptionError.UnsuccessfulConsumption(message)
                     consumer.onError(error)
@@ -129,33 +155,57 @@ internal class SqsPoller(private val sqs: SqsClient) {
         }
     }
 
-    private suspend fun startAcknowledging() {
-        while (acknowledge) {
-            buildList {
-                    repeat(10) { toAcknowledge.tryReceive().getOrNull()?.also { this.add(it) } }
-                }
-                .groupBy(ToBeAcknowledged::url)
-                .forEach { (url, messages) ->
-                    val entries =
-                        messages.map {
-                            DeleteMessageBatchRequestEntry.builder()
-                                .id(it.message.messageId())
-                                .receiptHandle(it.message.receiptHandle())
-                                .build()
+    private suspend fun startAcknowledging() = coroutineScope {
+        acknowledgeChannels.forEach { (_, acknowledgeConfiguration) ->
+            while (acknowledge) {
+                launch {
+                    buildList {
+                            repeat(10) {
+                                val element =
+                                    acknowledgeConfiguration.channel.tryReceive().getOrNull()
+                                if (element != null) {
+                                    add(element)
+                                }
+                            }
                         }
+                        .groupBy(ToBeAcknowledged::url)
+                        .forEach { (url, messages) ->
+                            val entries =
+                                messages.map {
+                                    DeleteMessageBatchRequestEntry.builder()
+                                        .id(it.message.messageId())
+                                        .receiptHandle(it.message.receiptHandle())
+                                        .build()
+                                }
 
-                    if (entries.isNotEmpty()) {
-                        val request =
-                            DeleteMessageBatchRequest.builder()
-                                .queueUrl(url.toString())
-                                .entries(entries)
-                                .build()
+                            if (entries.isNotEmpty()) {
+                                try {
+                                    val request =
+                                        DeleteMessageBatchRequest.builder()
+                                            .queueUrl(url.toString())
+                                            .entries(entries)
+                                            .build()
 
-                        sqs.deleteMessageBatch(request)
-                    }
+                                    val deleteResponse = sqs.deleteMessageBatch(request)
+
+                                    if (deleteResponse.hasFailed()) {
+                                        val failedMessages =
+                                            deleteResponse.failed().map { it.message() }
+
+                                        logger.error {
+                                            "There are failures while deleting batch. ${failedMessages.joinToString(", ")}"
+                                        }
+                                    } else {
+                                        logger.debug { "Successfully deleted batch" }
+                                    }
+                                } catch (e: Throwable) {
+                                    logger.error(e) { "Failed to delete message batch" }
+                                }
+                            }
+                        }
                 }
-
-            delay(1000)
+                delay(acknowledgeConfiguration.acknowledgeTime)
+            }
         }
     }
 }

@@ -9,6 +9,8 @@ import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -95,5 +97,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
          * with Localstack
          */
         var endpointOverride: URI? = null
+        /** The time between requests when acknowledging messages */
+        var acknowledgeDelay: Duration = 1.seconds
     }
 }
