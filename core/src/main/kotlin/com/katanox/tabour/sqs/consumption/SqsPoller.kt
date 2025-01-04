@@ -157,54 +157,56 @@ internal class SqsPoller(private val sqs: SqsClient) {
 
     private suspend fun startAcknowledging() = coroutineScope {
         acknowledgeChannels.forEach { (_, acknowledgeConfiguration) ->
-            while (acknowledge) {
-                launch {
-                    buildList {
-                            repeat(10) {
-                                val element =
-                                    acknowledgeConfiguration.channel.tryReceive().getOrNull()
-                                if (element != null) {
-                                    add(element)
-                                }
-                            }
-                        }
-                        .groupBy(ToBeAcknowledged::url)
-                        .forEach { (url, messages) ->
-                            val entries =
-                                messages.map {
-                                    DeleteMessageBatchRequestEntry.builder()
-                                        .id(it.message.messageId())
-                                        .receiptHandle(it.message.receiptHandle())
-                                        .build()
-                                }
-
-                            if (entries.isNotEmpty()) {
-                                try {
-                                    val request =
-                                        DeleteMessageBatchRequest.builder()
-                                            .queueUrl(url.toString())
-                                            .entries(entries)
-                                            .build()
-
-                                    val deleteResponse = sqs.deleteMessageBatch(request)
-
-                                    if (deleteResponse.hasFailed()) {
-                                        val failedMessages =
-                                            deleteResponse.failed().map { it.message() }
-
-                                        logger.error {
-                                            "There are failures while deleting batch. ${failedMessages.joinToString(", ")}"
-                                        }
-                                    } else {
-                                        logger.debug { "Successfully deleted batch" }
+            launch {
+                while (acknowledge) {
+                    launch {
+                        buildList {
+                                repeat(10) {
+                                    val element =
+                                        acknowledgeConfiguration.channel.tryReceive().getOrNull()
+                                    if (element != null) {
+                                        add(element)
                                     }
-                                } catch (e: Throwable) {
-                                    logger.error(e) { "Failed to delete message batch" }
                                 }
                             }
-                        }
+                            .groupBy(ToBeAcknowledged::url)
+                            .forEach { (url, messages) ->
+                                val entries =
+                                    messages.map {
+                                        DeleteMessageBatchRequestEntry.builder()
+                                            .id(it.message.messageId())
+                                            .receiptHandle(it.message.receiptHandle())
+                                            .build()
+                                    }
+
+                                if (entries.isNotEmpty()) {
+                                    try {
+                                        val request =
+                                            DeleteMessageBatchRequest.builder()
+                                                .queueUrl(url.toString())
+                                                .entries(entries)
+                                                .build()
+
+                                        val deleteResponse = sqs.deleteMessageBatch(request)
+
+                                        if (deleteResponse.hasFailed()) {
+                                            val failedMessages =
+                                                deleteResponse.failed().map { it.message() }
+
+                                            logger.error {
+                                                "There are failures while deleting batch. ${failedMessages.joinToString(", ")}"
+                                            }
+                                        } else {
+                                            logger.debug { "Successfully deleted batch" }
+                                        }
+                                    } catch (e: Throwable) {
+                                        logger.error(e) { "Failed to delete message batch" }
+                                    }
+                                }
+                            }
+                    }
+                    delay(acknowledgeConfiguration.acknowledgeTime)
                 }
-                delay(acknowledgeConfiguration.acknowledgeTime)
             }
         }
     }
