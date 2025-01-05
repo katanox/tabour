@@ -6,8 +6,11 @@ import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
-import kotlin.time.Duration
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -24,18 +27,14 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 private data class ToBeAcknowledged(val url: URL, val message: Message)
 
-private data class AcknowledgeConfiguration(
-    val channel: Channel<ToBeAcknowledged>,
-    val acknowledgeTime: Duration,
-)
-
 private val logger = KotlinLogging.logger {}
 
 internal class SqsPoller(private val sqs: SqsClient) {
     private var consume: Boolean = false
     private var acknowledge: Boolean = true
     private var jobs: Array<Job?> = arrayOf()
-    private val acknowledgeChannels: MutableMap<Int, AcknowledgeConfiguration> = mutableMapOf()
+    private val acknowledgeChannels: MutableMap<Int, Channel<ToBeAcknowledged>> =
+        ConcurrentHashMap()
 
     suspend fun poll(consumers: List<SqsConsumer<*>>) = coroutineScope {
         consume = true
@@ -51,15 +50,11 @@ internal class SqsPoller(private val sqs: SqsClient) {
             while (consume) {
                 consumers.forEachIndexed { index, consumer ->
                     if (!startedConsumerIndexes[index] && consumer.config.consumeWhile()) {
+                        acknowledgeChannels[index] = Channel()
                         val job = launch {
                             while (true) {
-                                acknowledgeChannels[index] =
-                                    AcknowledgeConfiguration(
-                                        Channel(),
-                                        consumer.config.acknowledgeTime,
-                                    )
                                 accept(consumer, index)
-                                delay(consumer.config.sleepTime.inWholeMilliseconds)
+                                delay(consumer.config.sleepTime)
                             }
                         }
 
@@ -81,6 +76,7 @@ internal class SqsPoller(private val sqs: SqsClient) {
                 delay(5000)
             }
         }
+
         jobs = jobIndexes
     }
 
@@ -137,9 +133,9 @@ internal class SqsPoller(private val sqs: SqsClient) {
         messages.forEach { message ->
             try {
                 if (consumer.onSuccess(message)) {
-                    acknowledgeChannels[consumerIndex]
-                        ?.channel
-                        ?.send(ToBeAcknowledged(consumer.queueUri, message))
+                    acknowledgeChannels[consumerIndex]?.send(
+                        ToBeAcknowledged(consumer.queueUri, message)
+                    )
                 } else {
                     val error = ConsumptionError.UnsuccessfulConsumption(message)
                     consumer.onError(error)
@@ -153,14 +149,13 @@ internal class SqsPoller(private val sqs: SqsClient) {
     }
 
     private suspend fun startAcknowledging() = coroutineScope {
-        acknowledgeChannels.forEach { (_, acknowledgeConfiguration) ->
-            launch {
-                while (acknowledge) {
-                    launch {
+        while (acknowledge) {
+            val tasks =
+                acknowledgeChannels.map { (_, channel) ->
+                    async {
                         buildList {
                                 repeat(10) {
-                                    val element =
-                                        acknowledgeConfiguration.channel.tryReceive().getOrNull()
+                                    val element = channel.tryReceive().getOrNull()
                                     if (element != null) {
                                         add(element)
                                     }
@@ -202,9 +197,9 @@ internal class SqsPoller(private val sqs: SqsClient) {
                                 }
                             }
                     }
-                    delay(acknowledgeConfiguration.acknowledgeTime)
                 }
-            }
+            tasks.awaitAll()
+            delay(1.seconds)
         }
     }
 }

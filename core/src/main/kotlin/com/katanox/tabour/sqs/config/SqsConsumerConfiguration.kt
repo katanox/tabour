@@ -63,7 +63,4 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * Default is true, which means that the consumer will start normally by default
      */
     var consumeWhile: () -> Boolean = { true }
-
-    /** The duration between requests to acknowledge received messages */
-    val acknowledgeTime: Duration = 1.seconds
 }
