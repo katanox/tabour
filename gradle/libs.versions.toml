@@ -6,7 +6,7 @@ ktfmt = "0.21.0"
 dokka = "2.0.0"
 spring-boot = "3.4.1"
 protobuf-plugin = "0.9.4"
-protobuf-java = "4.29.2"
+protobuf-java = "4.29.3"
 klogging = "7.0.3"
 
 [libraries]
