@@ -13,6 +13,11 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.model.Message
 
+/**
+ * Creates a new [SqsRegistry.Configuration] which can be used as configuration for a [SqsRegistry]
+ *
+ * [init] is used to modify the default values of the configuration
+ */
 fun <T> sqsRegistryConfiguration(
     key: T,
     credentialsProvider: AwsCredentialsProvider,
@@ -21,6 +26,10 @@ fun <T> sqsRegistryConfiguration(
 ): SqsRegistry.Configuration<T> =
     config(SqsRegistry.Configuration(key, credentialsProvider, region), init)
 
+/**
+ * Creates a new [SqsRegistry.Configuration] which can be used as configuration for a [SqsRegistry]
+ * using the default configuration values
+ */
 fun <T> sqsRegistryConfiguration(
     key: T,
     credentialsProvider: AwsCredentialsProvider,

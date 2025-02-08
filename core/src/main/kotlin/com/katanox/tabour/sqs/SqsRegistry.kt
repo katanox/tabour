@@ -9,18 +9,14 @@ import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsClient
 
 /**
- * A type of [Registry] which works with SQS
+ * An implementation of [Registry] which works with SQS
  *
  * [T] is the key of the registry which is used to identify the registry
- *
- * Supports consumption and production of SQS messages
  */
 class SqsRegistry<T> internal constructor(private val configuration: Configuration<T>) :
     Registry<T> {
@@ -67,10 +63,12 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
         sqsPoller.poll(consumers)
     }
 
+    /** Stops the consumption of messages by waiting the consumers to finish their work */
     override suspend fun stopConsumption() {
         sqsPoller.stopPolling()
     }
 
+    /** Produces an SQS message using the producer that was registered with [producerKey] */
     suspend fun <T> produce(
         producerKey: T,
         productionConfiguration: SqsDataProductionConfiguration,
@@ -97,7 +95,5 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
          * with Localstack
          */
         var endpointOverride: URI? = null
-        /** The time between requests when acknowledging messages */
-        var acknowledgeDelay: Duration = 1.seconds
     }
 }

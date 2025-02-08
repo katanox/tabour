@@ -5,7 +5,7 @@
 ```kotlin
 val producer =
     sqsProducer(URI("https://queue-url.com"), "key-1") {
-        onError = { error -> println(error) }
+        onError = { error: ProductionError -> println(error) }
         config = { retries = 1 }
     }
 ```
@@ -44,12 +44,14 @@ tabourContainer.produceMessage("registry-key", "producer-key") {
 
 ```
 
-This will search for the appropriate registry and producer and use its configuration to produce the message
-returned from the lambda function provided (`producerFn`)
+We can produce a batch of message using `BatchDataForProduction` which contains a list of `FifoQueueData` and `NonFifoQueueData`
 
-**Notes**
+> [!IMPORTANT]
+> If a registry with the given key is not found, nothing happens
 
-- If a registry with the given key is not found, nothing happens
-- If a producer with the given key is not found, nothing happens
-- If the producer lambda returns a null as its first part, the message is not produced
+> [!IMPORTANT]
+> If a producer with the given key is not found, nothing happens
+
+> [!IMPORTANT]
+> If the producer lambda returns a null as its first part, the message is not produced
 
