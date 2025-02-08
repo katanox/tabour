@@ -1,6 +1,6 @@
 ## SqsRegistry
 
-The SqsRegistry is a registry where we can register the following classes
+The SqsRegistry is a registry where we can register consumers and producers for SQS queues.
 
 - [SqsProducer](producer.md)
 - [SqsConsumer](consumer.md)

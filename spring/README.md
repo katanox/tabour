@@ -4,16 +4,15 @@ Tabour spring provides functionality to reduce the work of setting up a tabour c
 
 ## Requirements
 
-- Spring boot > 3.x.x
+- Spring Boot: > 3
 
 ## Usage
 
 Tabour Spring provides the annotation: `AutoconfigureTabour` which needs to be placed on your Spring Boot application
-class
+class.
+You also need to enable component scanning for the Tabour annotations as shown in the example below.
 
-Then you need to setup your registries as Beans
-
-Tabour Spring will collect these registries, register them and start tabour
+Then you need to setup your registries as Beans which will be collected and launched.
 
 ## Configuration
 
@@ -39,6 +38,7 @@ Add the annotation:
 
 ```kotlin
 @AutoconfigureTabour
+@ComponentScan(basePackages = ["com.katanox.tabour"])
 class MyApplication 
 ```
 
