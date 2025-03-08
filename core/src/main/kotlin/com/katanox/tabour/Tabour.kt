@@ -43,7 +43,7 @@ class Tabour internal constructor(val config: Configuration) {
      * Adds a new registry to the Tabour Container. All registries must be registered before
      * starting the tabour container.
      */
-    fun <T> register(registry: Registry<T>): Tabour = this.apply { registries.add(registry) }
+    fun <T> register(registry: Registry<T>): Tabour = apply { registries.add(registry) }
 
     /**
      * Produces a message using one of the registered producers
@@ -57,7 +57,7 @@ class Tabour internal constructor(val config: Configuration) {
      * - callback for when the data is produced
      * - handle the case where the production is not possible because the producer is not found
      */
-    suspend fun <T, K> produceMessage(
+    fun <T, K> produceMessage(
         registryKey: K,
         producerKey: T,
         productionConfiguration: SqsDataProductionConfiguration,
