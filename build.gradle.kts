@@ -68,7 +68,7 @@ subprojects {
                             developer {
                                 id = "katanoxdevs"
                                 name = "Katanox Developers"
-                                email = "katanox@developers.com"
+                                email = "developers@katanox.com"
                             }
                         }
                         scm { url = "https://github.com/katanox/tabour" }
