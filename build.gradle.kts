@@ -78,7 +78,7 @@ subprojects {
         }
     }
 
-    //    signing { sign(publishing.publications["gpr"]) }
+    signing { sign(publishing.publications["gpr"]) }
 
     ktfmt { kotlinLangStyle() }
 
