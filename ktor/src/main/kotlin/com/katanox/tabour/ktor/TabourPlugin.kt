@@ -12,8 +12,16 @@ import io.ktor.utils.io.locks.ReentrantLock
 import io.ktor.utils.io.locks.withLock
 
 class TabourConfiguration {
+    /** The tabour instance which will be used to start the Tabour container */
     var tabour = tabour { numOfThreads = 1 }
+
+    /** Indicates if the tabour container should be started */
     var enabled: Boolean = false
+
+    /**
+     * A function lazily configures tabour. If [enabled] is false, then [configure] will not be
+     * used. This allows the users to lazily register registries
+     */
     var configure: (Tabour) -> Tabour = { it }
 }
 
