@@ -1,6 +1,5 @@
 package com.katanox.tabour.ktor
 
-import com.katanox.tabour.Tabour
 import com.katanox.tabour.configuration.core.tabour
 import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.ApplicationStopped
@@ -17,12 +16,6 @@ class TabourConfiguration {
 
     /** Indicates if the tabour container should be started */
     var enabled: Boolean = false
-
-    /**
-     * A function lazily configures tabour. If [enabled] is false, then [configure] will not be
-     * used. This allows the users to lazily register registries
-     */
-    var configure: (Tabour) -> Tabour = { it }
 }
 
 @OptIn(InternalAPI::class)
@@ -33,8 +26,6 @@ val TabourPlugin =
         on(MonitoringEvent(ApplicationStarted)) { application ->
             if (pluginConfig.enabled) {
                 application.log.info("Starting tabour")
-
-                pluginConfig.configure(pluginConfig.tabour)
 
                 lock.withLock { pluginConfig.tabour.start() }
             }
