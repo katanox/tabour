@@ -17,7 +17,7 @@ spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-aut
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-java" }
 klogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "klogging" }
-ktor-server = { module ="io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-core = { module ="io.ktor:ktor-server-core", version.ref = "ktor" }
 
 [plugins]
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
