@@ -13,8 +13,7 @@ description = "Tabour Spring Boot"
 
 @Suppress("UnstableApiUsage")
 testing {
-    suites @Suppress("UnstableApiUsage")
-{
+    suites @Suppress("UnstableApiUsage") {
         val test by getting(JvmTestSuite::class) { useJUnitJupiter() }
 
         register("integrationTest", JvmTestSuite::class) {

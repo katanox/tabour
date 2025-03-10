@@ -1,6 +1,4 @@
-plugins {
-    alias(libs.plugins.protobuf)
-}
+plugins { alias(libs.plugins.protobuf) }
 
 dependencies {
     api(libs.aws.sqs)

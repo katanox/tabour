@@ -31,6 +31,8 @@ const val TABOUR_SHUTDOWN_MESSAGE = "tabour shutdown"
 class Tabour internal constructor(val config: Configuration) {
     private val registries: MutableSet<Registry<*>> = mutableSetOf()
 
+    private val registriesByKey by lazy { registries.associateBy { it.key } }
+
     @OptIn(DelicateCoroutinesApi::class)
     private val dispatcher: CoroutineDispatcher =
         newFixedThreadPoolContext(config.numOfThreads, "tabour")
@@ -62,7 +64,7 @@ class Tabour internal constructor(val config: Configuration) {
         producerKey: T,
         productionConfiguration: SqsDataProductionConfiguration,
     ) {
-        when (val registry = registries.find { it.key == registryKey }) {
+        when (val registry = registriesByKey[registryKey]) {
             is SqsRegistry ->
                 scope.launch { registry.produce(producerKey, productionConfiguration) }
             else -> productionConfiguration.resourceNotFound(RegistryNotFound(registryKey))
