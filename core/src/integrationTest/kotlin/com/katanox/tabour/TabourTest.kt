@@ -51,7 +51,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TabourTest {
     private val localstack =
-        LocalStackContainer(DockerImageName.parse("localstack/localstack:4.0"))
+        LocalStackContainer(DockerImageName.parse("localstack/localstack:4.2"))
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 

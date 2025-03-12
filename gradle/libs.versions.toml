@@ -8,6 +8,7 @@ spring-boot = "3.4.3"
 protobuf-plugin = "0.9.4"
 protobuf-java = "4.30.0"
 klogging = "7.0.5"
+ktor = "3.1.1"
 
 [libraries]
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -16,6 +17,7 @@ spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-aut
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-java" }
 klogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "klogging" }
+ktor-server-core = { module ="io.ktor:ktor-server-core", version.ref = "ktor" }
 
 [plugins]
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
