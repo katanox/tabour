@@ -6,8 +6,8 @@
 
 rootProject.name = "tabour"
 
-include("core", "proto", "spring", "plug", "ktor")
+include("core", "proto", "spring", "ktor")
 
 dependencyResolutionManagement {
-  versionCatalogs { create("testLibs") { from(files("gradle/testLibs.versions.toml")) } }
+    versionCatalogs { create("testLibs") { from(files("gradle/testLibs.versions.toml")) } }
 }
