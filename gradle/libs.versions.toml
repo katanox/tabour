@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.1.10"
+kotlin = "2.1.20"
 coroutines = "1.10.1"
 aws-sqs = "2.31.1"
 ktfmt = "0.22.0"
@@ -9,6 +9,8 @@ protobuf-plugin = "0.9.4"
 protobuf-java = "4.30.1"
 klogging = "7.0.5"
 ktor = "3.1.1"
+nexus-publish = "2.0.0"
+
 
 [libraries]
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -17,9 +19,10 @@ spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-aut
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-java" }
 klogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "klogging" }
-ktor-server-core = { module ="io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 
 [plugins]
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish" }
