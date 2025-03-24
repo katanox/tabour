@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.1.20"
 coroutines = "1.10.1"
-aws-sqs = "2.31.1"
+aws-sqs = "2.31.6"
 ktfmt = "0.22.0"
 dokka = "2.0.0"
 spring-boot = "3.4.4"
