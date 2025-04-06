@@ -7,7 +7,7 @@ dokka = "2.0.0"
 spring-boot = "3.4.4"
 protobuf-plugin = "0.9.4"
 protobuf-java = "4.30.2"
-klogging = "7.0.5"
+klogging = "7.0.6"
 ktor = "3.1.2"
 nexus-publish = "2.0.0"
 
