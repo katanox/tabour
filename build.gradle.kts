@@ -82,6 +82,16 @@ subprojects {
 
         gitRootSearch = true
 
+        release {
+            github {
+                enabled = true
+                username = "gpopides"
+                sign = true
+                repoUrl = "https://github.com/katanox/tabour"
+                releaseNotesUrl = "https://github.com/katanox/tabour/releases"
+            }
+        }
+
         deploy {
             maven {
                 mavenCentral {
