@@ -1,11 +1,9 @@
-import java.net.URI
-
 plugins {
     kotlin("jvm").version(libs.versions.kotlin)
     `maven-publish`
     alias(libs.plugins.dokka)
     alias(libs.plugins.ktfmt)
-    alias(libs.plugins.nexus.publish)
+    alias(libs.plugins.jreleaser)
     signing
 }
 
@@ -21,6 +19,7 @@ subprojects {
     plugins.apply("com.ncorti.ktfmt.gradle")
     plugins.apply("org.jetbrains.dokka")
     plugins.apply("signing")
+    plugins.apply("org.jreleaser")
 
     version = tabourVersion
 
@@ -34,22 +33,10 @@ subprojects {
     }
 
     publishing {
+        repositories {
+            maven { url = layout.buildDirectory.dir("staging-deploy").get().asFile.toURI() }
+        }
         publications {
-            repositories {
-                maven {
-                    url =
-                        URI.create(
-                            "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-                        )
-                    authentication {
-                        credentials {
-                            username = System.getenv("OSSRH_USERNAME")
-                            password = System.getenv("OSSRH_PASSWORD")
-                        }
-                    }
-                }
-            }
-
             publications {
                 register<MavenPublication>("gpr") {
                     from(components["java"])
@@ -86,15 +73,26 @@ subprojects {
     ktfmt { kotlinLangStyle() }
 
     tasks.test { useJUnitPlatform() }
-}
 
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-            snapshotRepositoryUrl.set(
-                uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-            )
+    jreleaser {
+        signing {
+            setActive("ALWAYS")
+            armored = true
+        }
+
+        gitRootSearch = true
+
+        deploy {
+            maven {
+                mavenCentral {
+                    create("sonatype") {
+                        version = tabourVersion
+                        setActive("ALWAYS")
+                        url = "https://central.sonatype.com/api/v1/publisher"
+                        stagingRepository("build/staging-deploy")
+                    }
+                }
+            }
         }
     }
 }

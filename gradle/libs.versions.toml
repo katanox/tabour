@@ -9,7 +9,7 @@ protobuf-plugin = "0.9.4"
 protobuf-java = "4.30.2"
 klogging = "7.0.5"
 ktor = "3.1.2"
-nexus-publish = "2.0.0"
+jreleaser = "1.17.0"
 
 
 [libraries]
@@ -25,4 +25,4 @@ ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish" }
+jreleaser = { id = "org.jreleaser", version.ref = "jreleaser" }
