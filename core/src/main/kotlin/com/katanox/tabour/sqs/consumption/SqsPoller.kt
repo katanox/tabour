@@ -7,7 +7,6 @@ import com.katanox.tabour.sqs.config.SqsConsumer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -164,12 +163,14 @@ internal class SqsPoller(private val sqs: SqsClient) {
                             .groupBy(ToBeAcknowledged::url)
                             .forEach { (url, messages) ->
                                 val entries =
-                                    messages.map {
-                                        DeleteMessageBatchRequestEntry.builder()
-                                            .id(it.message.messageId())
-                                            .receiptHandle(it.message.receiptHandle())
-                                            .build()
-                                    }
+                                    messages
+                                        .distinctBy { it.message.messageId() }
+                                        .map {
+                                            DeleteMessageBatchRequestEntry.builder()
+                                                .id(it.message.messageId())
+                                                .receiptHandle(it.message.receiptHandle())
+                                                .build()
+                                        }
 
                                 if (entries.isNotEmpty()) {
                                     try {
@@ -199,7 +200,6 @@ internal class SqsPoller(private val sqs: SqsClient) {
                     }
                 }
             tasks.awaitAll()
-            delay(1.seconds)
         }
     }
 }
