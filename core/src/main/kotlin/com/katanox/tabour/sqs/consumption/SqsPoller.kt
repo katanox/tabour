@@ -6,12 +6,8 @@ import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -30,10 +26,7 @@ private val logger = KotlinLogging.logger {}
 
 internal class SqsPoller(private val sqs: SqsClient) {
     private var consume: Boolean = false
-    private var acknowledge: Boolean = true
     private var jobs: Array<Job?> = arrayOf()
-    private val acknowledgeChannels: MutableMap<Int, Channel<ToBeAcknowledged>> =
-        ConcurrentHashMap()
 
     suspend fun poll(consumers: List<SqsConsumer<*>>) = coroutineScope {
         consume = true
@@ -41,18 +34,12 @@ internal class SqsPoller(private val sqs: SqsClient) {
         val jobIndexes: Array<Job?> = Array(consumers.size) { null }
 
         launch {
-            acknowledge = true
-            startAcknowledging()
-        }
-
-        launch {
             while (consume) {
                 consumers.forEachIndexed { index, consumer ->
                     if (!startedConsumerIndexes[index] && consumer.config.consumeWhile()) {
-                        acknowledgeChannels[index] = Channel()
                         val job = launch {
                             while (true) {
-                                accept(consumer, index)
+                                accept(consumer)
                                 delay(consumer.config.sleepTime)
                             }
                         }
@@ -69,7 +56,6 @@ internal class SqsPoller(private val sqs: SqsClient) {
 
                 if (startedConsumerIndexes.none { it }) {
                     consume = false
-                    acknowledge = false
                 }
 
                 delay(5000)
@@ -81,15 +67,13 @@ internal class SqsPoller(private val sqs: SqsClient) {
 
     suspend fun stopPolling() {
         consume = false
-        acknowledge = false
-        acknowledgeChannels.clear()
         jobs.forEach {
             it?.cancelAndJoin()
             yield()
         }
     }
 
-    private suspend fun <T> accept(consumer: SqsConsumer<T>, index: Int) = coroutineScope {
+    private suspend fun <T> accept(consumer: SqsConsumer<T>) = coroutineScope {
         repeat(consumer.config.concurrency) {
             launch {
                 retry(
@@ -117,89 +101,68 @@ internal class SqsPoller(private val sqs: SqsClient) {
 
                     if (messages.isNotEmpty()) {
                         logger.debug { "Received $messages from ${consumer.queueUri}" }
-                        handleMessages(messages, consumer, index)
+                        handleMessages(messages, consumer)
                     }
                 }
             }
         }
     }
 
-    private suspend fun <T> handleMessages(
-        messages: List<Message>,
-        consumer: SqsConsumer<T>,
-        consumerIndex: Int,
-    ) {
-        messages.forEach { message ->
+    private suspend fun <T> handleMessages(messages: List<Message>, consumer: SqsConsumer<T>) {
+        val processedMessages =
+            messages.mapNotNull { message ->
+                try {
+                    if (consumer.onSuccess(message)) {
+                        message
+                    } else {
+                        val error = ConsumptionError.UnsuccessfulConsumption(message)
+                        consumer.onError(error)
+                        null
+                    }
+                } catch (e: Throwable) {
+                    if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
+                        consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
+                    }
+                    null
+                }
+            }
+
+        acknowledge(consumer.queueUri, processedMessages)
+    }
+
+    private fun acknowledge(url: URL, messages: List<Message>) {
+        if (messages.isNotEmpty()) {
             try {
-                if (consumer.onSuccess(message)) {
-                    acknowledgeChannels[consumerIndex]?.send(
-                        ToBeAcknowledged(consumer.queueUri, message)
-                    )
+                val entries =
+                    messages
+                        .distinctBy { it.messageId() }
+                        .map {
+                            DeleteMessageBatchRequestEntry.builder()
+                                .id(it.messageId())
+                                .receiptHandle(it.receiptHandle())
+                                .build()
+                        }
+
+                val request =
+                    DeleteMessageBatchRequest.builder()
+                        .queueUrl(url.toString())
+                        .entries(entries)
+                        .build()
+
+                val deleteResponse = sqs.deleteMessageBatch(request)
+
+                if (deleteResponse.hasFailed()) {
+                    val failedMessages = deleteResponse.failed().map { it.message() }
+
+                    logger.error {
+                        "There are failures while deleting batch. ${failedMessages.joinToString(", ")}"
+                    }
                 } else {
-                    val error = ConsumptionError.UnsuccessfulConsumption(message)
-                    consumer.onError(error)
+                    logger.debug { "Successfully deleted batch" }
                 }
             } catch (e: Throwable) {
-                if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
-                    consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
-                }
+                logger.error(e) { "Failed to delete message batch" }
             }
-        }
-    }
-
-    private suspend fun startAcknowledging() = coroutineScope {
-        while (acknowledge) {
-            val tasks =
-                acknowledgeChannels.map { (_, channel) ->
-                    async {
-                        buildList {
-                                repeat(10) {
-                                    val element = channel.tryReceive().getOrNull()
-                                    if (element != null) {
-                                        add(element)
-                                    }
-                                }
-                            }
-                            .groupBy(ToBeAcknowledged::url)
-                            .forEach { (url, messages) ->
-                                val entries =
-                                    messages
-                                        .distinctBy { it.message.messageId() }
-                                        .map {
-                                            DeleteMessageBatchRequestEntry.builder()
-                                                .id(it.message.messageId())
-                                                .receiptHandle(it.message.receiptHandle())
-                                                .build()
-                                        }
-
-                                if (entries.isNotEmpty()) {
-                                    try {
-                                        val request =
-                                            DeleteMessageBatchRequest.builder()
-                                                .queueUrl(url.toString())
-                                                .entries(entries)
-                                                .build()
-
-                                        val deleteResponse = sqs.deleteMessageBatch(request)
-
-                                        if (deleteResponse.hasFailed()) {
-                                            val failedMessages =
-                                                deleteResponse.failed().map { it.message() }
-
-                                            logger.error {
-                                                "There are failures while deleting batch. ${failedMessages.joinToString(", ")}"
-                                            }
-                                        } else {
-                                            logger.debug { "Successfully deleted batch" }
-                                        }
-                                    } catch (e: Throwable) {
-                                        logger.error(e) { "Failed to delete message batch" }
-                                    }
-                                }
-                            }
-                    }
-                }
-            tasks.awaitAll()
         }
     }
 }
