@@ -20,8 +20,6 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
-private data class ToBeAcknowledged(val url: URL, val message: Message)
-
 private val logger = KotlinLogging.logger {}
 
 internal class SqsPoller(private val sqs: SqsClient) {
