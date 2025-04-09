@@ -284,6 +284,73 @@ class TabourTest {
         }
 
     @Test
+    fun `consuming messages deletes the message from queues`() {
+        val container = tabour { numOfThreads = 1 }
+        val config =
+            sqsRegistryConfiguration(
+                "test-registry",
+                StaticCredentialsProvider.create(credentials),
+                Region.of(localstack.region),
+            ) {
+                this.endpointOverride =
+                    localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+            }
+
+        val sqsRegistry = sqsRegistry(config)
+        val sqsProducerConfiguration =
+            SqsDataProductionConfiguration(
+                produceData = { NonFifoDataProduction("this is a test message") },
+                dataProduced = { _, _ -> },
+                resourceNotFound = { _ -> println("Resource not found") },
+            )
+
+        val producer =
+            sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+
+        sqsRegistry.addProducer(producer)
+        container.register(sqsRegistry)
+        container.start()
+
+        container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+
+        await
+            .withPollInterval(Duration.ofMillis(500))
+            .timeout(Duration.ofSeconds(5))
+            .untilAsserted {
+                val receiveMessagesResponse =
+                    sqsClient.receiveMessage(
+                        ReceiveMessageRequest.builder()
+                            .queueUrl(nonFifoQueueUrl)
+                            .maxNumberOfMessages(5)
+                            .build()
+                    )
+
+                assertTrue(receiveMessagesResponse.messages().isNotEmpty())
+                assertEquals(
+                    receiveMessagesResponse.messages().first().body(),
+                    "this is a test message",
+                )
+            }
+
+        assertEquals(
+            0,
+            sqsClient
+                .receiveMessage(
+                    ReceiveMessageRequest.builder()
+                        .maxNumberOfMessages(10)
+                        .visibilityTimeout(0)
+                        .queueUrl(nonFifoQueueUrl)
+                        .build()
+                )
+                .messages()
+                .size,
+        )
+
+        purgeQueue(nonFifoQueueUrl)
+        container.stop()
+    }
+
+    @Test
     @Tag("sqs-producer-test")
     fun `produce a message to a fifo queue`() =
         runTest(UnconfinedTestDispatcher()) {
