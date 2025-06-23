@@ -2,7 +2,7 @@
 kotlin = "2.1.21"
 coroutines = "1.10.2"
 aws-sqs = "2.31.68"
-ktfmt = "0.22.0"
+ktfmt = "0.23.0"
 dokka = "2.0.0"
 spring-boot = "3.5.3"
 protobuf-plugin = "0.9.5"
