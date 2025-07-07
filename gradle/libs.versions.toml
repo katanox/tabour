@@ -9,7 +9,7 @@ protobuf-plugin = "0.9.5"
 protobuf-java = "4.31.1"
 klogging = "7.0.7"
 ktor = "3.2.0"
-jreleaser = "1.18.0"
+jreleaser = "1.19.0"
 
 
 [libraries]
