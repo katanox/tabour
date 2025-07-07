@@ -8,3 +8,7 @@ updates:
       day: "sunday"
     labels:
       - "dependencies"
+    groups:
+      deps:
+        patterns:
+          - "*"
