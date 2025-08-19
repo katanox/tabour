@@ -10,7 +10,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider
 import software.amazon.awssdk.regions.Region
 
 @ExperimentalCoroutinesApi
@@ -40,18 +39,8 @@ class TabourConfigurerTest {
             val tabourContainer = tabour { numOfThreads = 1 }
 
             launchTabour(ClassWithAnnotation::class.java, tabourContainer) {
-                listOf(
-                    sqsRegistry(
-                        sqsRegistryConfiguration(
-                            "",
-                            EnvironmentVariableCredentialsProvider.create(),
-                            Region.US_EAST_1,
-                        )
-                    )
-                )
+                listOf(sqsRegistry(sqsRegistryConfiguration("", Region.US_EAST_1)))
             }
-
-            advanceUntilIdle()
 
             assertTrue(tabourContainer.running())
             tabourContainer.stop()

@@ -1,5 +1,12 @@
 package com.katanox.tabour
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.CreateQueueRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteQueueRequest
+import aws.sdk.kotlin.services.sqs.model.PurgeQueueRequest
+import aws.sdk.kotlin.services.sqs.model.QueueAttributeName
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.smithy.kotlin.runtime.net.url.Url
 import com.katanox.tabour.configuration.core.DataProductionConfiguration
 import com.katanox.tabour.configuration.core.tabour
 import com.katanox.tabour.configuration.sqs.sqsConsumer
@@ -23,8 +30,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.test.fail
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
@@ -37,25 +46,18 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.utility.DockerImageName
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
-import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
-import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
-import software.amazon.awssdk.services.sqs.model.QueueAttributeName
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 @ExperimentalCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TabourTest {
     private val localstack =
-        LocalStackContainer(DockerImageName.parse("localstack/localstack:4.2"))
+        LocalStackContainer(DockerImageName.parse("localstack/localstack:4.7"))
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 
-    private val credentials = AwsBasicCredentials.create(localstack.accessKey, localstack.secretKey)
+    //    private val credentials = AwsBasicCredentials.create(localstack.accessKey,
+    // localstack.secretKey)
     private lateinit var sqsClient: SqsClient
     private lateinit var nonFifoQueueUrl: String
     private lateinit var fifoQueueUrl: String
@@ -64,38 +66,44 @@ class TabourTest {
     fun setup() {
         localstack.start()
 
-        sqsClient =
-            SqsClient.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .endpointOverride(localstack.getEndpointOverride(LocalStackContainer.Service.SQS))
-                .region(Region.of(localstack.region))
-                .build()
+        sqsClient = SqsClient {
+            endpointUrl =
+                Url.parse(
+                    localstack
+                        .getEndpointOverride(LocalStackContainer.Service.SQS)
+                        .toURL()
+                        .toString()
+                )
+            region = localstack.region
+        }
 
-        nonFifoQueueUrl =
-            sqsClient
-                .createQueue(CreateQueueRequest.builder().queueName("my-queue").build())
-                .queueUrl()
+        nonFifoQueueUrl = runBlocking {
+            sqsClient.createQueue(CreateQueueRequest { queueName = "my-queue" }).queueUrl
+                ?: fail("Queue not created")
+        }
 
-        fifoQueueUrl =
+        fifoQueueUrl = runBlocking {
             sqsClient
                 .createQueue(
-                    CreateQueueRequest.builder()
-                        .attributes(
-                            mutableMapOf(
-                                QueueAttributeName.FIFO_QUEUE to "TRUE",
-                                QueueAttributeName.CONTENT_BASED_DEDUPLICATION to "TRUE",
+                    CreateQueueRequest {
+                        attributes =
+                            mapOf(
+                                QueueAttributeName.FifoQueue to "TRUE",
+                                QueueAttributeName.ContentBasedDeduplication to "TRUE",
                             )
-                        )
-                        .queueName("my-queue.fifo")
-                        .build()
+                        queueName = "my-queue.fifo"
+                    }
                 )
-                .queueUrl()
+                .queueUrl ?: fail("Queue not created")
+        }
     }
 
     @AfterAll
     fun cleanup() {
-        sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(nonFifoQueueUrl).build())
-        sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(fifoQueueUrl).build())
+        runBlocking {
+            sqsClient.deleteQueue(DeleteQueueRequest { queueUrl = nonFifoQueueUrl })
+            sqsClient.deleteQueue(DeleteQueueRequest { queueUrl = fifoQueueUrl })
+        }
     }
 
     @Test
@@ -120,11 +128,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
+                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 }
@@ -175,11 +179,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
+                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 }
@@ -234,11 +234,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
+                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 }
@@ -264,17 +260,18 @@ class TabourTest {
                 .withPollInterval(Duration.ofMillis(500))
                 .timeout(Duration.ofSeconds(5))
                 .untilAsserted {
-                    val receiveMessagesResponse =
+                    val receiveMessagesResponse = runBlocking {
                         sqsClient.receiveMessage(
-                            ReceiveMessageRequest.builder()
-                                .queueUrl(nonFifoQueueUrl)
-                                .maxNumberOfMessages(5)
-                                .build()
+                            ReceiveMessageRequest {
+                                queueUrl = nonFifoQueueUrl
+                                maxNumberOfMessages = 5
+                            }
                         )
+                    }
 
-                    assertTrue(receiveMessagesResponse.messages().isNotEmpty())
+                    assertEquals(receiveMessagesResponse.messages?.isNotEmpty(), true)
                     assertEquals(
-                        receiveMessagesResponse.messages().first().body(),
+                        receiveMessagesResponse.messages?.first()?.body,
                         "this is a test message",
                     )
                 }
@@ -284,14 +281,10 @@ class TabourTest {
         }
 
     @Test
-    fun `consuming messages deletes the message from queues`() {
+    fun `consuming messages deletes the message from queues`() = runTest {
         val container = tabour { numOfThreads = 1 }
         val config =
-            sqsRegistryConfiguration(
-                "test-registry",
-                StaticCredentialsProvider.create(credentials),
-                Region.of(localstack.region),
-            ) {
+            sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                 this.endpointOverride =
                     localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
             }
@@ -317,34 +310,35 @@ class TabourTest {
             .withPollInterval(Duration.ofMillis(500))
             .timeout(Duration.ofSeconds(5))
             .untilAsserted {
-                val receiveMessagesResponse =
+                val receiveMessagesResponse = runBlocking {
                     sqsClient.receiveMessage(
-                        ReceiveMessageRequest.builder()
-                            .queueUrl(nonFifoQueueUrl)
-                            .maxNumberOfMessages(5)
-                            .build()
+                        ReceiveMessageRequest {
+                            queueUrl = nonFifoQueueUrl
+                            maxNumberOfMessages = 5
+                        }
                     )
+                }
 
-                assertTrue(receiveMessagesResponse.messages().isNotEmpty())
+                assertEquals(receiveMessagesResponse.messages?.isNotEmpty(), true)
                 assertEquals(
-                    receiveMessagesResponse.messages().first().body(),
+                    receiveMessagesResponse.messages?.first()?.body,
                     "this is a test message",
                 )
             }
 
-        assertEquals(
-            0,
+        val messagesSize = runBlocking {
             sqsClient
                 .receiveMessage(
-                    ReceiveMessageRequest.builder()
-                        .maxNumberOfMessages(10)
-                        .visibilityTimeout(0)
-                        .queueUrl(nonFifoQueueUrl)
-                        .build()
+                    ReceiveMessageRequest {
+                        maxNumberOfMessages = 10
+                        visibilityTimeout = 0
+                        queueUrl = nonFifoQueueUrl
+                    }
                 )
-                .messages()
-                .size,
-        )
+                .messages
+                ?.size
+        }
+        assertEquals(0, messagesSize)
 
         purgeQueue(nonFifoQueueUrl)
         container.stop()
@@ -356,11 +350,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
+                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 }
@@ -392,17 +382,18 @@ class TabourTest {
                 .withPollInterval(Duration.ofMillis(500))
                 .timeout(Duration.ofSeconds(5))
                 .untilAsserted {
-                    val receiveMessagesResponse =
+                    val receiveMessagesResponse = runBlocking {
                         sqsClient.receiveMessage(
-                            ReceiveMessageRequest.builder()
-                                .queueUrl(fifoQueueUrl)
-                                .maxNumberOfMessages(5)
-                                .build()
+                            ReceiveMessageRequest {
+                                queueUrl = fifoQueueUrl
+                                maxNumberOfMessages = 5
+                            }
                         )
+                    }
 
-                    assertTrue(receiveMessagesResponse.messages().isNotEmpty())
+                    assertEquals(receiveMessagesResponse.messages?.isNotEmpty(), true)
                     assertEquals(
-                        receiveMessagesResponse.messages().first().body(),
+                        receiveMessagesResponse.messages?.first()?.body,
                         "this is a fifo test message",
                     )
                 }
@@ -416,11 +407,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
+                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 }
@@ -471,11 +458,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
+                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 }
@@ -516,11 +499,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration(
-                    "test-registry",
-                    StaticCredentialsProvider.create(credentials),
-                    Region.of(localstack.region),
-                ) {
+                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
                     this.endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 }
@@ -550,7 +529,7 @@ class TabourTest {
             container.stop()
         }
 
-    private fun purgeQueue(url: String) {
-        sqsClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(url).build())
+    private suspend fun purgeQueue(url: String) {
+        sqsClient.purgeQueue(PurgeQueueRequest { queueUrl = url })
     }
 }

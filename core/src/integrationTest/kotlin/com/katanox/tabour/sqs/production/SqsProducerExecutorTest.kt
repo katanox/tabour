@@ -1,10 +1,20 @@
 package com.katanox.tabour.sqs.production
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.CreateQueueRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteQueueRequest
+import aws.sdk.kotlin.services.sqs.model.PurgeQueueRequest
+import aws.sdk.kotlin.services.sqs.model.QueueAttributeName
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.smithy.kotlin.runtime.net.url.Url
 import com.katanox.tabour.configuration.sqs.sqsProducer
 import java.net.URI
 import java.net.URL
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.fail
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -13,78 +23,92 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.utility.DockerImageName
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
-import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
-import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
-import software.amazon.awssdk.services.sqs.model.QueueAttributeName
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@OptIn(DelicateCoroutinesApi::class)
 class SqsProducerExecutorTest {
     private val localstack =
-        LocalStackContainer(DockerImageName.parse("localstack/localstack:3.2"))
+        LocalStackContainer(DockerImageName.parse("localstack/localstack:4.7"))
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 
-    private val credentials = AwsBasicCredentials.create(localstack.accessKey, localstack.secretKey)
-    private lateinit var sqsClient: SqsClient
+    private suspend fun sqsClient(): SqsClient =
+        SqsClient.fromEnvironment {
+            region = localstack.region
+
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = localstack.accessKey
+                secretAccessKey = localstack.secretKey
+            }
+
+            endpointUrl =
+                Url.parse(
+                    localstack
+                        .getEndpointOverride(LocalStackContainer.Service.SQS)
+                        .toURL()
+                        .toString()
+                )
+        }
+
     private lateinit var nonFifoQueueUrl: String
     private lateinit var fifoQueueUrl: String
 
     @AfterEach
     fun cleanup() {
-        sqsClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(nonFifoQueueUrl).build())
-        sqsClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(fifoQueueUrl).build())
+        runBlocking {
+            sqsClient().let {
+                it.purgeQueue(PurgeQueueRequest { queueUrl = nonFifoQueueUrl })
+                it.purgeQueue(PurgeQueueRequest { queueUrl = fifoQueueUrl })
+            }
+        }
     }
 
     @AfterAll
     fun deleteQueues() {
-        sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(nonFifoQueueUrl).build())
-        sqsClient.deleteQueue(DeleteQueueRequest.builder().queueUrl(fifoQueueUrl).build())
+        runBlocking {
+            sqsClient().let {
+                it.deleteQueue(DeleteQueueRequest { queueUrl = nonFifoQueueUrl })
+                it.deleteQueue(DeleteQueueRequest { queueUrl = fifoQueueUrl })
+            }
+        }
     }
 
     @BeforeAll
     fun setup() {
-        localstack.start()
+        runBlocking {
+            localstack.start()
 
-        sqsClient =
-            SqsClient.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .endpointOverride(localstack.getEndpointOverride(LocalStackContainer.Service.SQS))
-                .region(Region.of(localstack.region))
-                .build()
+            val sqsClient = sqsClient()
 
-        nonFifoQueueUrl =
-            sqsClient
-                .createQueue(CreateQueueRequest.builder().queueName("my-queue").build())
-                .queueUrl()
+            nonFifoQueueUrl =
+                sqsClient.createQueue(CreateQueueRequest { queueName = "my-queue" }).queueUrl
+                    ?: fail("Queue not created")
 
-        fifoQueueUrl =
-            sqsClient
-                .createQueue(
-                    CreateQueueRequest.builder()
-                        .attributes(
-                            mutableMapOf(
-                                QueueAttributeName.FIFO_QUEUE to "TRUE",
-                                QueueAttributeName.CONTENT_BASED_DEDUPLICATION to "TRUE",
-                            )
-                        )
-                        .queueName("my-queue.fifo")
-                        .build()
-                )
-                .queueUrl()
+            fifoQueueUrl =
+                sqsClient
+                    .createQueue(
+                        CreateQueueRequest {
+                            attributes =
+                                mapOf(
+                                    QueueAttributeName.FifoQueue to "TRUE",
+                                    QueueAttributeName.ContentBasedDeduplication to "TRUE",
+                                )
+                            queueName = "my-queue.fifo"
+                        }
+                    )
+                    .queueUrl ?: fail("Queue not created")
+        }
     }
 
     @Test
     fun testProduceToFifoQueue() = runTest {
+        val sqsClient = sqsClient()
         val executor = SqsProducerExecutor(sqsClient)
 
         val producer =
-            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer", ::println)
+            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer") {
+                fail(it.toString())
+            }
         var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(
@@ -95,15 +119,15 @@ class SqsProducerExecutorTest {
 
         executor.produce(producer, pfc)
 
-        val response =
-            sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(fifoQueueUrl).build())
+        val response = sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
 
         assertEquals(1, producedCount)
-        assertTrue { response.messages().isNotEmpty() }
+        assertEquals(response.messages?.isNotEmpty(), true)
     }
 
     @Test
     fun testProduceToFifoQueueWithDeduplicationId() = runTest {
+        val sqsClient = sqsClient()
         val executor = SqsProducerExecutor(sqsClient)
 
         val producer =
@@ -138,15 +162,15 @@ class SqsProducerExecutorTest {
         executor.produce(producer, pfc)
         executor.produce(producer, pfc2)
 
-        val response =
-            sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(fifoQueueUrl).build())
+        val response = sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
 
         assertEquals(2, producedCount)
-        assertEquals(1, response.messages().size)
+        assertEquals(1, response.messages?.size)
     }
 
     @Test
     fun testProduceToNonFifoQueue() = runTest {
+        val sqsClient = sqsClient()
         val executor = SqsProducerExecutor(sqsClient)
 
         val producer =
@@ -166,16 +190,15 @@ class SqsProducerExecutorTest {
         executor.produce(producer, pfc)
 
         val response =
-            sqsClient.receiveMessage(
-                ReceiveMessageRequest.builder().queueUrl(nonFifoQueueUrl).build()
-            )
+            sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = nonFifoQueueUrl })
 
         assertEquals(1, producedCount)
-        assertTrue { response.messages().isNotEmpty() }
+        assertEquals(response.messages?.isNotEmpty(), true)
     }
 
     @Test
     fun produceBatch() = runTest {
+        val sqsClient = sqsClient()
         val executor = SqsProducerExecutor(sqsClient)
 
         val producer =
@@ -199,13 +222,13 @@ class SqsProducerExecutorTest {
 
         val response =
             sqsClient.receiveMessage(
-                ReceiveMessageRequest.builder()
-                    .queueUrl(fifoQueueUrl)
-                    .maxNumberOfMessages(10)
-                    .build()
+                ReceiveMessageRequest {
+                    queueUrl = fifoQueueUrl
+                    maxNumberOfMessages = 10
+                }
             )
 
         assertEquals(2, producedCount)
-        assertEquals(2, response.messages().size)
+        assertEquals(2, response.messages?.size)
     }
 }
