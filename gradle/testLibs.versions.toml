@@ -3,7 +3,7 @@ kotlin = "2.2.10"
 coroutines = "1.10.2"
 mockk = "1.14.4"
 testcontainers = "1.21.3"
-awaitility = "4.2.2"
+awaitility = "4.3.0"
 spring-boot = "3.5.3"
 
 [libraries]
