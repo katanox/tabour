@@ -1,6 +1,7 @@
 package com.katanox.tabour.sqs
 
 import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
@@ -70,6 +71,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
             SqsClient.fromEnvironment {
                     region = configuration.region.id()
                     endpointUrl = configuration.endpointOverride?.toString()?.let { Url.parse(it) }
+                    credentialsProvider = configuration.credentialsProvider
                 }
                 .use { client ->
                     sqsProducerExecutor.produce(client, producer, productionConfiguration)
@@ -90,13 +92,19 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
          * with Localstack
          */
         var endpointOverride: URI? = null
+
+        /**
+         * Explicit credentials provider. If not set, the
+         * [default chain](https://docs.aws.amazon.com/sdk-for-kotlin/latest/developer-guide/credential-providers.html)
+         * is used
+         */
+        var credentialsProvider: CredentialsProvider? = null
     }
 
     private suspend fun buildSqsClient(): SqsClient =
         SqsClient.fromEnvironment {
             region = configuration.region.id()
-            if (configuration.endpointOverride != null) {
-                endpointUrl = Url.parse(configuration.endpointOverride.toString())
-            }
+            endpointUrl = configuration.endpointOverride?.toString()?.let(Url::parse)
+            credentialsProvider = configuration.credentialsProvider
         }
 }

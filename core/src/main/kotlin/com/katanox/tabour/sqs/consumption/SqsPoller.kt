@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
 
-internal class SqsPoller(private val sqs: SqsClient) {
+internal class SqsPoller(private val sqsClient: SqsClient) {
     private var consume: Boolean = false
     private var jobs: Array<Job?> = arrayOf()
     private val logger = KotlinLogging.logger {}
@@ -89,7 +89,7 @@ internal class SqsPoller(private val sqs: SqsClient) {
                         waitTimeSeconds = consumer.config.waitTime.inWholeSeconds.toInt()
                     }
 
-                    val messages = sqs.receiveMessage(request).messages ?: emptyList()
+                    val messages = sqsClient.receiveMessage(request).messages ?: emptyList()
 
                     if (messages.isNotEmpty()) {
                         handleMessages(messages, consumer)
@@ -139,7 +139,7 @@ internal class SqsPoller(private val sqs: SqsClient) {
                     this.entries = entries
                 }
 
-                val deleteResponse = sqs.deleteMessageBatch(request)
+                val deleteResponse = sqsClient.deleteMessageBatch(request)
 
                 if (deleteResponse.failed.isNotEmpty()) {
                     val failedMessages = deleteResponse.failed.map { it.message }

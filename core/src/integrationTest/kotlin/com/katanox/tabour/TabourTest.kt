@@ -133,8 +133,12 @@ class TabourTest {
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    this.endpointOverride =
+                    endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
 
             val sqsRegistry = sqsRegistry(config)
@@ -165,9 +169,7 @@ class TabourTest {
                     }
                 }
 
-            sqsRegistry.addConsumer(consumer).addProducer(producer)
-            container.register(sqsRegistry)
-            container.start()
+            container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
 
             container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
 
@@ -184,8 +186,12 @@ class TabourTest {
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    this.endpointOverride =
+                    endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
 
             val sqsRegistry = sqsRegistry(config)
@@ -214,8 +220,7 @@ class TabourTest {
                 }
 
             sqsRegistry.addConsumer(consumer).addProducer(producer)
-            container.register(sqsRegistry)
-            container.start()
+            container.register(sqsRegistry).start()
 
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
@@ -239,8 +244,12 @@ class TabourTest {
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    this.endpointOverride =
+                    endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
 
             val sqsRegistry = sqsRegistry(config)
@@ -273,7 +282,7 @@ class TabourTest {
                         )
                     }
 
-                    assertEquals(receiveMessagesResponse.messages?.isNotEmpty(), true)
+                    assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
                     assertEquals(
                         receiveMessagesResponse.messages?.first()?.body,
                         "this is a test message",
@@ -289,8 +298,11 @@ class TabourTest {
         val container = tabour { numOfThreads = 1 }
         val config =
             sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                this.endpointOverride =
-                    localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                credentialsProvider = StaticCredentialsProvider {
+                    accessKeyId = localstack.accessKey
+                    secretAccessKey = localstack.secretKey
+                }
             }
 
         val sqsRegistry = sqsRegistry(config)
@@ -323,7 +335,7 @@ class TabourTest {
                     )
                 }
 
-                assertEquals(receiveMessagesResponse.messages?.isNotEmpty(), true)
+                assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
                 assertEquals(
                     receiveMessagesResponse.messages?.first()?.body,
                     "this is a test message",
@@ -342,7 +354,7 @@ class TabourTest {
                 .messages
                 ?.size
         }
-        assertEquals(0, messagesSize)
+        assertEquals(null, messagesSize)
 
         purgeQueue(nonFifoQueueUrl)
         container.stop()
@@ -355,8 +367,12 @@ class TabourTest {
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    this.endpointOverride =
+                    endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
 
             val sqsRegistry = sqsRegistry(config)
@@ -369,12 +385,10 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    println(it)
+                    println("Error $it")
                 }
 
-            sqsRegistry.addProducer(producer)
-            container.register(sqsRegistry)
-            container.start()
+            container.register(sqsRegistry.addProducer(producer)).start()
 
             container.produceMessage(
                 "test-registry",
@@ -383,7 +397,7 @@ class TabourTest {
             )
 
             await
-                .withPollInterval(Duration.ofMillis(500))
+                .withPollInterval(Duration.ofSeconds(1))
                 .timeout(Duration.ofSeconds(5))
                 .untilAsserted {
                     val receiveMessagesResponse = runBlocking {
@@ -395,7 +409,7 @@ class TabourTest {
                         )
                     }
 
-                    assertEquals(receiveMessagesResponse.messages?.isNotEmpty(), true)
+                    assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
                     assertEquals(
                         receiveMessagesResponse.messages?.first()?.body,
                         "this is a fifo test message",
@@ -412,8 +426,12 @@ class TabourTest {
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    this.endpointOverride =
+                    endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
 
             val sqsRegistry = sqsRegistry(config)
@@ -463,8 +481,12 @@ class TabourTest {
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    this.endpointOverride =
+                    endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
 
             val sqsRegistry = sqsRegistry(config)
@@ -504,8 +526,12 @@ class TabourTest {
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    this.endpointOverride =
+                    endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
 
             val sqsRegistry = sqsRegistry(config)
