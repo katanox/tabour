@@ -15,6 +15,7 @@ jreleaser = "1.19.0"
 [libraries]
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 aws-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "aws-sqs" }
+aws-sqs-kotlin = { module = "aws.sdk.kotlin:sqs", version.ref = "aws" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-java" }

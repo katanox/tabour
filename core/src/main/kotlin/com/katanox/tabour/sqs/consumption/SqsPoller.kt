@@ -67,7 +67,6 @@ internal class SqsPoller(private val sqs: SqsClient) {
         consume = false
         jobs.forEach {
             it?.cancelAndJoin()
-            yield()
         }
     }
 
