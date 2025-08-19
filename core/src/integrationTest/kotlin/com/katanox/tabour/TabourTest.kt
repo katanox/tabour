@@ -1,5 +1,6 @@
 package com.katanox.tabour
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.CreateQueueRequest
 import aws.sdk.kotlin.services.sqs.model.DeleteQueueRequest
@@ -56,8 +57,6 @@ class TabourTest {
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 
-    //    private val credentials = AwsBasicCredentials.create(localstack.accessKey,
-    // localstack.secretKey)
     private lateinit var sqsClient: SqsClient
     private lateinit var nonFifoQueueUrl: String
     private lateinit var fifoQueueUrl: String
@@ -75,6 +74,11 @@ class TabourTest {
                         .toString()
                 )
             region = localstack.region
+
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = localstack.accessKey
+                secretAccessKey = localstack.secretKey
+            }
         }
 
         nonFifoQueueUrl = runBlocking {

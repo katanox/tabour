@@ -102,7 +102,7 @@ class SqsProducerExecutorTest {
     @Test
     fun testProduceToFifoQueue() = runTest {
         val sqsClient = sqsClient()
-        val executor = SqsProducerExecutor(sqsClient)
+        val executor = SqsProducerExecutor()
 
         val producer =
             sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer") {
@@ -116,18 +116,20 @@ class SqsProducerExecutorTest {
                 resourceNotFound = { _ -> },
             )
 
-        executor.produce(producer, pfc)
+        sqsClient.use { client ->
+            executor.produce(client, producer, pfc)
 
-        val response = sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
+            val response =
+                sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
 
-        assertEquals(1, producedCount)
-        assertEquals(response.messages?.isNotEmpty(), true)
+            assertEquals(1, producedCount)
+            assertEquals(response.messages?.isNotEmpty(), true)
+        }
     }
 
     @Test
     fun testProduceToFifoQueueWithDeduplicationId() = runTest {
-        val sqsClient = sqsClient()
-        val executor = SqsProducerExecutor(sqsClient)
+        val executor = SqsProducerExecutor()
 
         val producer =
             sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer", ::println)
@@ -158,19 +160,20 @@ class SqsProducerExecutorTest {
                 resourceNotFound = { _ -> },
             )
 
-        executor.produce(producer, pfc)
-        executor.produce(producer, pfc2)
+        sqsClient().use { client ->
+            executor.produce(client, producer, pfc)
+            executor.produce(client, producer, pfc2)
 
-        val response = sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
+            val response = client.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
 
-        assertEquals(2, producedCount)
-        assertEquals(1, response.messages?.size)
+            assertEquals(2, producedCount)
+            assertEquals(1, response.messages?.size)
+        }
     }
 
     @Test
     fun testProduceToNonFifoQueue() = runTest {
-        val sqsClient = sqsClient()
-        val executor = SqsProducerExecutor(sqsClient)
+        val executor = SqsProducerExecutor()
 
         val producer =
             sqsProducer(
@@ -186,19 +189,20 @@ class SqsProducerExecutorTest {
                 resourceNotFound = { _ -> },
             )
 
-        executor.produce(producer, pfc)
+        sqsClient().use { client ->
+            executor.produce(client, producer, pfc)
 
-        val response =
-            sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = nonFifoQueueUrl })
+            val response =
+                client.receiveMessage(ReceiveMessageRequest { queueUrl = nonFifoQueueUrl })
 
-        assertEquals(1, producedCount)
-        assertEquals(response.messages?.isNotEmpty(), true)
+            assertEquals(1, producedCount)
+            assertEquals(response.messages?.isNotEmpty(), true)
+        }
     }
 
     @Test
     fun produceBatch() = runTest {
-        val sqsClient = sqsClient()
-        val executor = SqsProducerExecutor(sqsClient)
+        val executor = SqsProducerExecutor()
 
         val producer =
             sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer", ::println)
@@ -217,17 +221,19 @@ class SqsProducerExecutorTest {
                 resourceNotFound = { _ -> },
             )
 
-        executor.produce(producer, pfc)
+        sqsClient().use { client ->
+            executor.produce(client, producer, pfc)
 
-        val response =
-            sqsClient.receiveMessage(
-                ReceiveMessageRequest {
-                    queueUrl = fifoQueueUrl
-                    maxNumberOfMessages = 10
-                }
-            )
+            val response =
+                client.receiveMessage(
+                    ReceiveMessageRequest {
+                        queueUrl = fifoQueueUrl
+                        maxNumberOfMessages = 10
+                    }
+                )
 
-        assertEquals(2, producedCount)
-        assertEquals(2, response.messages?.size)
+            assertEquals(2, producedCount)
+            assertEquals(2, response.messages?.size)
+        }
     }
 }

@@ -9,7 +9,7 @@ import java.time.Instant
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
 
-internal class SqsProducerExecutor(private val sqs: SqsClient) {
+internal class SqsProducerExecutor {
     private fun throwableToError(e: Throwable): ProductionError =
         when (e) {
             is AwsServiceException -> ProductionError.AwsError(details = e.awsErrorDetails())
@@ -20,6 +20,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
     private val chunkSize = 10
 
     suspend fun <T> produce(
+        sqsClient: SqsClient,
         producer: SqsProducer<T>,
         productionConfiguration: SqsDataProductionConfiguration,
     ) {
@@ -41,7 +42,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                             produceData.buildMessageRequest(this)
                         }
 
-                        sqs.sendMessage(request).let { response ->
+                        sqsClient.sendMessage(request).let { response ->
                             val messageId = response.messageId
                             if (messageId != null && messageId.isNotEmpty()) {
                                 productionConfiguration.dataProduced?.invoke(
@@ -71,7 +72,7 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
                                 producer.config.retries,
                                 { producer.onError(throwableToError(it)) },
                             ) {
-                                val response = sqs.sendMessageBatch(request)
+                                val response = sqsClient.sendMessageBatch(request)
 
                                 if (response.failed.isEmpty()) {
                                     response.successful.zip(produceData.data).forEach {

@@ -26,7 +26,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
     private val consumers: MutableList<SqsConsumer<*>> = mutableListOf()
     private val producers: MutableSet<SqsProducer<*>> = mutableSetOf()
 
-    private var sqsProducerExecutor: SqsProducerExecutor? = null
+    private val sqsProducerExecutor: SqsProducerExecutor = SqsProducerExecutor()
     private var sqsPoller: SqsPoller? = null
 
     /** Adds a consumer to the registry */
@@ -67,9 +67,13 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
-            (sqsProducerExecutor
-                    ?: SqsProducerExecutor(buildSqsClient()).also { sqsProducerExecutor = it })
-                .produce(producer, productionConfiguration)
+            SqsClient.fromEnvironment {
+                    region = configuration.region.id()
+                    endpointUrl = configuration.endpointOverride?.toString()?.let { Url.parse(it) }
+                }
+                .use { client ->
+                    sqsProducerExecutor.produce(client, producer, productionConfiguration)
+                }
         } else {
             productionConfiguration.resourceNotFound(ProducerNotFound(producerKey))
         }
