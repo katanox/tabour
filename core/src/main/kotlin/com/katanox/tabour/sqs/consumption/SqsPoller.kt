@@ -15,6 +15,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
@@ -35,6 +36,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                     if (!startedConsumerIndexes[index] && consumer.config.consumeWhile()) {
                         val job = launch {
                             while (true) {
+                                ensureActive()
                                 accept(consumer)
                                 delay(consumer.config.sleepTime)
                             }
