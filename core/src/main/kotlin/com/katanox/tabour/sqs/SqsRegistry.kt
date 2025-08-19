@@ -11,7 +11,6 @@ import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 
 /**
@@ -79,8 +78,6 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
     class Configuration<T>(
         /** Key of the registry */
         val key: T,
-        /** Credentials to be used with the AWS SDK in order to perform AWS operations */
-        val credentialsProvider: AwsCredentialsProvider,
         /** The region of the credentials */
         val region: Region,
     ) : Config {

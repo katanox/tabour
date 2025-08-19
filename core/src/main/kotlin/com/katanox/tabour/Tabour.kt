@@ -11,7 +11,6 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.runBlocking
 
 const val TABOUR_SHUTDOWN_MESSAGE = "tabour shutdown"
 
@@ -81,11 +80,9 @@ class Tabour internal constructor(val config: Configuration) {
 
     /** Stops the consumers of the registered registries. */
     fun stop() {
-        runBlocking {
-            if (consumptionStarted) {
-                consumptionStarted = false
-                scope.cancel(TABOUR_SHUTDOWN_MESSAGE)
-            }
+        if (consumptionStarted) {
+            consumptionStarted = false
+            scope.cancel(TABOUR_SHUTDOWN_MESSAGE)
         }
     }
 
