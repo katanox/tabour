@@ -1,5 +1,7 @@
 package com.katanox.tabour.sqs
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.smithy.kotlin.runtime.net.url.Url
 import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.error.ProducerNotFound
@@ -11,7 +13,6 @@ import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SqsClient
 
 /**
  * An implementation of [Registry] which works with SQS
@@ -25,19 +26,9 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
 
     private val consumers: MutableList<SqsConsumer<*>> = mutableListOf()
     private val producers: MutableSet<SqsProducer<*>> = mutableSetOf()
-    private val sqs: SqsClient =
-        SqsClient.builder()
-            .credentialsProvider(configuration.credentialsProvider)
-            .region(configuration.region)
-            .apply {
-                if (configuration.endpointOverride != null) {
-                    this.endpointOverride(configuration.endpointOverride)
-                }
-            }
-            .build()
 
-    private val sqsProducerExecutor = SqsProducerExecutor(sqs)
-    private val sqsPoller = SqsPoller(sqs)
+    private var sqsProducerExecutor: SqsProducerExecutor? = null
+    private var sqsPoller: SqsPoller? = null
 
     /** Adds a consumer to the registry */
     fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> =
@@ -60,12 +51,13 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
      * when start was used
      */
     override suspend fun startConsumption() {
-        sqsPoller.poll(consumers)
+        val sqs = buildSqsClient()
+        SqsPoller(sqs).also { sqsPoller = it }.poll(consumers)
     }
 
     /** Stops the consumption of messages by waiting the consumers to finish their work */
     override suspend fun stopConsumption() {
-        sqsPoller.stopPolling()
+        sqsPoller?.stopPolling()
     }
 
     /** Produces an SQS message using the producer that was registered with [producerKey] */
@@ -76,7 +68,9 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
-            sqsProducerExecutor.produce(producer, productionConfiguration)
+            (sqsProducerExecutor
+                    ?: SqsProducerExecutor(buildSqsClient()).also { sqsProducerExecutor = it })
+                .produce(producer, productionConfiguration)
         } else {
             productionConfiguration.resourceNotFound(ProducerNotFound(producerKey))
         }
@@ -96,4 +90,12 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
          */
         var endpointOverride: URI? = null
     }
+
+    private suspend fun buildSqsClient(): SqsClient =
+        SqsClient.fromEnvironment {
+            region = configuration.region.id()
+            if (configuration.endpointOverride != null) {
+                endpointUrl = Url.parse(configuration.endpointOverride.toString())
+            }
+        }
 }

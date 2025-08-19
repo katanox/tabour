@@ -1,5 +1,6 @@
 package com.katanox.tabour.sqs.consumption
 
+import aws.sdk.kotlin.services.sqs.SqsClient
 import com.katanox.tabour.TABOUR_SHUTDOWN_MESSAGE
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
@@ -11,20 +12,13 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
-import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
-
-private val logger = KotlinLogging.logger {}
 
 internal class SqsPoller(private val sqs: SqsClient) {
     private var consume: Boolean = false
     private var jobs: Array<Job?> = arrayOf()
+    private val logger = KotlinLogging.logger {}
 
     suspend fun poll(consumers: List<SqsConsumer<*>>) = coroutineScope {
         consume = true
@@ -65,9 +59,7 @@ internal class SqsPoller(private val sqs: SqsClient) {
 
     suspend fun stopPolling() {
         consume = false
-        jobs.forEach {
-            it?.cancelAndJoin()
-        }
+        jobs.forEach { it?.cancelAndJoin() }
     }
 
     private suspend fun <T> accept(consumer: SqsConsumer<T>) = coroutineScope {

@@ -1,13 +1,10 @@
 package com.katanox.tabour.sqs.production
 
+import aws.sdk.kotlin.services.sqs.SqsClient
 import com.katanox.tabour.retry
 import java.time.Instant
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 internal class SqsProducerExecutor(private val sqs: SqsClient) {
     suspend fun <T> produce(
