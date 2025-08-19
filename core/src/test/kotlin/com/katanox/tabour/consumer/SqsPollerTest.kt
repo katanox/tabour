@@ -1,5 +1,11 @@
 package com.katanox.tabour.consumer
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageBatchRequest
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageBatchResponse
+import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageResponse
 import com.katanox.tabour.configuration.sqs.sqsConsumer
 import com.katanox.tabour.configuration.sqs.sqsConsumerConfiguration
 import com.katanox.tabour.consumption.ConsumptionError
@@ -21,12 +27,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.awscore.exception.AwsServiceException
-import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
-import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
-import software.amazon.awssdk.services.sqs.model.Message
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 
 @ExperimentalCoroutinesApi
 class SqsPollerTest {
@@ -58,18 +58,21 @@ class SqsPollerTest {
                         }
                     }
                 )
-            val request: ReceiveMessageRequest =
-                ReceiveMessageRequest.builder()
-                    .queueUrl("https://katanox.com")
-                    .maxNumberOfMessages(10)
-                    .waitTimeSeconds(0)
-                    .build()
+            val request = ReceiveMessageRequest {
+                queueUrl = "https://katanox.com"
+                maxNumberOfMessages = 10
+                waitTimeSeconds = 0
+            }
 
-            val message: Message =
-                Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+            val message = Message {
+                body = "body"
+                receiptHandle = "1"
+                messageId = "12345"
+            }
 
-            val response: ReceiveMessageResponse =
-                ReceiveMessageResponse.builder().messages(message).build()
+            val response: ReceiveMessageResponse = ReceiveMessageResponse {
+                messages = listOf(message)
+            }
 
             coEvery { sqs.receiveMessage(request) }.returns(response)
             coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
@@ -111,18 +114,21 @@ class SqsPollerTest {
                         }
                     }
                 )
-            val request: ReceiveMessageRequest =
-                ReceiveMessageRequest.builder()
-                    .queueUrl("https://katanox.com")
-                    .maxNumberOfMessages(10)
-                    .waitTimeSeconds(0)
-                    .build()
+            val request = ReceiveMessageRequest {
+                queueUrl = "https://katanox.com"
+                maxNumberOfMessages = 10
+                waitTimeSeconds = 0
+            }
 
-            val message: Message =
-                Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+            val message = Message {
+                body = "body"
+                receiptHandle = "1"
+                messageId = "12345"
+            }
 
-            val response: ReceiveMessageResponse =
-                ReceiveMessageResponse.builder().messages(message).build()
+            val response: ReceiveMessageResponse = ReceiveMessageResponse {
+                messages = listOf(message)
+            }
 
             coEvery { sqs.receiveMessage(request) }.returns(response)
             coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
@@ -161,12 +167,11 @@ class SqsPollerTest {
                         }
                     }
                 )
-            val request: ReceiveMessageRequest =
-                ReceiveMessageRequest.builder()
-                    .queueUrl("https://katanox.com")
-                    .maxNumberOfMessages(10)
-                    .waitTimeSeconds(0)
-                    .build()
+            val request = ReceiveMessageRequest {
+                queueUrl = "https://katanox.com"
+                maxNumberOfMessages = 10
+                waitTimeSeconds = 0
+            }
 
             val exception =
                 AwsServiceException.builder()
@@ -212,18 +217,19 @@ class SqsPollerTest {
                         }
                     }
                 )
-            val request: ReceiveMessageRequest =
-                ReceiveMessageRequest.builder()
-                    .queueUrl("https://katanox.com")
-                    .maxNumberOfMessages(10)
-                    .waitTimeSeconds(0)
-                    .build()
+            val request = ReceiveMessageRequest {
+                queueUrl = "https://katanox.com"
+                maxNumberOfMessages = 10
+                waitTimeSeconds = 0
+            }
 
-            val message: Message =
-                Message.builder().body("body").receiptHandle("1").messageId("12345").build()
+            val message = Message {
+                body = "body"
+                receiptHandle = "1"
+                messageId = "12345"
+            }
 
-            val response: ReceiveMessageResponse =
-                ReceiveMessageResponse.builder().messages(message).build()
+            val response = ReceiveMessageResponse { messages = listOf(message) }
 
             coEvery { sqs.receiveMessage(request) }.returns(response)
             coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
