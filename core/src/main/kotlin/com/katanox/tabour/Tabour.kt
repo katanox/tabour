@@ -79,9 +79,10 @@ class Tabour internal constructor(val config: Configuration) {
     }
 
     /** Stops the consumers of the registered registries. */
-    fun stop() {
+    suspend fun stop() {
         if (consumptionStarted) {
             consumptionStarted = false
+            registries.forEach { it.stopConsumption() }
             scope.cancel(TABOUR_SHUTDOWN_MESSAGE)
         }
     }
