@@ -36,7 +36,10 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
             is SqsProductionData -> {
                 if (!produceData.message.isNullOrEmpty()) {
                     retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
-                        val request = SendMessageRequest { produceData.buildMessageRequest(this) }
+                        val request = SendMessageRequest {
+                            queueUrl = url
+                            produceData.buildMessageRequest(this)
+                        }
 
                         sqs.sendMessage(request).let { response ->
                             val messageId = response.messageId

@@ -77,7 +77,6 @@ class SqsProducerExecutorTest {
     fun setup() {
         runBlocking {
             localstack.start()
-
             val sqsClient = sqsClient()
 
             nonFifoQueueUrl =
