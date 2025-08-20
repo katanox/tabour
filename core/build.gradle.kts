@@ -10,7 +10,6 @@ dependencies {
 
     testImplementation(testLibs.kotlin.test.coroutines)
     testImplementation(testLibs.bundles.kotlin.test)
-    testImplementation(testLibs.mockk)
 }
 
 group = "com.katanox.tabour"
