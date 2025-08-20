@@ -1,5 +1,6 @@
 package com.katanox.tabour.consumer
 
+import aws.sdk.kotlin.runtime.AwsServiceException
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.DeleteMessageBatchRequest
 import aws.sdk.kotlin.services.sqs.model.DeleteMessageBatchResponse
@@ -25,8 +26,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.awscore.exception.AwsErrorDetails
-import software.amazon.awssdk.awscore.exception.AwsServiceException
 
 @ExperimentalCoroutinesApi
 class SqsPollerTest {
@@ -70,9 +69,7 @@ class SqsPollerTest {
                 messageId = "12345"
             }
 
-            val response: ReceiveMessageResponse = ReceiveMessageResponse {
-                messages = listOf(message)
-            }
+            val response = ReceiveMessageResponse { messages = listOf(message) }
 
             coEvery { sqs.receiveMessage(request) }.returns(response)
             coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
@@ -126,9 +123,7 @@ class SqsPollerTest {
                 messageId = "12345"
             }
 
-            val response: ReceiveMessageResponse = ReceiveMessageResponse {
-                messages = listOf(message)
-            }
+            val response = ReceiveMessageResponse { messages = listOf(message) }
 
             coEvery { sqs.receiveMessage(request) }.returns(response)
             coEvery { sqs.deleteMessageBatch(any<DeleteMessageBatchRequest>()) }
@@ -173,10 +168,7 @@ class SqsPollerTest {
                 waitTimeSeconds = 0
             }
 
-            val exception =
-                AwsServiceException.builder()
-                    .awsErrorDetails(AwsErrorDetails.builder().build())
-                    .build()
+            val exception = AwsServiceException("random message")
 
             coEvery { errorFunc(any()) }.returns(Unit)
             coEvery { sqs.receiveMessage(request) }.throws(exception)
@@ -187,7 +179,7 @@ class SqsPollerTest {
 
             coVerify(exactly = 0) { successFunc(any()) }
             verify(exactly = 1) {
-                errorFunc(ConsumptionError.AwsServiceError(AwsErrorDetails.builder().build()))
+                errorFunc(ConsumptionError.AwsServiceError(AwsServiceException("random message")))
             }
         }
 

@@ -114,7 +114,7 @@ class SqsProducerExecutorTest {
                 produceData = {
                     SqsProductionData.SingleMessage {
                         messageBody = "this is a fifo test message"
-                        messageGroupId = "group 1"
+                        messageGroupId = "group_1"
                     }
                 },
                 resourceNotFound = { _ -> },
@@ -141,7 +141,7 @@ class SqsProducerExecutorTest {
                 produceData = {
                     SqsProductionData.SingleMessage {
                         messageBody = "this is a fifo test message"
-                        messageGroupId = "group 1"
+                        messageGroupId = "group_1"
                         messageDeduplicationId = "dedup"
                     }
                 },
@@ -153,7 +153,7 @@ class SqsProducerExecutorTest {
                 produceData = {
                     SqsProductionData.SingleMessage {
                         messageBody = "this is a fifo test message"
-                        messageGroupId = "group 1"
+                        messageGroupId = "group_1"
                         messageDeduplicationId = "dedup"
                     }
                 },
@@ -185,7 +185,7 @@ class SqsProducerExecutorTest {
                 produceData = {
                     SqsProductionData.SingleMessage {
                         messageBody = "my message"
-                        messageGroupId = "group 1"
+                        messageGroupId = "group_1"
                     }
                 },
                 resourceNotFound = { _ -> },
@@ -215,11 +215,11 @@ class SqsProducerExecutorTest {
                             listOf(
                                 SendMessageBatchRequestEntry {
                                     messageBody = "message 1"
-                                    messageGroupId = "group 1"
+                                    messageGroupId = "group_1"
                                 },
                                 SendMessageBatchRequestEntry {
                                     messageBody = "message 2"
-                                    messageGroupId = "group 1"
+                                    messageGroupId = "group_1"
                                 },
                             )
                     }
