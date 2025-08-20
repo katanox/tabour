@@ -73,45 +73,34 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
             launch {
                 retry(
                     consumer.config.retries,
-                    {
-                        val error =
-                            when (it) {
-                                is AwsServiceException ->
-                                    ConsumptionError.AwsError(details = it.awsErrorDetails())
-                                is SdkClientException -> ConsumptionError.AwsSdkClientError(it)
-                                else -> ConsumptionError.UnrecognizedError(it)
-                            }
-
-                        consumer.onError(error)
-                    },
+                    { error -> consumer.handleConsumptionException(error) },
                 ) {
-                    val request = ReceiveMessageRequest {
-                        queueUrl = consumer.queueUri.toString()
-                        maxNumberOfMessages = consumer.config.maxMessages
-                        waitTimeSeconds = consumer.config.waitTime.inWholeSeconds.toInt()
-                    }
-
                     channelFlow {
-                            sqsClient.receiveMessage(request).messages.orEmpty().forEach { message
-                                ->
-                                launch {
-                                    try {
-                                        if (consumer.onSuccess(message)) {
-                                            send(message)
-                                        } else {
-                                            consumer.onError(
-                                                ConsumptionError.UnsuccessfulConsumption(message)
-                                            )
-                                        }
-                                    } catch (e: Throwable) {
-                                        if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
-                                            consumer.onError(
-                                                ConsumptionError.ThrowableDuringHanding(e)
-                                            )
+                            sqsClient
+                                .receiveMessage(consumer.receiveRequest())
+                                .messages
+                                .orEmpty()
+                                .forEach { message ->
+                                    launch {
+                                        try {
+                                            if (consumer.onSuccess(message)) {
+                                                send(message)
+                                            } else {
+                                                consumer.onError(
+                                                    ConsumptionError.UnsuccessfulConsumption(
+                                                        message
+                                                    )
+                                                )
+                                            }
+                                        } catch (e: Throwable) {
+                                            if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
+                                                consumer.onError(
+                                                    ConsumptionError.ThrowableDuringHanding(e)
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
                         }
                         .collect { message -> acknowledge(consumer.queueUri, message) }
                 }
@@ -131,4 +120,22 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
             logger.error(e) { "Failed to delete message batch" }
         }
     }
+}
+
+private suspend fun <T> SqsConsumer<T>.handleConsumptionException(throwable: Throwable) {
+    val error =
+        when (throwable) {
+            is AwsServiceException ->
+                ConsumptionError.AwsError(details = throwable.awsErrorDetails())
+            is SdkClientException -> ConsumptionError.AwsSdkClientError(throwable)
+            else -> ConsumptionError.UnrecognizedError(throwable)
+        }
+
+    onError(error)
+}
+
+private fun <T> SqsConsumer<T>.receiveRequest() = ReceiveMessageRequest {
+    queueUrl = queueUri.toString()
+    maxNumberOfMessages = config.maxMessages
+    waitTimeSeconds = config.waitTime.inWholeSeconds.toInt()
 }
