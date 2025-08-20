@@ -135,6 +135,5 @@ private suspend fun <T> SqsConsumer<T>.handleConsumptionException(exception: Thr
 
 private fun <T> SqsConsumer<T>.receiveRequest() = ReceiveMessageRequest {
     queueUrl = queueUri.toString()
-    maxNumberOfMessages = config.maxMessages
-    waitTimeSeconds = config.waitTime.inWholeSeconds.toInt()
+    config.receiveRequestConfigurationBuilder(this)
 }

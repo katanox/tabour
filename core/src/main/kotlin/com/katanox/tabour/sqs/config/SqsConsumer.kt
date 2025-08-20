@@ -14,5 +14,5 @@ internal constructor(
     override val onSuccess: suspend (Message) -> Boolean,
     override val onError: suspend (ConsumptionError) -> Unit,
 ) : Consumer<Message, ConsumptionError>, Config {
-    var config: SqsConsumerConfiguration = sqsConsumerConfiguration { maxMessages = 10 }
+    var config: SqsConsumerConfiguration = sqsConsumerConfiguration {}
 }
