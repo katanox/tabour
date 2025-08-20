@@ -12,7 +12,6 @@ import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
-import software.amazon.awssdk.regions.Region
 
 /**
  * An implementation of [Registry] which works with SQS
@@ -69,7 +68,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
 
         if (producer != null) {
             SqsClient.fromEnvironment {
-                    region = configuration.region.id()
+                    region = configuration.region
                     endpointUrl = configuration.endpointOverride?.toString()?.let { Url.parse(it) }
                     credentialsProvider = configuration.credentialsProvider
                 }
@@ -85,7 +84,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
         /** Key of the registry */
         val key: T,
         /** The region of the credentials */
-        val region: Region,
+        val region: String,
     ) : Config {
         /**
          * Can be used to change the endpoint of the SQS queue. Usually this is for testing purposes
@@ -103,7 +102,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
 
     private suspend fun buildSqsClient(): SqsClient =
         SqsClient.fromEnvironment {
-            region = configuration.region.id()
+            region = configuration.region
             endpointUrl = configuration.endpointOverride?.toString()?.let(Url::parse)
             credentialsProvider = configuration.credentialsProvider
         }

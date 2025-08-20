@@ -1,5 +1,7 @@
 package com.katanox.tabour.sqs.consumption
 
+import aws.sdk.kotlin.runtime.AwsServiceException
+import aws.sdk.kotlin.runtime.ClientException
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
 import aws.sdk.kotlin.services.sqs.model.Message
@@ -17,8 +19,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
-import software.amazon.awssdk.awscore.exception.AwsServiceException
-import software.amazon.awssdk.core.exception.SdkClientException
 
 internal class SqsPoller(private val sqsClient: SqsClient) {
     private var consume: Boolean = false
@@ -122,13 +122,12 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
     }
 }
 
-private suspend fun <T> SqsConsumer<T>.handleConsumptionException(throwable: Throwable) {
+private suspend fun <T> SqsConsumer<T>.handleConsumptionException(exception: Throwable) {
     val error =
-        when (throwable) {
-            is AwsServiceException ->
-                ConsumptionError.AwsError(details = throwable.awsErrorDetails())
-            is SdkClientException -> ConsumptionError.AwsSdkClientError(throwable)
-            else -> ConsumptionError.UnrecognizedError(throwable)
+        when (exception) {
+            is AwsServiceException -> ConsumptionError.AwsServiceError(exception = exception)
+            is ClientException -> ConsumptionError.AwsClientError(exception = exception)
+            else -> ConsumptionError.UnrecognizedError(exception)
         }
 
     onError(error)

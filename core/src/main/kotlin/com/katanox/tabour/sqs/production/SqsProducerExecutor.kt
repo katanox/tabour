@@ -4,16 +4,16 @@ import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.SendMessageBatchRequest
 import aws.sdk.kotlin.services.sqs.model.SendMessageBatchRequestEntry
 import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
+import aws.smithy.kotlin.runtime.ClientException
+import aws.smithy.kotlin.runtime.ServiceException
 import com.katanox.tabour.retry
 import java.time.Instant
-import software.amazon.awssdk.awscore.exception.AwsServiceException
-import software.amazon.awssdk.core.exception.SdkClientException
 
 internal class SqsProducerExecutor {
     private fun throwableToError(e: Throwable): ProductionError =
         when (e) {
-            is AwsServiceException -> ProductionError.AwsError(details = e.awsErrorDetails())
-            is SdkClientException -> ProductionError.AwsSdkClientError(e)
+            is ServiceException -> ProductionError.AwsServiceError(exception = e)
+            is ClientException -> ProductionError.AwsClientError(e)
             else -> ProductionError.UnrecognizedError(e)
         }
 

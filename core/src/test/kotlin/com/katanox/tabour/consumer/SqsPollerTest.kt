@@ -187,7 +187,7 @@ class SqsPollerTest {
 
             coVerify(exactly = 0) { successFunc(any()) }
             verify(exactly = 1) {
-                errorFunc(ConsumptionError.AwsError(AwsErrorDetails.builder().build()))
+                errorFunc(ConsumptionError.AwsServiceError(AwsErrorDetails.builder().build()))
             }
         }
 

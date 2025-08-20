@@ -5,7 +5,6 @@ plugins { `jvm-test-suite` }
 dependencies {
     implementation(libs.coroutines.core)
 
-    api(libs.aws.sqs)
     api(libs.aws.sqs.kotlin)
     api(libs.klogging)
 

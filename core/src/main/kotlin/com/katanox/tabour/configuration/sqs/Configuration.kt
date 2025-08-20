@@ -10,7 +10,6 @@ import com.katanox.tabour.sqs.production.ProductionError
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerConfiguration
 import java.net.URL
-import software.amazon.awssdk.regions.Region
 
 /**
  * Creates a new [SqsRegistry.Configuration] which can be used as configuration for a [SqsRegistry]
@@ -19,7 +18,7 @@ import software.amazon.awssdk.regions.Region
  */
 fun <T> sqsRegistryConfiguration(
     key: T,
-    region: Region,
+    region: String,
     init: SqsRegistry.Configuration<T>.() -> Unit,
 ): SqsRegistry.Configuration<T> = config(SqsRegistry.Configuration(key, region), init)
 
@@ -27,7 +26,7 @@ fun <T> sqsRegistryConfiguration(
  * Creates a new [SqsRegistry.Configuration] which can be used as configuration for a [SqsRegistry]
  * using the default configuration values
  */
-fun <T> sqsRegistryConfiguration(key: T, region: Region): SqsRegistry.Configuration<T> =
+fun <T> sqsRegistryConfiguration(key: T, region: String): SqsRegistry.Configuration<T> =
     SqsRegistry.Configuration(key, region)
 
 /** Creates a new [SqsRegistry] */
