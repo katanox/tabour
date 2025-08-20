@@ -214,10 +214,12 @@ class SqsProducerExecutorTest {
                         entries =
                             listOf(
                                 SendMessageBatchRequestEntry {
+                                    id = "1"
                                     messageBody = "message 1"
                                     messageGroupId = "group_1"
                                 },
                                 SendMessageBatchRequestEntry {
+                                    id = "2"
                                     messageBody = "message 2"
                                     messageGroupId = "group_1"
                                 },
