@@ -143,7 +143,7 @@ class TabourTest {
                     produceData = {
                         SqsProductionData.SingleMessage {
                             messageBody = "this is a fifo test message"
-                            messageGroupId = "group 1"
+                            messageGroupId = "group_1"
                         }
                     },
                     resourceNotFound = { _ -> println("Resource not found") },
@@ -226,7 +226,7 @@ class TabourTest {
                     produceData = {
                         SqsProductionData.SingleMessage {
                             messageBody = "this is a fifo test message"
-                            messageGroupId = "group 1"
+                            messageGroupId = "group_1"
                         }
                     },
                     resourceNotFound = { _ -> println("Resource not found") },
@@ -261,7 +261,7 @@ class TabourTest {
                     produceData = {
                         SqsProductionData.SingleMessage {
                             messageBody = "this is a fifo test message"
-                            messageGroupId = "group 1"
+                            messageGroupId = "group_1"
                         }
                     },
                     resourceNotFound = { _ -> println("Resource not found") },
@@ -318,7 +318,7 @@ class TabourTest {
                 produceData = {
                     SqsProductionData.SingleMessage {
                         messageBody = "this is a fifo test message"
-                        messageGroupId = "group 1"
+                        messageGroupId = "group_1"
                     }
                 },
                 resourceNotFound = { _ -> println("Resource not found") },
@@ -392,7 +392,7 @@ class TabourTest {
                     produceData = {
                         SqsProductionData.SingleMessage {
                             messageBody = "this is a fifo test message"
-                            messageGroupId = "group 1"
+                            messageGroupId = "group_1"
                         }
                     },
                     resourceNotFound = { _ -> println("Resource not found") },
@@ -400,7 +400,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-                    println("Error $it")
+                    fail("Error $it")
                 }
 
             container.register(sqsRegistry.addProducer(producer)).start()
@@ -456,7 +456,7 @@ class TabourTest {
                     produceData = {
                         SqsProductionData.SingleMessage {
                             messageBody = "this is a fifo test message"
-                            messageGroupId = "group 1"
+                            messageGroupId = "group_1"
                         }
                     },
                     resourceNotFound = { error -> resourceNotFound = error },
@@ -505,7 +505,7 @@ class TabourTest {
                     produceData = {
                         SqsProductionData.SingleMessage {
                             messageBody = "this is a fifo test message"
-                            messageGroupId = "group 1"
+                            messageGroupId = "group_1"
                         }
                     },
                     resourceNotFound = { error -> resourceNotFound = error },
