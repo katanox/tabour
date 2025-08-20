@@ -18,18 +18,14 @@ import com.katanox.tabour.configuration.sqs.sqsRegistryConfiguration
 import com.katanox.tabour.error.ProducerNotFound
 import com.katanox.tabour.error.ProductionResourceNotFound
 import com.katanox.tabour.error.RegistryNotFound
-import com.katanox.tabour.sqs.production.FifoDataProduction
-import com.katanox.tabour.sqs.production.NonFifoDataProduction
-import com.katanox.tabour.sqs.production.SqsDataForProduction
 import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsMessageProduced
+import com.katanox.tabour.sqs.production.SqsProductionData
 import java.net.URI
 import java.net.URL
 import java.time.Duration
-import kotlin.test.DefaultAsserter.assertNotNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.milliseconds
@@ -131,7 +127,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
+                sqsRegistryConfiguration("test-registry", localstack.region) {
                     endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                     credentialsProvider = StaticCredentialsProvider {
@@ -143,9 +139,13 @@ class TabourTest {
             val sqsRegistry = sqsRegistry(config)
             var counter = 0
             val sqsProducerConfiguration =
-                DataProductionConfiguration<SqsDataForProduction, SqsMessageProduced>(
-                    produceData = { NonFifoDataProduction("this is a test message") },
-                    dataProduced = { _, _ -> },
+                DataProductionConfiguration<SqsProductionData, SqsMessageProduced>(
+                    produceData = {
+                        SqsProductionData.SingleMessage {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group 1"
+                        }
+                    },
                     resourceNotFound = { _ -> println("Resource not found") },
                 )
 
@@ -184,7 +184,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
+                sqsRegistryConfiguration("test-registry", localstack.region) {
                     endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                     credentialsProvider = StaticCredentialsProvider {
@@ -223,8 +223,12 @@ class TabourTest {
 
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
-                    produceData = { NonFifoDataProduction("this is a test message") },
-                    dataProduced = { _, _ -> },
+                    produceData = {
+                        SqsProductionData.SingleMessage {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group 1"
+                        }
+                    },
                     resourceNotFound = { _ -> println("Resource not found") },
                 )
 
@@ -242,7 +246,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
+                sqsRegistryConfiguration("test-registry", localstack.region) {
                     endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                     credentialsProvider = StaticCredentialsProvider {
@@ -254,8 +258,12 @@ class TabourTest {
             val sqsRegistry = sqsRegistry(config)
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
-                    produceData = { NonFifoDataProduction("this is a test message") },
-                    dataProduced = { _, _ -> },
+                    produceData = {
+                        SqsProductionData.SingleMessage {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group 1"
+                        }
+                    },
                     resourceNotFound = { _ -> println("Resource not found") },
                 )
 
@@ -296,7 +304,7 @@ class TabourTest {
     fun `consuming messages deletes the message from queues`() = runTest {
         val container = tabour { numOfThreads = 1 }
         val config =
-            sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
+            sqsRegistryConfiguration("test-registry", localstack.region) {
                 endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                 credentialsProvider = StaticCredentialsProvider {
                     accessKeyId = localstack.accessKey
@@ -307,8 +315,12 @@ class TabourTest {
         val sqsRegistry = sqsRegistry(config)
         val sqsProducerConfiguration =
             SqsDataProductionConfiguration(
-                produceData = { NonFifoDataProduction("this is a test message") },
-                dataProduced = { _, _ -> },
+                produceData = {
+                    SqsProductionData.SingleMessage {
+                        messageBody = "this is a fifo test message"
+                        messageGroupId = "group 1"
+                    }
+                },
                 resourceNotFound = { _ -> println("Resource not found") },
             )
 
@@ -365,7 +377,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
+                sqsRegistryConfiguration("test-registry", localstack.region) {
                     endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                     credentialsProvider = StaticCredentialsProvider {
@@ -377,8 +389,12 @@ class TabourTest {
             val sqsRegistry = sqsRegistry(config)
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
-                    produceData = { FifoDataProduction("this is a fifo test message", "group1") },
-                    dataProduced = { _, _ -> },
+                    produceData = {
+                        SqsProductionData.SingleMessage {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group 1"
+                        }
+                    },
                     resourceNotFound = { _ -> println("Resource not found") },
                 )
 
@@ -420,66 +436,11 @@ class TabourTest {
 
     @Test
     @Tag("sqs-producer-test")
-    fun `successful production triggers dataProduced function`() =
-        runTest(UnconfinedTestDispatcher()) {
-            val container = tabour { numOfThreads = 1 }
-            val config =
-                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
-                    endpointOverride =
-                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-                    credentialsProvider = StaticCredentialsProvider {
-                        accessKeyId = localstack.accessKey
-                        secretAccessKey = localstack.secretKey
-                    }
-                }
-
-            val sqsRegistry = sqsRegistry(config)
-            var expectedProduceData: SqsDataForProduction? = null
-            var producedDataEvent: SqsMessageProduced? = null
-
-            val sqsProducerConfiguration =
-                SqsDataProductionConfiguration(
-                    produceData = { FifoDataProduction("this is a fifo test message", "group1") },
-                    dataProduced = { data, event ->
-                        expectedProduceData = data
-                        producedDataEvent = event
-                    },
-                    resourceNotFound = { _ -> println("Resource not found") },
-                )
-
-            val producer =
-                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer", ::println)
-
-            sqsRegistry.addProducer(producer)
-            container.register(sqsRegistry)
-            container.start()
-
-            container.produceMessage(
-                "test-registry",
-                "fifo-test-producer",
-                sqsProducerConfiguration,
-            )
-
-            purgeQueue(fifoQueueUrl)
-
-            await.withPollDelay(Duration.ofSeconds(1)).untilAsserted {
-                assertEquals(
-                    FifoDataProduction("this is a fifo test message", "group1"),
-                    expectedProduceData,
-                )
-                assertNotNull("Message group id is null", producedDataEvent?.messageGroupId)
-                assertNotEquals("", producedDataEvent?.messageGroupId)
-            }
-            container.stop()
-        }
-
-    @Test
-    @Tag("sqs-producer-test")
     fun `produce a message with wrong registry key triggers resource not found error`() =
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
+                sqsRegistryConfiguration("test-registry", localstack.region) {
                     endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                     credentialsProvider = StaticCredentialsProvider {
@@ -492,8 +453,12 @@ class TabourTest {
             var resourceNotFound: ProductionResourceNotFound? = null
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
-                    produceData = { FifoDataProduction("this is a fifo test message", "group1") },
-                    dataProduced = { _, _ -> },
+                    produceData = {
+                        SqsProductionData.SingleMessage {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group 1"
+                        }
+                    },
                     resourceNotFound = { error -> resourceNotFound = error },
                 )
 
@@ -524,7 +489,7 @@ class TabourTest {
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
             val config =
-                sqsRegistryConfiguration("test-registry", Region.of(localstack.region)) {
+                sqsRegistryConfiguration("test-registry", localstack.region) {
                     endpointOverride =
                         localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
                     credentialsProvider = StaticCredentialsProvider {
@@ -537,8 +502,12 @@ class TabourTest {
             var resourceNotFound: ProductionResourceNotFound? = null
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
-                    produceData = { FifoDataProduction("this is a fifo test message", "group1") },
-                    dataProduced = { _, _ -> },
+                    produceData = {
+                        SqsProductionData.SingleMessage {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group 1"
+                        }
+                    },
                     resourceNotFound = { error -> resourceNotFound = error },
                 )
 

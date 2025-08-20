@@ -7,6 +7,7 @@ import aws.sdk.kotlin.services.sqs.model.DeleteQueueRequest
 import aws.sdk.kotlin.services.sqs.model.PurgeQueueRequest
 import aws.sdk.kotlin.services.sqs.model.QueueAttributeName
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.SendMessageBatchRequestEntry
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.katanox.tabour.configuration.sqs.sqsProducer
 import java.net.URI
@@ -108,11 +109,14 @@ class SqsProducerExecutorTest {
             sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer") {
                 fail(it.toString())
             }
-        var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(
-                dataProduced = { _, _ -> producedCount++ },
-                produceData = { FifoDataProduction("my message", "groupid") },
+                produceData = {
+                    SqsProductionData.SingleMessage {
+                        messageBody = "this is a fifo test message"
+                        messageGroupId = "group 1"
+                    }
+                },
                 resourceNotFound = { _ -> },
             )
 
@@ -122,7 +126,6 @@ class SqsProducerExecutorTest {
             val response =
                 sqsClient.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
 
-            assertEquals(1, producedCount)
             assertEquals(response.messages?.isNotEmpty(), true)
         }
     }
@@ -133,29 +136,26 @@ class SqsProducerExecutorTest {
 
         val producer =
             sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer", ::println)
-        var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(
-                dataProduced = { _, _ -> producedCount++ },
                 produceData = {
-                    FifoDataProduction(
-                        "my message dedup",
-                        "groupid",
-                        messageDeduplicationId = "dedup",
-                    )
+                    SqsProductionData.SingleMessage {
+                        messageBody = "this is a fifo test message"
+                        messageGroupId = "group 1"
+                        messageDeduplicationId = "dedup"
+                    }
                 },
                 resourceNotFound = { _ -> },
             )
 
         val pfc2 =
             SqsDataProductionConfiguration(
-                dataProduced = { _, _ -> producedCount++ },
                 produceData = {
-                    FifoDataProduction(
-                        "my message dedup",
-                        "groupid",
-                        messageDeduplicationId = "dedup",
-                    )
+                    SqsProductionData.SingleMessage {
+                        messageBody = "this is a fifo test message"
+                        messageGroupId = "group 1"
+                        messageDeduplicationId = "dedup"
+                    }
                 },
                 resourceNotFound = { _ -> },
             )
@@ -166,7 +166,6 @@ class SqsProducerExecutorTest {
 
             val response = client.receiveMessage(ReceiveMessageRequest { queueUrl = fifoQueueUrl })
 
-            assertEquals(2, producedCount)
             assertEquals(1, response.messages?.size)
         }
     }
@@ -181,11 +180,14 @@ class SqsProducerExecutorTest {
                 "non-fifo-queue-producer",
                 ::println,
             )
-        var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(
-                dataProduced = { _, _ -> producedCount++ },
-                produceData = { NonFifoDataProduction("my message") },
+                produceData = {
+                    SqsProductionData.SingleMessage {
+                        messageBody = "my message"
+                        messageGroupId = "group 1"
+                    }
+                },
                 resourceNotFound = { _ -> },
             )
 
@@ -195,7 +197,6 @@ class SqsProducerExecutorTest {
             val response =
                 client.receiveMessage(ReceiveMessageRequest { queueUrl = nonFifoQueueUrl })
 
-            assertEquals(1, producedCount)
             assertEquals(response.messages?.isNotEmpty(), true)
         }
     }
@@ -206,17 +207,22 @@ class SqsProducerExecutorTest {
 
         val producer =
             sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-queue-producer", ::println)
-        var producedCount = 0
         val pfc =
             SqsDataProductionConfiguration(
-                dataProduced = { _, _ -> producedCount++ },
                 produceData = {
-                    BatchDataForProduction(
-                        listOf(
-                            FifoDataProduction("batch message", messageGroupId = "ohello"),
-                            FifoDataProduction("batch message 2", messageGroupId = "ohello"),
-                        )
-                    )
+                    SqsProductionData.Batch {
+                        entries =
+                            listOf(
+                                SendMessageBatchRequestEntry {
+                                    messageBody = "message 1"
+                                    messageGroupId = "group 1"
+                                },
+                                SendMessageBatchRequestEntry {
+                                    messageBody = "message 2"
+                                    messageGroupId = "group 1"
+                                },
+                            )
+                    }
                 },
                 resourceNotFound = { _ -> },
             )
@@ -232,7 +238,6 @@ class SqsProducerExecutorTest {
                     }
                 )
 
-            assertEquals(2, producedCount)
             assertEquals(2, response.messages?.size)
         }
     }

@@ -24,7 +24,7 @@ internal class SqsProducerExecutor {
         }
 
         when (produceData) {
-            is SqsProductionData.NonBatch -> {
+            is SqsProductionData.SingleMessage -> {
                 retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
                     val request = SendMessageRequest {
                         queueUrl = url
