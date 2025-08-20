@@ -214,7 +214,7 @@ class TabourTest {
                         sleepTime = 200.milliseconds
                         consumeWhile = { counter < 50 }
                         concurrency = 5
-                        maxMessages = 2
+                        receiveRequestConfigurationBuilder = { maxNumberOfMessages = 2 }
                     }
                 }
 
