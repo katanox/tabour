@@ -69,13 +69,13 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
     }
 
     private suspend fun <T> accept(consumer: SqsConsumer<T>) = coroutineScope {
-        repeat(consumer.config.concurrency) {
-            launch {
-                retry(
-                    consumer.config.retries,
-                    { error -> consumer.handleConsumptionException(error) },
-                ) {
-                    channelFlow {
+        channelFlow {
+                repeat(consumer.config.concurrency) {
+                    launch {
+                        retry(
+                            consumer.config.retries,
+                            { error -> consumer.handleConsumptionException(error) },
+                        ) {
                             sqsClient
                                 .receiveMessage(consumer.receiveRequest())
                                 .messages
@@ -102,10 +102,10 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                                     }
                                 }
                         }
-                        .collect { message -> acknowledge(consumer.queueUri, message) }
+                    }
                 }
             }
-        }
+            .collect { message -> acknowledge(consumer.queueUri, message) }
     }
 
     private suspend fun acknowledge(url: URL, message: Message) {
