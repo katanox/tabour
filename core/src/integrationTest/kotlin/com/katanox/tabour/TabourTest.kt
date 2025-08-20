@@ -260,7 +260,7 @@ class TabourTest {
                 SqsDataProductionConfiguration(
                     produceData = {
                         SqsProductionData.SingleMessage {
-                            messageBody = "this is a fifo test message"
+                            messageBody = "this is a test message"
                             messageGroupId = "group_1"
                         }
                     },
@@ -317,7 +317,7 @@ class TabourTest {
             SqsDataProductionConfiguration(
                 produceData = {
                     SqsProductionData.SingleMessage {
-                        messageBody = "this is a fifo test message"
+                        messageBody = "consuming messages deletes the message from queues"
                         messageGroupId = "group_1"
                     }
                 },
@@ -349,11 +349,11 @@ class TabourTest {
                 assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
                 assertEquals(
                     receiveMessagesResponse.messages?.first()?.body,
-                    "this is a test message",
+                    "consuming messages deletes the message from queues",
                 )
             }
 
-        val messagesSize = runBlocking {
+        val messagesSize =
             sqsClient
                 .receiveMessage(
                     ReceiveMessageRequest {
@@ -364,7 +364,7 @@ class TabourTest {
                 )
                 .messages
                 ?.size
-        }
+
         assertEquals(null, messagesSize)
 
         purgeQueue(nonFifoQueueUrl)
