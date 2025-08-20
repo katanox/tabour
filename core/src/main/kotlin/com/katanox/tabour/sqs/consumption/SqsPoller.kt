@@ -1,8 +1,7 @@
 package com.katanox.tabour.sqs.consumption
 
 import aws.sdk.kotlin.services.sqs.SqsClient
-import aws.sdk.kotlin.services.sqs.model.DeleteMessageBatchRequest
-import aws.sdk.kotlin.services.sqs.model.DeleteMessageBatchRequestEntry
+import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
 import aws.sdk.kotlin.services.sqs.model.Message
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
 import com.katanox.tabour.TABOUR_SHUTDOWN_MESSAGE
@@ -16,7 +15,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
@@ -92,63 +91,44 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                         waitTimeSeconds = consumer.config.waitTime.inWholeSeconds.toInt()
                     }
 
-                    val processedMessages = buildList {
-                        sqsClient.receiveMessage(request).messages.orEmpty().asFlow().collect {
-                            message ->
-                            try {
-                                if (consumer.onSuccess(message)) {
-                                    add(message)
-                                } else {
-                                    consumer.onError(
-                                        ConsumptionError.UnsuccessfulConsumption(message)
-                                    )
-                                }
-                            } catch (e: Throwable) {
-                                if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
-                                    consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
+                    channelFlow {
+                            sqsClient.receiveMessage(request).messages.orEmpty().forEach { message
+                                ->
+                                launch {
+                                    try {
+                                        if (consumer.onSuccess(message)) {
+                                            send(message)
+                                        } else {
+                                            consumer.onError(
+                                                ConsumptionError.UnsuccessfulConsumption(message)
+                                            )
+                                        }
+                                    } catch (e: Throwable) {
+                                        if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
+                                            consumer.onError(
+                                                ConsumptionError.ThrowableDuringHanding(e)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-
-                    acknowledge(consumer.queueUri, processedMessages)
+                        .collect { message -> acknowledge(consumer.queueUri, message) }
                 }
             }
         }
     }
 
-    private suspend fun acknowledge(url: URL, messages: List<Message>) {
-        if (messages.isNotEmpty()) {
-            try {
-                val entries =
-                    messages
-                        .distinctBy { it.messageId }
-                        .map {
-                            DeleteMessageBatchRequestEntry {
-                                id = it.messageId
-                                receiptHandle = it.receiptHandle
-                            }
-                        }
-
-                val request = DeleteMessageBatchRequest {
+    private suspend fun acknowledge(url: URL, message: Message) {
+        try {
+            sqsClient.deleteMessage(
+                DeleteMessageRequest {
                     queueUrl = url.toString()
-                    this.entries = entries
+                    receiptHandle = message.receiptHandle
                 }
-
-                val deleteResponse = sqsClient.deleteMessageBatch(request)
-
-                if (deleteResponse.failed.isNotEmpty()) {
-                    val failedMessages = deleteResponse.failed.map { it.message }
-
-                    logger.error {
-                        "There are failures while deleting batch. ${failedMessages.joinToString(", ")}"
-                    }
-                } else {
-                    logger.debug { "Successfully deleted batch" }
-                }
-            } catch (e: Throwable) {
-                logger.error(e) { "Failed to delete message batch" }
-            }
+            )
+        } catch (e: Throwable) {
+            logger.error(e) { "Failed to delete message batch" }
         }
     }
 }
