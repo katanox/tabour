@@ -8,12 +8,6 @@ import aws.smithy.kotlin.runtime.ServiceException
 import com.katanox.tabour.retry
 
 internal class SqsProducerExecutor {
-    private fun throwableToError(e: Throwable): ProductionError =
-        when (e) {
-            is ServiceException -> ProductionError.AwsServiceError(exception = e)
-            is ClientException -> ProductionError.AwsClientError(e)
-            else -> ProductionError.UnrecognizedError(e)
-        }
 
     suspend fun <T> produce(
         sqsClient: SqsClient,
@@ -62,3 +56,10 @@ internal class SqsProducerExecutor {
         }
     }
 }
+
+private fun throwableToError(e: Throwable): ProductionError =
+    when (e) {
+        is ServiceException -> ProductionError.AwsServiceError(exception = e)
+        is ClientException -> ProductionError.AwsClientError(e)
+        else -> ProductionError.UnrecognizedError(e)
+    }
