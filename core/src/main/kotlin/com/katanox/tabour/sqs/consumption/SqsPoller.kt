@@ -16,6 +16,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.core.exception.SdkClientException
@@ -91,36 +92,29 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                         waitTimeSeconds = consumer.config.waitTime.inWholeSeconds.toInt()
                     }
 
-                    val messages = sqsClient.receiveMessage(request).messages ?: emptyList()
-
-                    if (messages.isNotEmpty()) {
-                        handleMessages(messages, consumer)
+                    val processedMessages = buildList {
+                        sqsClient.receiveMessage(request).messages.orEmpty().asFlow().collect {
+                            message ->
+                            try {
+                                if (consumer.onSuccess(message)) {
+                                    add(message)
+                                } else {
+                                    consumer.onError(
+                                        ConsumptionError.UnsuccessfulConsumption(message)
+                                    )
+                                }
+                            } catch (e: Throwable) {
+                                if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
+                                    consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
+                                }
+                            }
+                        }
                     }
+
+                    acknowledge(consumer.queueUri, processedMessages)
                 }
             }
         }
-    }
-
-    private suspend fun <T> handleMessages(messages: List<Message>, consumer: SqsConsumer<T>) {
-        val processedMessages =
-            messages.mapNotNull { message ->
-                try {
-                    if (consumer.onSuccess(message)) {
-                        message
-                    } else {
-                        val error = ConsumptionError.UnsuccessfulConsumption(message)
-                        consumer.onError(error)
-                        null
-                    }
-                } catch (e: Throwable) {
-                    if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
-                        consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
-                    }
-                    null
-                }
-            }
-
-        acknowledge(consumer.queueUri, processedMessages)
     }
 
     private suspend fun acknowledge(url: URL, messages: List<Message>) {
