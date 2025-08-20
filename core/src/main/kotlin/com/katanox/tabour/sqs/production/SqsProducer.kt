@@ -1,5 +1,7 @@
 package com.katanox.tabour.sqs.production
 
+import aws.sdk.kotlin.services.sqs.model.SendMessageBatchRequest
+import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
 import com.katanox.tabour.configuration.sqs.sqsProducerConfiguration
 import com.katanox.tabour.consumption.Config
 import java.net.URL
@@ -17,23 +19,9 @@ internal constructor(
     var config: SqsProducerConfiguration = sqsProducerConfiguration { retries = 1 }
 }
 
-sealed interface SqsDataForProduction
+sealed class SqsProductionData {
+    data class NonBatch(val builder: (SendMessageRequest.Builder.() -> Unit)) : SqsProductionData()
 
-/**
- * SQS producers use instances of this interfaces in order to produce messages to queues.
- * - For FIFO queues use [FifoDataProduction]
- * - For Non FIFO queues use [NonFifoDataProduction]
- */
-sealed interface SqsProductionData : SqsDataForProduction {
-    val message: String?
+    data class Batch(val builder: (SendMessageBatchRequest.Builder.() -> Unit)) :
+        SqsProductionData()
 }
-
-data class FifoDataProduction(
-    override val message: String?,
-    val messageGroupId: String,
-    val messageDeduplicationId: String? = null,
-) : SqsProductionData
-
-data class NonFifoDataProduction(override val message: String?) : SqsProductionData
-
-data class BatchDataForProduction(val data: List<SqsProductionData>) : SqsDataForProduction
