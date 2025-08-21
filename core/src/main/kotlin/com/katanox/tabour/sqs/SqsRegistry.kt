@@ -50,8 +50,15 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
      * when start was used
      */
     override suspend fun startConsumption() {
-        val sqs = buildSqsClient()
-        SqsPoller(sqs).also { sqsPoller = it }.poll(consumers)
+        SqsPoller(
+                SqsClient.fromEnvironment {
+                    region = configuration.region
+                    endpointUrl = configuration.endpointOverride?.toString()?.let(Url::parse)
+                    credentialsProvider = configuration.credentialsProvider
+                }
+            )
+            .also { sqsPoller = it }
+            .poll(consumers)
     }
 
     /** Stops the consumption of messages by waiting the consumers to finish their work */
@@ -99,11 +106,4 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
          */
         var credentialsProvider: CredentialsProvider? = null
     }
-
-    private suspend fun buildSqsClient(): SqsClient =
-        SqsClient.fromEnvironment {
-            region = configuration.region
-            endpointUrl = configuration.endpointOverride?.toString()?.let(Url::parse)
-            credentialsProvider = configuration.credentialsProvider
-        }
 }
