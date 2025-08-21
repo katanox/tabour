@@ -1,6 +1,5 @@
 package com.katanox.tabour
 
-import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.error.RegistryNotFound
 import com.katanox.tabour.sqs.SqsRegistry
@@ -15,12 +14,6 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 const val TABOUR_SHUTDOWN_MESSAGE = "tabour shutdown"
 
 /**
- * A container for collection of [Registry]. This class is the entrypoint for interacting with
- * consumers and producers.
- *
- * Consumers and producers are added to a [Registry] and then the registry itself must be added to a
- * tabour container
- *
  * After registering all registries, the tabour container can be started using [start].
  *
  * To stop the consumption of the container, you can use [stop]
@@ -28,7 +21,7 @@ const val TABOUR_SHUTDOWN_MESSAGE = "tabour shutdown"
  * By default, the container will allocate 4 threads which can be configured using [Configuration]
  */
 class Tabour internal constructor(val config: Configuration) {
-    private val registries: MutableSet<Registry<*>> = mutableSetOf()
+    private val registries: MutableSet<SqsRegistry<*>> = mutableSetOf()
 
     private val registriesByKey by lazy { registries.associateBy { it.key } }
 
@@ -44,7 +37,7 @@ class Tabour internal constructor(val config: Configuration) {
      * Adds a new registry to the Tabour Container. All registries must be registered before
      * starting the tabour container.
      */
-    fun <T> register(registry: Registry<T>): Tabour = apply { registries.add(registry) }
+    fun <T> register(registry: SqsRegistry<T>): Tabour = apply { registries.add(registry) }
 
     /**
      * Produces a message using one of the registered producers

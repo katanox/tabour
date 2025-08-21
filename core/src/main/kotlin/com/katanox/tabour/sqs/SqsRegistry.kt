@@ -3,7 +3,6 @@ package com.katanox.tabour.sqs
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.net.url.Url
-import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.error.ProducerNotFound
 import com.katanox.tabour.sqs.config.SqsConsumer
@@ -13,14 +12,8 @@ import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
 import java.net.URI
 
-/**
- * An implementation of [Registry] which works with SQS
- *
- * [T] is the key of the registry which is used to identify the registry
- */
-class SqsRegistry<T> internal constructor(private val configuration: Configuration<T>) :
-    Registry<T> {
-    override val key: T
+class SqsRegistry<T> internal constructor(private val configuration: Configuration<T>) {
+    val key: T
         get() = configuration.key
 
     private val consumers: MutableList<SqsConsumer<*>> = mutableListOf()
@@ -49,7 +42,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
      * Starts the consuming process using the Consumers that have been registered up until the time
      * when start was used
      */
-    override suspend fun startConsumption() {
+    suspend fun startConsumption() {
         SqsPoller(
                 SqsClient.fromEnvironment {
                     region = configuration.region
@@ -62,7 +55,7 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
     }
 
     /** Stops the consumption of messages by waiting the consumers to finish their work */
-    override suspend fun stopConsumption() {
+    suspend fun stopConsumption() {
         sqsPoller?.stopPolling()
     }
 
