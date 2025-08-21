@@ -22,21 +22,19 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
     private val sqsProducerExecutor: SqsProducerExecutor = SqsProducerExecutor()
     private var sqsPoller: SqsPoller? = null
 
-    /** Adds a consumer to the registry */
-    fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> =
-        this.apply { consumers.add(consumer) }
+    fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> = consumers.add(consumer).let { this }
 
     /** Adds a collection of consumers to the registry */
     fun addConsumers(consumers: List<SqsConsumer<*>>): SqsRegistry<T> =
-        this.apply { consumers.fold(this) { registry, consumer -> registry.addConsumer(consumer) } }
+        consumers.fold(this) { registry, consumer -> registry.addConsumer(consumer) }
 
     /** Adds a producer to the registry */
     fun <K> addProducer(producer: SqsProducer<K>): SqsRegistry<T> =
-        this.apply { producers.add(producer) }
+        producers.add(producer).let { this }
 
     /** Adds a collection of producers to the registry */
     fun <K> addProducers(producers: List<SqsProducer<K>>): SqsRegistry<T> =
-        this.apply { producers.fold(this) { registry, producer -> registry.addProducer(producer) } }
+        producers.fold(this) { registry, producer -> registry.addProducer(producer) }
 
     /**
      * Starts the consuming process using the Consumers that have been registered up until the time
