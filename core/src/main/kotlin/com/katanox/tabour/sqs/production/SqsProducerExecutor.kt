@@ -48,7 +48,7 @@ internal class SqsProducerExecutor {
                 retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
                     val response = sqsClient.sendMessageBatch(request)
 
-                    if (response.failed.isEmpty()) {
+                    if (response.failed.isNotEmpty()) {
                         producer.onError(ProductionError.FailedBatch(response.failed))
                     }
                 }
