@@ -6,12 +6,13 @@ import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
 import aws.sdk.kotlin.services.sqs.model.Message
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
-import com.katanox.tabour.TABOUR_SHUTDOWN_MESSAGE
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.retry
 import com.katanox.tabour.sqs.config.SqsConsumer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
@@ -24,6 +25,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
     private var consume: Boolean = false
     private var jobs: Array<Job?> = arrayOf()
     private val logger = KotlinLogging.logger {}
+    private val consumersActivityCheckTimeout = 5.seconds
 
     suspend fun poll(consumers: List<SqsConsumer<*>>) = coroutineScope {
         consume = true
@@ -57,7 +59,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                     break
                 }
 
-                delay(5000)
+                delay(consumersActivityCheckTimeout)
             }
         }
 
@@ -93,12 +95,10 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                                                     )
                                                 )
                                             }
-                                        } catch (e: Throwable) {
-                                            if (e.message != TABOUR_SHUTDOWN_MESSAGE) {
-                                                consumer.onError(
-                                                    ConsumptionError.ThrowableDuringHanding(e)
-                                                )
-                                            }
+                                        } catch (_: CancellationException) {} catch (e: Throwable) {
+                                            consumer.onError(
+                                                ConsumptionError.ThrowableDuringHanding(e)
+                                            )
                                         }
                                     }
                                 }
@@ -117,7 +117,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                     receiptHandle = message.receiptHandle
                 }
             )
-        } catch (e: Throwable) {
+        } catch (e: ClientException) {
             logger.error(e) { "Failed to delete message batch" }
         }
     }
