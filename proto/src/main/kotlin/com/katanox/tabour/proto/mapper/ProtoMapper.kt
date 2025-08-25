@@ -1,9 +1,9 @@
 package com.katanox.tabour.proto.mapper
 
+import aws.sdk.kotlin.services.sqs.model.Message
 import com.google.protobuf.Message as ProtobufMessage
 import com.google.protobuf.util.JsonFormat
 import kotlin.jvm.Throws
-import software.amazon.awssdk.services.sqs.model.Message
 
 private val printer: JsonFormat.Printer = JsonFormat.printer()
 val parser: JsonFormat.Parser = JsonFormat.parser()
@@ -14,7 +14,7 @@ val parser: JsonFormat.Parser = JsonFormat.parser()
  */
 @Throws(Throwable::class)
 inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessage(message: Message): K {
-    parser.merge(message.body(), this)
+    parser.merge(message.body, this)
     return this.build() as K
 }
 

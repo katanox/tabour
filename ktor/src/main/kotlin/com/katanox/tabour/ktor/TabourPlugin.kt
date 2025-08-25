@@ -9,6 +9,7 @@ import io.ktor.server.application.log
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.locks.ReentrantLock
 import io.ktor.utils.io.locks.withLock
+import kotlinx.coroutines.launch
 
 class TabourConfiguration {
     /** The tabour instance which will be used to start the Tabour container */
@@ -35,7 +36,7 @@ val TabourPlugin =
                 application.log.info("Stopping tabour")
 
                 if (pluginConfig.enabled) {
-                    lock.withLock { pluginConfig.tabour.stop() }
+                    lock.withLock { application.launch { pluginConfig.tabour.stop() } }
                 }
 
                 application.monitor.unsubscribe(ApplicationStarted) {}

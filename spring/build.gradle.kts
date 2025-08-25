@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins { `jvm-test-suite` }
 
 dependencies {
@@ -36,3 +38,9 @@ tasks.named("check") { dependsOn(testing.suites.named("integrationTest")) }
 kotlin.target.compilations
     .getByName("integrationTest")
     .associateWith(kotlin.target.compilations.getByName("main"))
+
+val compileKotlin: KotlinCompile by tasks
+
+compileKotlin.compilerOptions {
+    freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
+}

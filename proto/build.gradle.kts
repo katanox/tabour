@@ -1,7 +1,7 @@
 plugins { alias(libs.plugins.protobuf) }
 
 dependencies {
-    api(libs.aws.sqs)
+    api(libs.aws.sqs.kotlin)
     implementation(project(":core"))
     implementation(libs.protobuf.java.util)
     testImplementation(testLibs.bundles.kotlin.test)

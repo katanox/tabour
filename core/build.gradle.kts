@@ -5,13 +5,11 @@ plugins { `jvm-test-suite` }
 dependencies {
     implementation(libs.coroutines.core)
 
-    api(libs.aws.sqs)
-
+    api(libs.aws.sqs.kotlin)
     api(libs.klogging)
 
     testImplementation(testLibs.kotlin.test.coroutines)
     testImplementation(testLibs.bundles.kotlin.test)
-    testImplementation(testLibs.mockk)
 }
 
 group = "com.katanox.tabour"

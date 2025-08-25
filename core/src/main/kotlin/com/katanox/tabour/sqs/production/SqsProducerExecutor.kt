@@ -1,16 +1,16 @@
 package com.katanox.tabour.sqs.production
 
+import aws.sdk.kotlin.services.sqs.SqsClient
+import aws.sdk.kotlin.services.sqs.model.SendMessageBatchRequest
+import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
+import aws.smithy.kotlin.runtime.ClientException
+import aws.smithy.kotlin.runtime.ServiceException
 import com.katanox.tabour.retry
-import java.time.Instant
-import software.amazon.awssdk.awscore.exception.AwsServiceException
-import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
-internal class SqsProducerExecutor(private val sqs: SqsClient) {
+internal class SqsProducerExecutor {
+
     suspend fun <T> produce(
+        sqsClient: SqsClient,
         producer: SqsProducer<T>,
         productionConfiguration: SqsDataProductionConfiguration,
     ) {
@@ -23,102 +23,43 @@ internal class SqsProducerExecutor(private val sqs: SqsClient) {
             return
         }
 
-        val throwableToError: (Throwable) -> ProductionError = {
-            when (it) {
-                is AwsServiceException -> ProductionError.AwsError(details = it.awsErrorDetails())
-                is SdkClientException -> ProductionError.AwsSdkClientError(it)
-                else -> ProductionError.UnrecognizedError(it)
-            }
-        }
-
         when (produceData) {
-            is SqsProductionData -> {
-                if (!produceData.message.isNullOrEmpty()) {
-                    retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
-                        sqs.sendMessage {
-                                produceData.buildMessageRequest(it)
-                                it.queueUrl(url)
-                            }
-                            .let { response ->
-                                if (response.messageId().isNotEmpty()) {
-                                    productionConfiguration.dataProduced?.invoke(
-                                        produceData,
-                                        SqsMessageProduced(response.messageId(), Instant.now()),
-                                    )
-                                }
-                            }
+            is SqsProductionData.SingleMessage -> {
+                retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
+                    val request = SendMessageRequest {
+                        queueUrl = url
+                        produceData.builder(this)
                     }
-                } else {
-                    if (produceData.message.isNullOrEmpty()) {
-                        producer.onError(ProductionError.EmptyMessage(produceData))
+
+                    sqsClient.sendMessage(request).let { response ->
+                        val messageId = response.messageId
+                        if (messageId == null || messageId.isEmpty()) {
+                            producer.onError(ProductionError.EmptyMessageId)
+                        }
                     }
                 }
             }
-            is BatchDataForProduction -> {
-                if (produceData.data.isNotEmpty()) {
-                    produceData.data
-                        .chunked(10) {
-                            SendMessageBatchRequest.builder()
-                                .queueUrl(url)
-                                .entries(buildBatchGroup(it))
-                                .build()
-                        }
-                        .forEach { request ->
-                            retry(
-                                producer.config.retries,
-                                { producer.onError(throwableToError(it)) },
-                            ) {
-                                val response = sqs.sendMessageBatch(request)
+            is SqsProductionData.Batch -> {
+                val request = SendMessageBatchRequest {
+                    queueUrl = url
+                    produceData.builder(this)
+                }
 
-                                if (!response.hasFailed()) {
-                                    response.successful().zip(produceData.data).forEach {
-                                        (entry, data) ->
-                                        productionConfiguration.dataProduced?.invoke(
-                                            data,
-                                            SqsMessageProduced(entry.messageId(), Instant.now()),
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
+                    val response = sqsClient.sendMessageBatch(request)
+
+                    if (response.failed.isNotEmpty()) {
+                        producer.onError(ProductionError.FailedBatch(response.failed))
+                    }
                 }
             }
         }
     }
 }
 
-private fun SqsProductionData.buildMessageRequest(builder: SendMessageRequest.Builder) {
-    when (this) {
-        is FifoDataProduction -> {
-            builder.messageBody(message)
-            builder.messageGroupId(messageGroupId)
-
-            if (messageDeduplicationId != null) {
-                builder.messageDeduplicationId(messageDeduplicationId)
-            }
-        }
-        is NonFifoDataProduction -> builder.messageBody(message)
-    }
-}
-
-private fun SqsProductionData.buildMessageRequest(builder: SendMessageBatchRequestEntry.Builder) {
-    when (this) {
-        is FifoDataProduction -> {
-            builder.messageBody(message)
-            builder.messageGroupId(messageGroupId)
-
-            if (messageDeduplicationId != null) {
-                builder.messageDeduplicationId(messageDeduplicationId)
-            }
-        }
-        is NonFifoDataProduction -> builder.messageBody(message)
-    }
-}
-
-private fun buildBatchGroup(data: List<SqsProductionData>): List<SendMessageBatchRequestEntry> =
-    data.mapIndexed { i, it ->
-        val entryBuilder = SendMessageBatchRequestEntry.builder()
-        it.buildMessageRequest(entryBuilder)
-        entryBuilder.id((i + 1).toString())
-        entryBuilder.build()
+private fun throwableToError(e: Throwable): ProductionError =
+    when (e) {
+        is ServiceException -> ProductionError.AwsServiceError(exception = e)
+        is ClientException -> ProductionError.AwsClientError(e)
+        else -> ProductionError.UnrecognizedError(e)
     }

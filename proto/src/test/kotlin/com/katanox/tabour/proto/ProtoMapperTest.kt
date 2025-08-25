@@ -1,12 +1,12 @@
 package com.katanox.tabour.proto
 
+import aws.sdk.kotlin.services.sqs.model.Message
 import com.katanox.tabour.proto.mapper.fromSqsMessage
 import com.katanox.tabour.proto.mapper.fromSqsMessageOrNull
 import com.katanox.tabour.proto.person.Hello.Person
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.services.sqs.model.Message
 
 class ProtoMapperTest {
 
@@ -22,7 +22,7 @@ class ProtoMapperTest {
         """
                 .trimIndent()
 
-        val message = Message.builder().body(body).build()
+        val message = Message { this.body = body }
         val expected =
             Person.newBuilder().setName("Wutang").setId(1).setEmail("isfor@thechildren.com").build()
 
@@ -42,7 +42,7 @@ class ProtoMapperTest {
         """
                 .trimIndent()
 
-        val message = Message.builder().body(body).build()
+        val message = Message { this.body = body }
 
         val person: Person? =
             Person.newBuilder().fromSqsMessageOrNull<Person.Builder, Person>(message)
@@ -61,7 +61,7 @@ class ProtoMapperTest {
         """
                 .trimIndent()
 
-        val message = Message.builder().body(body).build()
+        val message = Message { this.body = body }
         var errorCounter = 0
 
         val person: Person? =
@@ -84,7 +84,7 @@ class ProtoMapperTest {
         """
                 .trimIndent()
 
-        val message = Message.builder().body(body).build()
+        val message = Message { this.body = body }
         var errorCounter = 0
         val errorHandler: (Throwable) -> Unit = { errorCounter++ }
 
@@ -112,7 +112,7 @@ class ProtoMapperTest {
         """
                 .trimIndent()
 
-        val message = Message.builder().body(body).build()
+        val message = Message { this.body = body }
         var errorCounter = 0
         val errorHandler: (Throwable) -> Unit = { errorCounter++ }
 
@@ -140,7 +140,7 @@ class ProtoMapperTest {
         """
                 .trimIndent()
 
-        val message = Message.builder().body(body).build()
+        val message = Message { this.body = body }
         val nameLength =
             Person.newBuilder().fromSqsMessageOrNull<Person.Builder, Person, Int>(message) {
                 it.name.length
