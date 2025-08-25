@@ -1,10 +1,10 @@
 [versions]
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 coroutines = "1.10.2"
-aws-sqs = "2.32.14"
+aws = "1.5.20"
 ktfmt = "0.23.0"
 dokka = "2.0.0"
-spring-boot = "3.5.4"
+spring-boot = "3.5.5"
 protobuf-plugin = "0.9.5"
 protobuf-java = "4.31.1"
 klogging = "7.0.11"
@@ -14,7 +14,7 @@ jreleaser = "1.19.0"
 
 [libraries]
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-aws-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "aws-sqs" }
+aws-sqs-kotlin = { module = "aws.sdk.kotlin:sqs", version.ref = "aws" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-java" }

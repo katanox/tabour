@@ -1,18 +1,16 @@
 package com.katanox.tabour.sqs.config
 
+import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
 import com.katanox.tabour.consumption.Config
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class SqsConsumerConfiguration internal constructor() : Config {
 
-    /** The number of max messages to fetch. Default is 10 which is also the max numbers allowed */
-    var maxMessages: Int = 10
-        @Throws(IllegalArgumentException::class)
-        set(value) {
-            require(value < 10 || value > 0)
-            field = value
-        }
+    /** A lambda function that is used to configure the receive request of the consumer */
+    var receiveRequestConfigurationBuilder: (ReceiveMessageRequest.Builder.() -> Unit) = {
+        maxNumberOfMessages = 10
+    }
 
     /**
      * Unit of concurrency. In combination with [maxMessages] determines the max number of messages
@@ -24,7 +22,7 @@ class SqsConsumerConfiguration internal constructor() : Config {
     var concurrency: Int = 1
         @Throws(IllegalArgumentException::class)
         set(value) {
-            require(value <= 50 || value > 0)
+            require(value in 0..50)
             field = value
         }
 
@@ -34,16 +32,6 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * Default is 10 seconds
      */
     var sleepTime: Duration = 10.seconds
-
-    /**
-     * The duration for which the call waits for a message to arrive in the queue before returning.
-     * If a message is available, the call returns sooner than WaitTimeSeconds. If no messages are
-     * available and the wait time expires, the call returns successfully with an empty list of
-     * messages.
-     *
-     * Default is 0 seconds
-     */
-    var waitTime: Duration = 0.seconds
 
     /**
      * The number of attempts to receive a message if an exception occurs

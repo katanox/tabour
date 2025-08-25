@@ -1,15 +1,13 @@
 package com.katanox.tabour.consumption
 
-import software.amazon.awssdk.awscore.exception.AwsErrorDetails
-import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.services.sqs.model.Message
+import aws.sdk.kotlin.runtime.AwsServiceException
+import aws.sdk.kotlin.runtime.ClientException
+import aws.sdk.kotlin.services.sqs.model.Message
 
 sealed interface ConsumptionError {
-    /** Represents an error which AWS returns during the request of retrieving messages */
-    data class AwsError(val details: AwsErrorDetails) : ConsumptionError
+    data class AwsServiceError(val exception: AwsServiceException) : ConsumptionError
 
-    /** An error which is raised from the SQS SDK */
-    data class AwsSdkClientError(val exception: SdkClientException) : ConsumptionError
+    data class AwsClientError(val exception: ClientException) : ConsumptionError
 
     /**
      * Represents an error is returned when the [Consumer.onSuccess] method does not return true
@@ -21,7 +19,7 @@ sealed interface ConsumptionError {
     data class ThrowableDuringHanding(val throwable: Throwable) : ConsumptionError
 
     /**
-     * The error is returned for all the errors other than [AwsError], [AwsSdkClientError],
+     * The error is returned for all the errors other than [AwsServiceError], [AwsClientError],
      * [UnsuccessfulConsumption] and [ThrowableDuringHanding]
      */
     data class UnrecognizedError(val error: Throwable) : ConsumptionError

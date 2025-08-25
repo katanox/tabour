@@ -1,11 +1,12 @@
 package com.katanox.tabour.spring.config
 
 import com.katanox.tabour.Tabour
-import com.katanox.tabour.configuration.Registry
 import com.katanox.tabour.configuration.core.tabour
+import com.katanox.tabour.sqs.SqsRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
@@ -46,7 +47,7 @@ class ContextRefreshedEventListener(
 
             if (tabourContainers.size == 1 && enabled) {
                 launchTabour(mainClass, tabourContainers.values.first()) {
-                    context.getBeansOfType(Registry::class.java).values.toList()
+                    context.getBeansOfType(SqsRegistry::class.java).values.toList()
                 }
             }
         }
@@ -56,18 +57,18 @@ class ContextRefreshedEventListener(
 @Component
 class TabourDisposer(private val tabour: Tabour) : DisposableBean {
     override fun destroy() {
-        tabour.stop()
+        runBlocking { tabour.stop() }
     }
 }
 
 /**
  * starts the tabour container only if the annotation [AutoconfigureTabour] is present and there are
- * [Registry] instances available in the spring context
+ * [SqsRegistry] instances available in the spring context
  */
 internal fun launchTabour(
     mainClass: Class<*>,
     tabourContainer: Tabour,
-    registriesProvider: () -> List<Registry<*>>,
+    registriesProvider: () -> List<SqsRegistry<*>>,
 ) {
     val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
 

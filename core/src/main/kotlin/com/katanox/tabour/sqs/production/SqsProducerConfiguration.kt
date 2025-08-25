@@ -9,4 +9,4 @@ class SqsProducerConfiguration internal constructor() : Config {
 }
 
 typealias SqsDataProductionConfiguration =
-    DataProductionConfiguration<SqsDataForProduction, SqsMessageProduced>
+    DataProductionConfiguration<SqsProductionData, SqsMessageProduced>
