@@ -141,7 +141,7 @@ class TabourTest {
             val sqsProducerConfiguration =
                 DataProductionConfiguration<SqsProductionData, SqsMessageProduced>(
                     produceData = {
-                        SqsProductionData.SingleMessage {
+                        SqsProductionData.Single {
                             messageBody = "this is a fifo test message"
                             messageGroupId = "group_1"
                         }
@@ -224,7 +224,7 @@ class TabourTest {
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
                     produceData = {
-                        SqsProductionData.SingleMessage {
+                        SqsProductionData.Single {
                             messageBody = "this is a fifo test message"
                             messageGroupId = "group_1"
                         }
@@ -259,7 +259,7 @@ class TabourTest {
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
                     produceData = {
-                        SqsProductionData.SingleMessage {
+                        SqsProductionData.Single {
                             messageBody = "this is a test message"
                             messageGroupId = "group_1"
                         }
@@ -316,7 +316,7 @@ class TabourTest {
         val sqsProducerConfiguration =
             SqsDataProductionConfiguration(
                 produceData = {
-                    SqsProductionData.SingleMessage {
+                    SqsProductionData.Single {
                         messageBody = "consuming messages deletes the message from queues"
                         messageGroupId = "group_1"
                     }
@@ -390,7 +390,7 @@ class TabourTest {
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
                     produceData = {
-                        SqsProductionData.SingleMessage {
+                        SqsProductionData.Single {
                             messageBody = "this is a fifo test message"
                             messageGroupId = "group_1"
                         }
@@ -454,7 +454,7 @@ class TabourTest {
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
                     produceData = {
-                        SqsProductionData.SingleMessage {
+                        SqsProductionData.Single {
                             messageBody = "this is a fifo test message"
                             messageGroupId = "group_1"
                         }
@@ -503,7 +503,7 @@ class TabourTest {
             val sqsProducerConfiguration =
                 SqsDataProductionConfiguration(
                     produceData = {
-                        SqsProductionData.SingleMessage {
+                        SqsProductionData.Single {
                             messageBody = "this is a fifo test message"
                             messageGroupId = "group_1"
                         }
