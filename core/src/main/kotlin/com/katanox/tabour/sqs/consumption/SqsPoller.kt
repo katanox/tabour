@@ -35,7 +35,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
         launch {
             while (consume) {
                 consumers.forEachIndexed { index, consumer ->
-                    if (!startedConsumerIndexes[index] && consumer.config.consumeWhile()) {
+                    if (!startedConsumerIndexes[index]) {
                         val job = launch {
                             while (true) {
                                 ensureActive()

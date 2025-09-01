@@ -12,13 +12,6 @@ class SqsConsumerConfiguration internal constructor() : Config {
         maxNumberOfMessages = 10
     }
 
-    /**
-     * Unit of concurrency. In combination with [maxMessages] determines the max number of messages
-     * that can be received every [sleepTime]. The upper bound of messages every [sleepTime] is
-     * [maxMessages] * [concurrency]
-     *
-     * Max coroutines: 50
-     */
     var concurrency: Int = 1
         @Throws(IllegalArgumentException::class)
         set(value) {
@@ -44,11 +37,4 @@ class SqsConsumerConfiguration internal constructor() : Config {
             require(value > 0)
             field = value
         }
-
-    /**
-     * Used to dynamically enable or disable a consumer.
-     *
-     * Default is true, which means that the consumer will start normally by default
-     */
-    var consumeWhile: () -> Boolean = { true }
 }
