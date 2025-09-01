@@ -164,10 +164,7 @@ class TabourTest {
                     },
                     onError = ::println,
                 ) {
-                    this.config = sqsConsumerConfiguration {
-                        sleepTime = 200.milliseconds
-                        consumeWhile = { counter < 1 }
-                    }
+                    this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
                 }
 
             container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
@@ -182,8 +179,9 @@ class TabourTest {
 
     @Test
     @Tag("sqs-consumer-test")
-    fun `consume 1000 messages`() =
+    fun `consume 2000 messages`() =
         runTest(UnconfinedTestDispatcher()) {
+            val numOfMessages = 2000
             val container = tabour { numOfThreads = 1 }
             val config =
                 sqsRegistryConfiguration("test-registry", localstack.region) {
@@ -197,16 +195,6 @@ class TabourTest {
 
             val sqsRegistry = sqsRegistry(config)
             var counter = 0
-            val sqsProducerConfiguration =
-                DataProductionConfiguration<SqsProductionData, SqsMessageProduced>(
-                    produceData = {
-                        SqsProductionData.Single {
-                            messageBody = "this is a fifo test message"
-                            messageGroupId = "group_1"
-                        }
-                    },
-                    resourceNotFound = { _ -> println("Resource not found") },
-                )
 
             val producer =
                 sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
@@ -222,29 +210,43 @@ class TabourTest {
                     },
                     onError = ::println,
                 ) {
-                    this.config = sqsConsumerConfiguration { sleepTime = 100.milliseconds }
+                    this.config = sqsConsumerConfiguration {
+                        sleepTime = 100.milliseconds
+                        concurrency = 4
+                    }
                 }
 
             container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
 
-            repeat(1000) {
+            repeat(numOfMessages) {
+                val sqsProducerConfiguration =
+                    DataProductionConfiguration<SqsProductionData, SqsMessageProduced>(
+                        produceData = {
+                            SqsProductionData.Single {
+                                messageBody = "this is a fifo test message $it"
+                                messageGroupId = "group_1"
+                            }
+                        },
+                        resourceNotFound = { _ -> println("Resource not found") },
+                    )
                 container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
             }
 
             await
                 .timeout(2.minutes.toJavaDuration())
                 .withPollDelay(Duration.ofSeconds(1))
-                .untilAsserted { assertTrue { counter == 1000 } }
+                .untilAsserted { assertTrue { counter == numOfMessages } }
 
             val receiveMessagesResponse =
                 sqsClient.receiveMessage(
                     ReceiveMessageRequest {
                         queueUrl = nonFifoQueueUrl
-                        maxNumberOfMessages = 5
+                        maxNumberOfMessages = 10
                     }
                 )
 
             assertEquals(null, receiveMessagesResponse.messages)
+            assertEquals(numOfMessages, counter)
 
             purgeQueue(nonFifoQueueUrl)
             container.stop()
@@ -270,7 +272,7 @@ class TabourTest {
 
             val producer =
                 sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-                    println(it)
+                    println("Exception during production $it")
                 }
             val consumer =
                 sqsConsumer(
@@ -280,11 +282,10 @@ class TabourTest {
                         counter++
                         true
                     },
-                    onError = ::println,
+                    onError = { println("Exception during consumption $it") },
                 ) {
                     this.config = sqsConsumerConfiguration {
                         sleepTime = 200.milliseconds
-                        consumeWhile = { counter < 50 }
                         concurrency = 5
                         receiveRequestConfigurationBuilder = { maxNumberOfMessages = 2 }
                     }
@@ -384,6 +385,8 @@ class TabourTest {
                 }
             }
 
+        var counter = 0
+
         val sqsRegistry = sqsRegistry(config)
         val sqsProducerConfiguration =
             SqsDataProductionConfiguration(
@@ -397,33 +400,26 @@ class TabourTest {
             )
 
         val producer =
-            sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+            sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
+                println("Production of message failed: $it")
+            }
 
-        sqsRegistry.addProducer(producer)
-        container.register(sqsRegistry)
-        container.start()
+        val consumer =
+            sqsConsumer(
+                URL.of(URI.create(nonFifoQueueUrl), null),
+                key = "my-consumer",
+                onSuccess = {
+                    counter++
+                    true
+                },
+                onError = ::println,
+            ) {
+                this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
+            }
+
+        container.register(sqsRegistry.addProducer(producer).addConsumer(consumer)).start()
 
         container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
-
-        await
-            .withPollInterval(Duration.ofMillis(500))
-            .timeout(Duration.ofSeconds(5))
-            .untilAsserted {
-                val receiveMessagesResponse = runBlocking {
-                    sqsClient.receiveMessage(
-                        ReceiveMessageRequest {
-                            queueUrl = nonFifoQueueUrl
-                            maxNumberOfMessages = 5
-                        }
-                    )
-                }
-
-                assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
-                assertEquals(
-                    receiveMessagesResponse.messages?.first()?.body,
-                    "consuming messages deletes the message from queues",
-                )
-            }
 
         val messagesSize =
             sqsClient
@@ -439,6 +435,19 @@ class TabourTest {
 
         assertEquals(null, messagesSize)
 
+        await.withPollInterval(Duration.ofSeconds(1)).timeout(Duration.ofSeconds(5)).untilAsserted {
+            val receiveMessagesResponse = runBlocking {
+                sqsClient.receiveMessage(
+                    ReceiveMessageRequest {
+                        queueUrl = nonFifoQueueUrl
+                        maxNumberOfMessages = 5
+                    }
+                )
+            }
+
+            (receiveMessagesResponse.messages?.first()?.body ==
+                "consuming messages deletes the message from queues") && counter == 1
+        }
         purgeQueue(nonFifoQueueUrl)
         container.stop()
     }

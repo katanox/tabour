@@ -25,16 +25,4 @@ class SqsConsumerConfiguration internal constructor() : Config {
      * Default is 10 seconds
      */
     var sleepTime: Duration = 10.seconds
-
-    /**
-     * The number of attempts to receive a message if an exception occurs
-     *
-     * Default is 1
-     */
-    var retries: Int = 1
-        @Throws(IllegalArgumentException::class)
-        set(value) {
-            require(value > 0)
-            field = value
-        }
 }

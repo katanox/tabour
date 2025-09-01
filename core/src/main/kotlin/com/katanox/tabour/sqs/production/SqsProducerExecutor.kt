@@ -27,8 +27,8 @@ internal class SqsProducerExecutor {
             is SqsProductionData.Single -> {
                 retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
                     val request = SendMessageRequest {
-                        queueUrl = url
                         produceData.builder(this)
+                        queueUrl = url
                     }
 
                     sqsClient.sendMessage(request).let { response ->
@@ -41,8 +41,8 @@ internal class SqsProducerExecutor {
             }
             is SqsProductionData.Batch -> {
                 val request = SendMessageBatchRequest {
-                    queueUrl = url
                     produceData.builder(this)
+                    queueUrl = url
                 }
 
                 retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
