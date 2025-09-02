@@ -1,5 +1,7 @@
 package com.katanox.tabour
 
+import kotlin.coroutines.cancellation.CancellationException
+
 internal suspend inline fun retry(
     repeatTimes: Int,
     onError: (Throwable) -> Unit,
@@ -12,6 +14,9 @@ internal suspend inline fun retry(
             f()
             break
         } catch (e: Throwable) {
+            if (e is CancellationException) {
+                throw e
+            }
             tries++
 
             if (tries == repeatTimes) {

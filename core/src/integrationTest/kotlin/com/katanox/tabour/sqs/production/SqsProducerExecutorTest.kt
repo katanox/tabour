@@ -112,7 +112,7 @@ class SqsProducerExecutorTest {
         val pfc =
             SqsDataProductionConfiguration(
                 produceData = {
-                    SqsProductionData.SingleMessage {
+                    SqsProductionData.Single {
                         messageBody = "this is a fifo test message"
                         messageGroupId = "group_1"
                     }
@@ -139,7 +139,7 @@ class SqsProducerExecutorTest {
         val pfc =
             SqsDataProductionConfiguration(
                 produceData = {
-                    SqsProductionData.SingleMessage {
+                    SqsProductionData.Single {
                         messageBody = "this is a fifo test message"
                         messageGroupId = "group_1"
                         messageDeduplicationId = "dedup"
@@ -151,7 +151,7 @@ class SqsProducerExecutorTest {
         val pfc2 =
             SqsDataProductionConfiguration(
                 produceData = {
-                    SqsProductionData.SingleMessage {
+                    SqsProductionData.Single {
                         messageBody = "this is a fifo test message"
                         messageGroupId = "group_1"
                         messageDeduplicationId = "dedup"
@@ -183,7 +183,7 @@ class SqsProducerExecutorTest {
         val pfc =
             SqsDataProductionConfiguration(
                 produceData = {
-                    SqsProductionData.SingleMessage {
+                    SqsProductionData.Single {
                         messageBody = "my message"
                         messageGroupId = "group_1"
                     }
