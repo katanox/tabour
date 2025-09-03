@@ -12,7 +12,6 @@ internal class SqsProducerExecutor {
         producer: SqsProducer<T>,
         productionConfiguration: SqsDataProductionConfiguration,
     ) {
-        val produceData = productionConfiguration.produceData()
 
         val url = producer.queueUrl.toString()
 
@@ -20,6 +19,14 @@ internal class SqsProducerExecutor {
             producer.onError(ProductionError.EmptyUrl(producer.queueUrl))
             return
         }
+
+        val produceData =
+            try {
+                productionConfiguration.produceData()
+            } catch (e: Throwable) {
+                producer.onError(throwableToError(e))
+                return
+            }
 
         try {
             when (produceData) {

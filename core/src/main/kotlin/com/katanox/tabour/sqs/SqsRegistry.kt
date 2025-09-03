@@ -7,7 +7,6 @@ import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.error.ProducerNotFound
 import com.katanox.tabour.sqs.config.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
-import com.katanox.tabour.sqs.production.ProductionError
 import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
 import com.katanox.tabour.sqs.production.SqsProducerExecutor
@@ -66,19 +65,14 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
         val producer = producers.find { it.key == producerKey }
 
         if (producer != null) {
-            try {
-                SqsClient.fromEnvironment {
-                        region = configuration.region
-                        endpointUrl =
-                            configuration.endpointOverride?.toString()?.let { Url.parse(it) }
-                        credentialsProvider = configuration.credentialsProvider
-                    }
-                    .use { client ->
-                        sqsProducerExecutor.produce(client, producer, productionConfiguration)
-                    }
-            } catch (e: Throwable) {
-                producer.onError(ProductionError.UnrecognizedError(e))
-            }
+            SqsClient.fromEnvironment {
+                    region = configuration.region
+                    endpointUrl = configuration.endpointOverride?.toString()?.let { Url.parse(it) }
+                    credentialsProvider = configuration.credentialsProvider
+                }
+                .use { client ->
+                    sqsProducerExecutor.produce(client, producer, productionConfiguration)
+                }
         } else {
             productionConfiguration.resourceNotFound(ProducerNotFound(producerKey))
         }
