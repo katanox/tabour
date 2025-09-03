@@ -517,6 +517,70 @@ class TabourTest {
 
     @Test
     @Tag("sqs-producer-test")
+    fun `produce 1000 messages`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+
+            val producer =
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    fail("Error $it")
+                }
+
+            container.register(sqsRegistry.addProducer(producer)).start()
+
+            repeat(1000) {
+                val sqsProducerConfiguration =
+                    SqsDataProductionConfiguration(
+                        produceData = {
+                            SqsProductionData.Single {
+                                messageBody = "this is a fifo test message+$it"
+                                messageGroupId = "group_1+$it"
+                            }
+                        },
+                        resourceNotFound = { _ -> println("Resource not found") },
+                    )
+                container.produceMessage(
+                    "test-registry",
+                    "fifo-test-producer",
+                    sqsProducerConfiguration,
+                )
+            }
+
+            var counter = 0
+
+            await
+                .timeout(1.minutes.toJavaDuration())
+                .withPollDelay(Duration.ofSeconds(1))
+                .untilAsserted {
+                    val receiveMessagesResponse = runBlocking {
+                        sqsClient.receiveMessage(
+                            ReceiveMessageRequest {
+                                queueUrl = fifoQueueUrl
+                                maxNumberOfMessages = 10
+                            }
+                        )
+                    }
+
+                    counter += receiveMessagesResponse.messages.orEmpty().size
+                    assertEquals(1000, counter)
+                }
+
+            container.stop()
+        }
+
+    @Test
+    @Tag("sqs-producer-test")
     fun `produce a message with wrong registry key triggers resource not found error`() =
         runTest(UnconfinedTestDispatcher()) {
             val container = tabour { numOfThreads = 1 }
