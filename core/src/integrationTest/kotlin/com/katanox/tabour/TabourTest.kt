@@ -4,6 +4,7 @@ import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.CreateQueueRequest
 import aws.sdk.kotlin.services.sqs.model.DeleteQueueRequest
+import aws.sdk.kotlin.services.sqs.model.GetQueueAttributesRequest
 import aws.sdk.kotlin.services.sqs.model.PurgeQueueRequest
 import aws.sdk.kotlin.services.sqs.model.QueueAttributeName
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
@@ -30,6 +31,7 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -574,6 +576,82 @@ class TabourTest {
 
                     counter += receiveMessagesResponse.messages.orEmpty().size
                     assertEquals(1000, counter)
+                }
+
+            container.stop()
+        }
+
+    @Test
+    @Tag("sqs-producer-test")
+    fun `produce multiple messages invokes the error handler on errors and does not halt production`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour {}
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+
+            var errorHandlerInvokedTimes = 0
+
+            val producer =
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    errorHandlerInvokedTimes++
+                }
+
+            container.register(sqsRegistry.addProducer(producer)).start()
+
+            repeat(10) {
+                val sqsProducerConfiguration =
+                    SqsDataProductionConfiguration(
+                        produceData = {
+                            // simulate that 1 production message failed
+                            if (it > 0 && it % 8 == 0) {
+                                throw RuntimeException("Random $it")
+                            }
+                            SqsProductionData.Single {
+                                messageBody = "this is a fifo test message+$it"
+                                messageGroupId = "group_1+$it"
+                            }
+                        },
+                        resourceNotFound = { _ -> println("Resource not found") },
+                    )
+
+                container.produceMessage(
+                    "test-registry",
+                    "fifo-test-producer",
+                    sqsProducerConfiguration,
+                )
+            }
+
+            await
+                .timeout(10.seconds.toJavaDuration())
+                .withPollDelay(Duration.ofSeconds(1))
+                .untilAsserted {
+                    runBlocking {
+                        val attributes =
+                            sqsClient.getQueueAttributes(
+                                GetQueueAttributesRequest {
+                                    queueUrl = fifoQueueUrl
+                                    attributeNames =
+                                        listOf(QueueAttributeName.ApproximateNumberOfMessages)
+                                }
+                            )
+
+                        assertEquals(
+                            9,
+                            attributes.attributes
+                                ?.get(QueueAttributeName.ApproximateNumberOfMessages)
+                                ?.toInt(),
+                        )
+                        assertEquals(1, errorHandlerInvokedTimes)
+                    }
                 }
 
             container.stop()
