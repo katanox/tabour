@@ -10,7 +10,7 @@ fun tabour(init: Tabour.Configuration.() -> Unit): Tabour =
 
 internal fun <T : Config> config(conf: T, init: T.() -> Unit): T = conf.apply { init() }
 
-data class DataProductionConfiguration<T, K>(
+data class DataProductionConfiguration<T>(
     /** The function responsible to return the data that should be produced */
     val produceData: () -> T,
     /** In case of the Producer not being found, this function is invoked */
