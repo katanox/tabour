@@ -20,7 +20,6 @@ import com.katanox.tabour.error.ProducerNotFound
 import com.katanox.tabour.error.ProductionResourceNotFound
 import com.katanox.tabour.error.RegistryNotFound
 import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
-import com.katanox.tabour.sqs.production.SqsMessageProduced
 import com.katanox.tabour.sqs.production.SqsProductionData
 import java.net.URI
 import java.net.URL
@@ -143,7 +142,7 @@ class TabourTest {
             val sqsRegistry = sqsRegistry(config)
             var counter = 0
             val sqsProducerConfiguration =
-                DataProductionConfiguration<SqsProductionData, SqsMessageProduced>(
+                DataProductionConfiguration<SqsProductionData>(
                     produceData = {
                         SqsProductionData.Single {
                             messageBody = "this is a fifo test message"
@@ -222,7 +221,7 @@ class TabourTest {
 
             repeat(numOfMessages) {
                 val sqsProducerConfiguration =
-                    DataProductionConfiguration<SqsProductionData, SqsMessageProduced>(
+                    DataProductionConfiguration<SqsProductionData>(
                         produceData = {
                             SqsProductionData.Single {
                                 messageBody = "this is a fifo test message $it"
