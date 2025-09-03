@@ -8,5 +8,4 @@ class SqsProducerConfiguration internal constructor() : Config {
     var retries: Int = 1
 }
 
-typealias SqsDataProductionConfiguration =
-    DataProductionConfiguration<SqsProductionData, SqsMessageProduced>
+typealias SqsDataProductionConfiguration = DataProductionConfiguration<SqsProductionData>
