@@ -20,8 +20,7 @@ internal constructor(
 }
 
 sealed class SqsProductionData {
-    data class Single(val builder: (SendMessageRequest.Builder.() -> Unit)) :
-        SqsProductionData()
+    data class Single(val builder: (SendMessageRequest.Builder.() -> Unit)) : SqsProductionData()
 
     data class Batch(val builder: (SendMessageBatchRequest.Builder.() -> Unit)) :
         SqsProductionData()
