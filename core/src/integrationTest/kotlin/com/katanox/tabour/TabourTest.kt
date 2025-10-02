@@ -172,10 +172,74 @@ class TabourTest {
 
             container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
 
-            await.withPollDelay(Duration.ofSeconds(3)).untilAsserted { assertTrue { counter >= 1 } }
+            await.timeout(Duration.ofSeconds(5)).untilAsserted { assertTrue { counter >= 1 } }
 
             purgeQueue(nonFifoQueueUrl)
             container.stop()
+        }
+
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consuming messages with an exception inside the handler does not halt the consumption process`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var errorCounter = 0
+            var onErrorHandlerCounter = 0
+            val sqsProducerConfiguration =
+                DataProductionConfiguration<SqsProductionData>(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { _ -> println("Resource not found") },
+                )
+
+            val producer =
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+
+            val consumer =
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = { error("Exception during on success") },
+                    onError = { onErrorHandlerCounter++ },
+                ) {
+                    this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
+                }
+
+            container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
+
+            container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+
+            await
+                .withPollDelay(Duration.ofSeconds(1))
+                .timeout(Duration.ofSeconds(5))
+                .untilAsserted {
+                    // we verify that the counter equals the number of seconds we use as timeout
+                    // divided by the
+                    // seconds of each poll, which indicates that the poll has not stopped when the
+                    // consumer
+                    // throws an exception
+                    errorCounter++
+                    assertTrue { errorCounter >= 5 }
+                }
+
+            purgeQueue(nonFifoQueueUrl)
+            container.stop()
+            assertTrue { onErrorHandlerCounter >= 1 }
         }
 
     @Test
