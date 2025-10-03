@@ -30,9 +30,7 @@ class Tabour internal constructor(val config: Configuration) {
     private var consumptionStarted: Boolean = false
 
     private val scope =
-        CoroutineScope(config.dispatcher + config.coroutineContext).also {
-            println(config.dispatcher)
-        }
+        CoroutineScope(config.dispatcher + config.coroutineContext)
 
     /**
      * Adds a new registry to the Tabour Container. All registries must be registered before
