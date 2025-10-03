@@ -5,16 +5,13 @@ import aws.sdk.kotlin.services.sqs.model.SendMessageBatchRequest
 import aws.sdk.kotlin.services.sqs.model.SendMessageRequest
 import aws.smithy.kotlin.runtime.ClientException
 import aws.smithy.kotlin.runtime.ServiceException
-import com.katanox.tabour.retry
 
 internal class SqsProducerExecutor {
-
     suspend fun <T> produce(
         sqsClient: SqsClient,
         producer: SqsProducer<T>,
         productionConfiguration: SqsDataProductionConfiguration,
     ) {
-        val produceData = productionConfiguration.produceData()
 
         val url = producer.queueUrl.toString()
 
@@ -23,9 +20,17 @@ internal class SqsProducerExecutor {
             return
         }
 
-        when (produceData) {
-            is SqsProductionData.Single -> {
-                retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
+        val produceData =
+            try {
+                productionConfiguration.produceData()
+            } catch (e: Throwable) {
+                producer.onError(throwableToError(e))
+                return
+            }
+
+        try {
+            when (produceData) {
+                is SqsProductionData.Single -> {
                     val request = SendMessageRequest {
                         produceData.builder(this)
                         queueUrl = url
@@ -38,14 +43,12 @@ internal class SqsProducerExecutor {
                         }
                     }
                 }
-            }
-            is SqsProductionData.Batch -> {
-                val request = SendMessageBatchRequest {
-                    produceData.builder(this)
-                    queueUrl = url
-                }
+                is SqsProductionData.Batch -> {
+                    val request = SendMessageBatchRequest {
+                        produceData.builder(this)
+                        queueUrl = url
+                    }
 
-                retry(producer.config.retries, { producer.onError(throwableToError(it)) }) {
                     val response = sqsClient.sendMessageBatch(request)
 
                     if (response.failed.isNotEmpty()) {
@@ -53,6 +56,10 @@ internal class SqsProducerExecutor {
                     }
                 }
             }
+        } catch (e: ClientException) {
+            producer.onError(throwableToError(e))
+        } catch (e: ServiceException) {
+            producer.onError(throwableToError(e))
         }
     }
 }

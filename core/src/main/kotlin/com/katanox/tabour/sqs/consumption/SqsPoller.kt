@@ -17,7 +17,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 
@@ -75,7 +74,8 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                             .messages
                             .orEmpty()
                             .forEach { message ->
-                                launch {
+                                try {
+
                                     if (consumer.onSuccess(message)) {
                                         send(message)
                                     } else {
@@ -83,16 +83,19 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                                             ConsumptionError.UnsuccessfulConsumption(message)
                                         )
                                     }
+                                } catch (e: Throwable) {
+                                    when (e) {
+                                        is ClientException -> consumer.handleConsumptionException(e)
+                                        is ServiceException ->
+                                            consumer.handleConsumptionException(e)
+                                        else ->
+                                            consumer.onError(
+                                                ConsumptionError.ThrowableDuringHanding(e)
+                                            )
+                                    }
                                 }
                             }
                     }
-                }
-            }
-            .catch { ex ->
-                when (ex) {
-                    is ClientException -> consumer.handleConsumptionException(ex)
-                    is ServiceException -> consumer.handleConsumptionException(ex)
-                    else -> throw ex
                 }
             }
             .collect { message -> acknowledge(consumer.queueUri, message) }

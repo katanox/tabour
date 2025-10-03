@@ -4,6 +4,8 @@ import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.error.RegistryNotFound
 import com.katanox.tabour.sqs.SqsRegistry
 import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -25,13 +27,9 @@ class Tabour internal constructor(val config: Configuration) {
 
     private val registriesByKey by lazy { registries.associateBy { it.key } }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    private val dispatcher: CoroutineDispatcher =
-        newFixedThreadPoolContext(config.numOfThreads, "tabour")
-
     private var consumptionStarted: Boolean = false
 
-    private val scope = CoroutineScope(dispatcher)
+    private val scope = CoroutineScope(config.dispatcher + config.coroutineContext)
 
     /**
      * Adds a new registry to the Tabour Container. All registries must be registered before
@@ -84,7 +82,12 @@ class Tabour internal constructor(val config: Configuration) {
     fun running(): Boolean = consumptionStarted
 
     class Configuration : Config {
-        /** The thread pool size for tabour. Default is 4 */
-        var numOfThreads: Int = 4
+        /** The thread pool size for tabour. Default is 1 */
+        var numOfThreads: Int = 1
+
+        var coroutineContext: CoroutineContext = EmptyCoroutineContext
+
+        @OptIn(DelicateCoroutinesApi::class)
+        var dispatcher: CoroutineDispatcher = newFixedThreadPoolContext(numOfThreads, "tabour")
     }
 }
