@@ -40,3 +40,4 @@ build/
 *.iml
 *.ipr
 .envrc
+gradlew.bat
