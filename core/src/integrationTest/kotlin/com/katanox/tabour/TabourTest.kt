@@ -50,750 +50,770 @@ import org.testcontainers.utility.DockerImageName
 @ExperimentalCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TabourTest {
-  private val localstack =
-      LocalStackContainer(DockerImageName.parse("localstack/localstack:4.7"))
-          .withServices(LocalStackContainer.Service.SQS)
-          .withReuse(true)
+    private val localstack =
+        LocalStackContainer(DockerImageName.parse("localstack/localstack:4.7"))
+            .withServices(LocalStackContainer.Service.SQS)
+            .withReuse(true)
 
-  private lateinit var sqsClient: SqsClient
-  private lateinit var nonFifoQueueUrl: String
-  private lateinit var fifoQueueUrl: String
+    private lateinit var sqsClient: SqsClient
+    private lateinit var nonFifoQueueUrl: String
+    private lateinit var fifoQueueUrl: String
 
-  @BeforeAll
-  fun setup() {
-    localstack.start()
+    @BeforeAll
+    fun setup() {
+        localstack.start()
 
-    sqsClient = SqsClient {
-      endpointUrl =
-          Url.parse(
-              localstack.getEndpointOverride(LocalStackContainer.Service.SQS).toURL().toString()
-          )
-      region = localstack.region
+        sqsClient = SqsClient {
+            endpointUrl =
+                Url.parse(
+                    localstack
+                        .getEndpointOverride(LocalStackContainer.Service.SQS)
+                        .toURL()
+                        .toString()
+                )
+            region = localstack.region
 
-      credentialsProvider = StaticCredentialsProvider {
-        accessKeyId = localstack.accessKey
-        secretAccessKey = localstack.secretKey
-      }
-    }
-
-    nonFifoQueueUrl = runBlocking {
-      sqsClient.createQueue(CreateQueueRequest { queueName = "my-queue" }).queueUrl
-          ?: fail("Queue not created")
-    }
-
-    fifoQueueUrl = runBlocking {
-      sqsClient
-          .createQueue(
-              CreateQueueRequest {
-                attributes =
-                    mapOf(
-                        QueueAttributeName.FifoQueue to "TRUE",
-                        QueueAttributeName.ContentBasedDeduplication to "TRUE",
-                    )
-                queueName = "my-queue.fifo"
-              }
-          )
-          .queueUrl ?: fail("Queue not created")
-    }
-  }
-
-  @AfterAll
-  fun cleanup() {
-    runBlocking {
-      sqsClient.deleteQueue(DeleteQueueRequest { queueUrl = nonFifoQueueUrl })
-      sqsClient.deleteQueue(DeleteQueueRequest { queueUrl = fifoQueueUrl })
-    }
-  }
-
-  @Test
-  fun isRunningIsTrue() = runTest {
-    val container = tabour { numOfThreads = 1 }
-    container.start()
-    assertTrue { container.running() }
-    container.stop()
-  }
-
-  @Test
-  fun isRunningIsFalse() = runTest {
-    val container = tabour { numOfThreads = 1 }
-    container.start()
-    container.stop()
-    assertFalse { container.running() }
-  }
-
-  @Test
-  @Tag("sqs-consumer-test")
-  fun `consume messages`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
+            credentialsProvider = StaticCredentialsProvider {
                 accessKeyId = localstack.accessKey
                 secretAccessKey = localstack.secretKey
-              }
             }
-
-        val sqsRegistry = sqsRegistry(config)
-        var counter = 0
-        val sqsProducerConfiguration =
-            DataProductionConfiguration<SqsProductionData>(
-                produceData = {
-                  SqsProductionData.Single {
-                    messageBody = "this is a fifo test message"
-                    messageGroupId = "group_1"
-                  }
-                },
-                resourceNotFound = { _ -> println("Resource not found") },
-            )
-
-        val producer =
-            sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
-
-        val consumer =
-            sqsConsumer(
-                URL.of(URI.create(nonFifoQueueUrl), null),
-                key = "my-consumer",
-                onSuccess = {
-                  counter++
-                  true
-                },
-                onError = ::println,
-            ) {
-              this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
-            }
-
-        container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
-
-        container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
-
-        await.timeout(Duration.ofSeconds(5)).untilAsserted { assertTrue { counter >= 1 } }
-
-        purgeQueue(nonFifoQueueUrl)
-        container.stop()
-      }
-
-  @Test
-  @Tag("sqs-consumer-test")
-  fun `consuming messages with an exception inside the handler does not halt the consumption process`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
-
-        val sqsRegistry = sqsRegistry(config)
-        var errorCounter = 0
-        var onErrorHandlerCounter = 0
-        val sqsProducerConfiguration =
-            DataProductionConfiguration<SqsProductionData>(
-                produceData = {
-                  SqsProductionData.Single {
-                    messageBody = "this is a fifo test message"
-                    messageGroupId = "group_1"
-                  }
-                },
-                resourceNotFound = { _ -> println("Resource not found") },
-            )
-
-        val producer =
-            sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
-
-        val consumer =
-            sqsConsumer(
-                URL.of(URI.create(nonFifoQueueUrl), null),
-                key = "my-consumer",
-                onSuccess = { error("Exception during on success") },
-                onError = { onErrorHandlerCounter++ },
-            ) {
-              this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
-            }
-
-        container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
-
-        container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
-
-        await.withPollDelay(Duration.ofSeconds(1)).timeout(Duration.ofSeconds(5)).untilAsserted {
-          // we verify that the counter equals the number of seconds we use as timeout
-          // divided by the
-          // seconds of each poll, which indicates that the poll has not stopped when the
-          // consumer
-          // throws an exception
-          errorCounter++
-          assertTrue { errorCounter >= 5 }
         }
 
-        purgeQueue(nonFifoQueueUrl)
-        container.stop()
-        assertTrue { onErrorHandlerCounter >= 1 }
-      }
+        nonFifoQueueUrl = runBlocking {
+            sqsClient.createQueue(CreateQueueRequest { queueName = "my-queue" }).queueUrl
+                ?: fail("Queue not created")
+        }
 
-  @Test
-  @Tag("sqs-consumer-test")
-  fun `consume 2000 messages`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val numOfMessages = 2000
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
-
-        val sqsRegistry = sqsRegistry(config)
-        var counter = 0
-
-        val producer =
-            sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
-
-        val consumer =
-            sqsConsumer(
-                URL.of(URI.create(nonFifoQueueUrl), null),
-                key = "my-consumer",
-                onSuccess = {
-                  counter++
-                  println(counter)
-                  true
-                },
-                onError = ::println,
-            ) {
-              this.config = sqsConsumerConfiguration {
-                sleepTime = 100.milliseconds
-                concurrency = 4
-              }
-            }
-
-        container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
-
-        repeat(numOfMessages) {
-          val sqsProducerConfiguration =
-              DataProductionConfiguration<SqsProductionData>(
-                  produceData = {
-                    SqsProductionData.Single {
-                      messageBody = "this is a fifo test message $it"
-                      messageGroupId = "group_1"
+        fifoQueueUrl = runBlocking {
+            sqsClient
+                .createQueue(
+                    CreateQueueRequest {
+                        attributes =
+                            mapOf(
+                                QueueAttributeName.FifoQueue to "TRUE",
+                                QueueAttributeName.ContentBasedDeduplication to "TRUE",
+                            )
+                        queueName = "my-queue.fifo"
                     }
-                  },
-                  resourceNotFound = { _ -> println("Resource not found") },
-              )
-          container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+                )
+                .queueUrl ?: fail("Queue not created")
+        }
+    }
+
+    @AfterAll
+    fun cleanup() {
+        runBlocking {
+            sqsClient.deleteQueue(DeleteQueueRequest { queueUrl = nonFifoQueueUrl })
+            sqsClient.deleteQueue(DeleteQueueRequest { queueUrl = fifoQueueUrl })
+        }
+    }
+
+    @Test
+    fun isRunningIsTrue() = runTest {
+        val container = tabour { numOfThreads = 1 }
+        container.start()
+        assertTrue { container.running() }
+        container.stop()
+    }
+
+    @Test
+    fun isRunningIsFalse() = runTest {
+        val container = tabour { numOfThreads = 1 }
+        container.start()
+        container.stop()
+        assertFalse { container.running() }
+    }
+
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consume messages`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var counter = 0
+            val sqsProducerConfiguration =
+                DataProductionConfiguration<SqsProductionData>(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { _ -> println("Resource not found") },
+                )
+
+            val producer =
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+
+            val consumer =
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = {
+                        counter++
+                        true
+                    },
+                    onError = ::println,
+                ) {
+                    this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
+                }
+
+            container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
+
+            container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+
+            await.timeout(Duration.ofSeconds(5)).untilAsserted { assertTrue { counter >= 1 } }
+
+            purgeQueue(nonFifoQueueUrl)
+            container.stop()
         }
 
-        await
-            .timeout(2.minutes.toJavaDuration())
-            .withPollDelay(Duration.ofSeconds(1))
-            .untilAsserted { assertTrue { counter == numOfMessages } }
-
-        val receiveMessagesResponse =
-            sqsClient.receiveMessage(
-                ReceiveMessageRequest {
-                  queueUrl = nonFifoQueueUrl
-                  maxNumberOfMessages = 10
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consuming messages with an exception inside the handler does not halt the consumption process`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
                 }
-            )
 
-        assertEquals(null, receiveMessagesResponse.messages)
-        assertEquals(numOfMessages, counter)
+            val sqsRegistry = sqsRegistry(config)
+            var errorCounter = 0
+            var onErrorHandlerCounter = 0
+            val sqsProducerConfiguration =
+                DataProductionConfiguration<SqsProductionData>(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { _ -> println("Resource not found") },
+                )
 
-        purgeQueue(nonFifoQueueUrl)
-        container.stop()
-      }
+            val producer =
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
 
-  @Test
-  @Tag("sqs-consumer-test")
-  fun `consume messages with multi concurrency`() =
-      runTest(UnconfinedTestDispatcher()) {
+            val consumer =
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = { error("Exception during on success") },
+                    onError = { onErrorHandlerCounter++ },
+                ) {
+                    this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
+                }
+
+            container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
+
+            container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+
+            await
+                .withPollDelay(Duration.ofSeconds(1))
+                .timeout(Duration.ofSeconds(5))
+                .untilAsserted {
+                    // we verify that the counter equals the number of seconds we use as timeout
+                    // divided by the
+                    // seconds of each poll, which indicates that the poll has not stopped when the
+                    // consumer
+                    // throws an exception
+                    errorCounter++
+                    assertTrue { errorCounter >= 5 }
+                }
+
+            purgeQueue(nonFifoQueueUrl)
+            container.stop()
+            assertTrue { onErrorHandlerCounter >= 1 }
+        }
+
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consume 2000 messages`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val numOfMessages = 2000
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var counter = 0
+
+            val producer =
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+
+            val consumer =
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = {
+                        counter++
+                        println(counter)
+                        true
+                    },
+                    onError = ::println,
+                ) {
+                    this.config = sqsConsumerConfiguration {
+                        sleepTime = 100.milliseconds
+                        concurrency = 4
+                    }
+                }
+
+            container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
+
+            repeat(numOfMessages) {
+                val sqsProducerConfiguration =
+                    DataProductionConfiguration<SqsProductionData>(
+                        produceData = {
+                            SqsProductionData.Single {
+                                messageBody = "this is a fifo test message $it"
+                                messageGroupId = "group_1"
+                            }
+                        },
+                        resourceNotFound = { _ -> println("Resource not found") },
+                    )
+                container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+            }
+
+            await
+                .timeout(2.minutes.toJavaDuration())
+                .withPollDelay(Duration.ofSeconds(1))
+                .untilAsserted { assertTrue { counter == numOfMessages } }
+
+            val receiveMessagesResponse =
+                sqsClient.receiveMessage(
+                    ReceiveMessageRequest {
+                        queueUrl = nonFifoQueueUrl
+                        maxNumberOfMessages = 10
+                    }
+                )
+
+            assertEquals(null, receiveMessagesResponse.messages)
+            assertEquals(numOfMessages, counter)
+
+            purgeQueue(nonFifoQueueUrl)
+            container.stop()
+        }
+
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consume messages with multi concurrency`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var counter = 0
+
+            val producer =
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
+                    println("Exception during production $it")
+                }
+            val consumer =
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = {
+                        counter++
+                        true
+                    },
+                    onError = { println("Exception during consumption $it") },
+                ) {
+                    this.config = sqsConsumerConfiguration {
+                        sleepTime = 200.milliseconds
+                        concurrency = 5
+                        receiveRequestConfigurationBuilder = { maxNumberOfMessages = 2 }
+                    }
+                }
+
+            sqsRegistry.addConsumer(consumer).addProducer(producer)
+            container.register(sqsRegistry).start()
+
+            val sqsProducerConfiguration =
+                SqsDataProductionConfiguration(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { _ -> println("Resource not found") },
+                )
+
+            repeat(50) {
+                container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+            }
+
+            await.withPollDelay(Duration.ofSeconds(2)).untilAsserted { assertTrue { counter > 1 } }
+            container.stop()
+        }
+
+    @Test
+    @Tag("sqs-producer-test")
+    fun `produce a message to a non fifo queue`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            val sqsProducerConfiguration =
+                SqsDataProductionConfiguration(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { _ -> println("Resource not found") },
+                )
+
+            val producer =
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
+
+            sqsRegistry.addProducer(producer)
+            container.register(sqsRegistry)
+            container.start()
+
+            container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+
+            await
+                .withPollInterval(Duration.ofMillis(500))
+                .timeout(Duration.ofSeconds(5))
+                .untilAsserted {
+                    val receiveMessagesResponse = runBlocking {
+                        sqsClient.receiveMessage(
+                            ReceiveMessageRequest {
+                                queueUrl = nonFifoQueueUrl
+                                maxNumberOfMessages = 5
+                            }
+                        )
+                    }
+
+                    assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
+                    assertEquals(
+                        receiveMessagesResponse.messages?.first()?.body,
+                        "this is a test message",
+                    )
+                }
+
+            purgeQueue(nonFifoQueueUrl)
+            container.stop()
+        }
+
+    @Test
+    fun `consuming messages deletes the message from queues`() = runTest {
         val container = tabour { numOfThreads = 1 }
         val config =
             sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
+                endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                credentialsProvider = StaticCredentialsProvider {
+                    accessKeyId = localstack.accessKey
+                    secretAccessKey = localstack.secretKey
+                }
             }
 
-        val sqsRegistry = sqsRegistry(config)
         var counter = 0
+
+        val sqsRegistry = sqsRegistry(config)
+        val sqsProducerConfiguration =
+            SqsDataProductionConfiguration(
+                produceData = {
+                    SqsProductionData.Single {
+                        messageBody = "consuming messages deletes the message from queues"
+                        messageGroupId = "group_1"
+                    }
+                },
+                resourceNotFound = { _ -> println("Resource not found") },
+            )
 
         val producer =
             sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-              println("Exception during production $it")
+                println("Production of message failed: $it")
             }
+
         val consumer =
             sqsConsumer(
                 URL.of(URI.create(nonFifoQueueUrl), null),
                 key = "my-consumer",
                 onSuccess = {
-                  counter++
-                  true
+                    counter++
+                    true
                 },
-                onError = { println("Exception during consumption $it") },
+                onError = ::println,
             ) {
-              this.config = sqsConsumerConfiguration {
-                sleepTime = 200.milliseconds
-                concurrency = 5
-                receiveRequestConfigurationBuilder = { maxNumberOfMessages = 2 }
-              }
+                this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
             }
 
-        sqsRegistry.addConsumer(consumer).addProducer(producer)
-        container.register(sqsRegistry).start()
-
-        val sqsProducerConfiguration =
-            SqsDataProductionConfiguration(
-                produceData = {
-                  SqsProductionData.Single {
-                    messageBody = "this is a fifo test message"
-                    messageGroupId = "group_1"
-                  }
-                },
-                resourceNotFound = { _ -> println("Resource not found") },
-            )
-
-        repeat(50) {
-          container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
-        }
-
-        await.withPollDelay(Duration.ofSeconds(2)).untilAsserted { assertTrue { counter > 1 } }
-        container.stop()
-      }
-
-  @Test
-  @Tag("sqs-producer-test")
-  fun `produce a message to a non fifo queue`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
-
-        val sqsRegistry = sqsRegistry(config)
-        val sqsProducerConfiguration =
-            SqsDataProductionConfiguration(
-                produceData = {
-                  SqsProductionData.Single {
-                    messageBody = "this is a test message"
-                    messageGroupId = "group_1"
-                  }
-                },
-                resourceNotFound = { _ -> println("Resource not found") },
-            )
-
-        val producer =
-            sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer", ::println)
-
-        sqsRegistry.addProducer(producer)
-        container.register(sqsRegistry)
-        container.start()
+        container.register(sqsRegistry.addProducer(producer).addConsumer(consumer)).start()
 
         container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
 
-        await
-            .withPollInterval(Duration.ofMillis(500))
-            .timeout(Duration.ofSeconds(5))
-            .untilAsserted {
-              val receiveMessagesResponse = runBlocking {
-                sqsClient.receiveMessage(
+        val messagesSize =
+            sqsClient
+                .receiveMessage(
                     ReceiveMessageRequest {
-                      queueUrl = nonFifoQueueUrl
-                      maxNumberOfMessages = 5
+                        maxNumberOfMessages = 10
+                        visibilityTimeout = 0
+                        queueUrl = nonFifoQueueUrl
                     }
                 )
-              }
+                .messages
+                ?.size
 
-              assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
-              assertEquals(
-                  receiveMessagesResponse.messages?.first()?.body,
-                  "this is a test message",
-              )
-            }
-
-        purgeQueue(nonFifoQueueUrl)
-        container.stop()
-      }
-
-  @Test
-  fun `consuming messages deletes the message from queues`() = runTest {
-    val container = tabour { numOfThreads = 1 }
-    val config =
-        sqsRegistryConfiguration("test-registry", localstack.region) {
-          endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-          credentialsProvider = StaticCredentialsProvider {
-            accessKeyId = localstack.accessKey
-            secretAccessKey = localstack.secretKey
-          }
-        }
-
-    var counter = 0
-
-    val sqsRegistry = sqsRegistry(config)
-    val sqsProducerConfiguration =
-        SqsDataProductionConfiguration(
-            produceData = {
-              SqsProductionData.Single {
-                messageBody = "consuming messages deletes the message from queues"
-                messageGroupId = "group_1"
-              }
-            },
-            resourceNotFound = { _ -> println("Resource not found") },
-        )
-
-    val producer =
-        sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
-          println("Production of message failed: $it")
-        }
-
-    val consumer =
-        sqsConsumer(
-            URL.of(URI.create(nonFifoQueueUrl), null),
-            key = "my-consumer",
-            onSuccess = {
-              counter++
-              true
-            },
-            onError = ::println,
-        ) {
-          this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
-        }
-
-    container.register(sqsRegistry.addProducer(producer).addConsumer(consumer)).start()
-
-    container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
-
-    val messagesSize =
-        sqsClient
-            .receiveMessage(
-                ReceiveMessageRequest {
-                  maxNumberOfMessages = 10
-                  visibilityTimeout = 0
-                  queueUrl = nonFifoQueueUrl
-                }
-            )
-            .messages
-            ?.size
-
-    assertEquals(null, messagesSize)
-
-    await.withPollInterval(Duration.ofSeconds(1)).timeout(Duration.ofSeconds(5)).untilAsserted {
-      val receiveMessagesResponse = runBlocking {
-        sqsClient.receiveMessage(
-            ReceiveMessageRequest {
-              queueUrl = nonFifoQueueUrl
-              maxNumberOfMessages = 5
-            }
-        )
-      }
-
-      (receiveMessagesResponse.messages?.first()?.body ==
-          "consuming messages deletes the message from queues") && counter == 1
-    }
-    purgeQueue(nonFifoQueueUrl)
-    container.stop()
-  }
-
-  @Test
-  @Tag("sqs-producer-test")
-  fun `produce a message to a fifo queue`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
-
-        val sqsRegistry = sqsRegistry(config)
-        val sqsProducerConfiguration =
-            SqsDataProductionConfiguration(
-                produceData = {
-                  SqsProductionData.Single {
-                    messageBody = "this is a fifo test message"
-                    messageGroupId = "group_1"
-                  }
-                },
-                resourceNotFound = { _ -> println("Resource not found") },
-            )
-
-        val producer =
-            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-              fail("Error $it")
-            }
-
-        container.register(sqsRegistry.addProducer(producer)).start()
-
-        container.produceMessage(
-            "test-registry",
-            "fifo-test-producer",
-            sqsProducerConfiguration,
-        )
+        assertEquals(null, messagesSize)
 
         await.withPollInterval(Duration.ofSeconds(1)).timeout(Duration.ofSeconds(5)).untilAsserted {
-          val receiveMessagesResponse = runBlocking {
-            sqsClient.receiveMessage(
-                ReceiveMessageRequest {
-                  queueUrl = fifoQueueUrl
-                  maxNumberOfMessages = 5
-                }
-            )
-          }
-
-          assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
-          assertEquals(
-              receiveMessagesResponse.messages?.first()?.body,
-              "this is a fifo test message",
-          )
-        }
-        purgeQueue(fifoQueueUrl)
-        container.stop()
-      }
-
-  @Test
-  @Tag("sqs-producer-test")
-  fun `produce 1000 messages`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
-
-        val sqsRegistry = sqsRegistry(config)
-
-        val producer =
-            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-              fail("Error $it")
-            }
-
-        container.register(sqsRegistry.addProducer(producer)).start()
-
-        repeat(1000) {
-          val sqsProducerConfiguration =
-              SqsDataProductionConfiguration(
-                  produceData = {
-                    SqsProductionData.Single {
-                      messageBody = "this is a fifo test message+$it"
-                      messageGroupId = "group_1+$it"
-                    }
-                  },
-                  resourceNotFound = { _ -> println("Resource not found") },
-              )
-          container.produceMessage(
-              "test-registry",
-              "fifo-test-producer",
-              sqsProducerConfiguration,
-          )
-        }
-
-        var counter = 0
-
-        await
-            .timeout(1.minutes.toJavaDuration())
-            .withPollDelay(Duration.ofSeconds(1))
-            .untilAsserted {
-              val receiveMessagesResponse = runBlocking {
+            val receiveMessagesResponse = runBlocking {
                 sqsClient.receiveMessage(
                     ReceiveMessageRequest {
-                      queueUrl = fifoQueueUrl
-                      maxNumberOfMessages = 10
+                        queueUrl = nonFifoQueueUrl
+                        maxNumberOfMessages = 5
                     }
                 )
-              }
-
-              counter += receiveMessagesResponse.messages.orEmpty().size
-              assertEquals(1000, counter)
             }
 
+            (receiveMessagesResponse.messages?.first()?.body ==
+                "consuming messages deletes the message from queues") && counter == 1
+        }
+        purgeQueue(nonFifoQueueUrl)
         container.stop()
-      }
+    }
 
-  @Test
-  @Tag("sqs-producer-test")
-  fun `produce multiple messages invokes the error handler on errors and does not halt production`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour {}
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
-
-        val sqsRegistry = sqsRegistry(config)
-
-        var errorHandlerInvokedTimes = 0
-
-        val producer =
-            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-              errorHandlerInvokedTimes++
-            }
-
-        container.register(sqsRegistry.addProducer(producer)).start()
-
-        repeat(10) {
-          val sqsProducerConfiguration =
-              SqsDataProductionConfiguration(
-                  produceData = {
-                    // simulate that 1 production message failed
-                    if (it > 0 && it % 8 == 0) {
-                      throw RuntimeException("Random $it")
+    @Test
+    @Tag("sqs-producer-test")
+    fun `produce a message to a fifo queue`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
                     }
-                    SqsProductionData.Single {
-                      messageBody = "this is a fifo test message+$it"
-                      messageGroupId = "group_1+$it"
-                    }
-                  },
-                  resourceNotFound = { _ -> println("Resource not found") },
-              )
+                }
 
-          container.produceMessage(
-              "test-registry",
-              "fifo-test-producer",
-              sqsProducerConfiguration,
-          )
+            val sqsRegistry = sqsRegistry(config)
+            val sqsProducerConfiguration =
+                SqsDataProductionConfiguration(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { _ -> println("Resource not found") },
+                )
+
+            val producer =
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    fail("Error $it")
+                }
+
+            container.register(sqsRegistry.addProducer(producer)).start()
+
+            container.produceMessage(
+                "test-registry",
+                "fifo-test-producer",
+                sqsProducerConfiguration,
+            )
+
+            await
+                .withPollInterval(Duration.ofSeconds(1))
+                .timeout(Duration.ofSeconds(5))
+                .untilAsserted {
+                    val receiveMessagesResponse = runBlocking {
+                        sqsClient.receiveMessage(
+                            ReceiveMessageRequest {
+                                queueUrl = fifoQueueUrl
+                                maxNumberOfMessages = 5
+                            }
+                        )
+                    }
+
+                    assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
+                    assertEquals(
+                        receiveMessagesResponse.messages?.first()?.body,
+                        "this is a fifo test message",
+                    )
+                }
+            purgeQueue(fifoQueueUrl)
+            container.stop()
         }
 
-        await
-            .timeout(10.seconds.toJavaDuration())
-            .withPollDelay(Duration.ofSeconds(1))
-            .untilAsserted {
-              runBlocking {
-                val attributes =
-                    sqsClient.getQueueAttributes(
-                        GetQueueAttributesRequest {
-                          queueUrl = fifoQueueUrl
-                          attributeNames = listOf(QueueAttributeName.ApproximateNumberOfMessages)
-                        }
+    @Test
+    @Tag("sqs-producer-test")
+    fun `produce 1000 messages`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+
+            val producer =
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    fail("Error $it")
+                }
+
+            container.register(sqsRegistry.addProducer(producer)).start()
+
+            repeat(1000) {
+                val sqsProducerConfiguration =
+                    SqsDataProductionConfiguration(
+                        produceData = {
+                            SqsProductionData.Single {
+                                messageBody = "this is a fifo test message+$it"
+                                messageGroupId = "group_1+$it"
+                            }
+                        },
+                        resourceNotFound = { _ -> println("Resource not found") },
+                    )
+                container.produceMessage(
+                    "test-registry",
+                    "fifo-test-producer",
+                    sqsProducerConfiguration,
+                )
+            }
+
+            var counter = 0
+
+            await
+                .timeout(1.minutes.toJavaDuration())
+                .withPollDelay(Duration.ofSeconds(1))
+                .untilAsserted {
+                    val receiveMessagesResponse = runBlocking {
+                        sqsClient.receiveMessage(
+                            ReceiveMessageRequest {
+                                queueUrl = fifoQueueUrl
+                                maxNumberOfMessages = 10
+                            }
+                        )
+                    }
+
+                    counter += receiveMessagesResponse.messages.orEmpty().size
+                    assertEquals(1000, counter)
+                }
+
+            container.stop()
+        }
+
+    @Test
+    @Tag("sqs-producer-test")
+    fun `produce multiple messages invokes the error handler on errors and does not halt production`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour {}
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+
+            var errorHandlerInvokedTimes = 0
+
+            val producer =
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    errorHandlerInvokedTimes++
+                }
+
+            container.register(sqsRegistry.addProducer(producer)).start()
+
+            repeat(10) {
+                val sqsProducerConfiguration =
+                    SqsDataProductionConfiguration(
+                        produceData = {
+                            // simulate that 1 production message failed
+                            if (it > 0 && it % 8 == 0) {
+                                throw RuntimeException("Random $it")
+                            }
+                            SqsProductionData.Single {
+                                messageBody = "this is a fifo test message+$it"
+                                messageGroupId = "group_1+$it"
+                            }
+                        },
+                        resourceNotFound = { _ -> println("Resource not found") },
                     )
 
-                assertEquals(
-                    9,
-                    attributes.attributes
-                        ?.get(QueueAttributeName.ApproximateNumberOfMessages)
-                        ?.toInt(),
+                container.produceMessage(
+                    "test-registry",
+                    "fifo-test-producer",
+                    sqsProducerConfiguration,
                 )
-                assertEquals(1, errorHandlerInvokedTimes)
-              }
             }
 
-        container.stop()
-      }
+            await
+                .timeout(10.seconds.toJavaDuration())
+                .withPollDelay(Duration.ofSeconds(1))
+                .untilAsserted {
+                    runBlocking {
+                        val attributes =
+                            sqsClient.getQueueAttributes(
+                                GetQueueAttributesRequest {
+                                    queueUrl = fifoQueueUrl
+                                    attributeNames =
+                                        listOf(QueueAttributeName.ApproximateNumberOfMessages)
+                                }
+                            )
 
-  @Test
-  @Tag("sqs-producer-test")
-  fun `produce a message with wrong registry key triggers resource not found error`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
+                        assertEquals(
+                            9,
+                            attributes.attributes
+                                ?.get(QueueAttributeName.ApproximateNumberOfMessages)
+                                ?.toInt(),
+                        )
+                        assertEquals(1, errorHandlerInvokedTimes)
+                    }
+                }
 
-        val sqsRegistry = sqsRegistry(config)
-        var resourceNotFound: ProductionResourceNotFound? = null
-        val sqsProducerConfiguration =
-            SqsDataProductionConfiguration(
-                produceData = {
-                  SqsProductionData.Single {
-                    messageBody = "this is a fifo test message"
-                    messageGroupId = "group_1"
-                  }
-                },
-                resourceNotFound = { error -> resourceNotFound = error },
-            )
-
-        val producer =
-            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
-              println(it)
-            }
-
-        sqsRegistry.addProducer(producer)
-        container.register(sqsRegistry)
-        container.start()
-
-        container.produceMessage(
-            "wrong-registry",
-            "fifo-test-producer",
-            sqsProducerConfiguration,
-        )
-
-        await.withPollDelay(Duration.ofSeconds(1)).untilAsserted {
-          assertEquals(RegistryNotFound("wrong-registry"), resourceNotFound)
-        }
-        container.stop()
-      }
-
-  @Test
-  @Tag("sqs-producer-test")
-  fun `produce a message with wrong producer key triggers resource not found error`() =
-      runTest(UnconfinedTestDispatcher()) {
-        val container = tabour { numOfThreads = 1 }
-        val config =
-            sqsRegistryConfiguration("test-registry", localstack.region) {
-              endpointOverride = localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
-              credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-              }
-            }
-
-        val sqsRegistry = sqsRegistry(config)
-        var resourceNotFound: ProductionResourceNotFound? = null
-        val sqsProducerConfiguration =
-            SqsDataProductionConfiguration(
-                produceData = {
-                  SqsProductionData.Single {
-                    messageBody = "this is a fifo test message"
-                    messageGroupId = "group_1"
-                  }
-                },
-                resourceNotFound = { error -> resourceNotFound = error },
-            )
-
-        val producer =
-            sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer", ::println)
-
-        sqsRegistry.addProducer(producer)
-        container.register(sqsRegistry)
-        container.start()
-
-        container.produceMessage("test-registry", "wrong-producer", sqsProducerConfiguration)
-
-        await.withPollDelay(Duration.ofSeconds(1)).untilAsserted {
-          assertEquals(ProducerNotFound("wrong-producer"), resourceNotFound)
+            container.stop()
         }
 
-        container.stop()
-      }
+    @Test
+    @Tag("sqs-producer-test")
+    fun `produce a message with wrong registry key triggers resource not found error`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
 
-  private suspend fun purgeQueue(url: String) {
-    sqsClient.purgeQueue(PurgeQueueRequest { queueUrl = url })
-  }
+            val sqsRegistry = sqsRegistry(config)
+            var resourceNotFound: ProductionResourceNotFound? = null
+            val sqsProducerConfiguration =
+                SqsDataProductionConfiguration(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { error -> resourceNotFound = error },
+                )
+
+            val producer =
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer") {
+                    println(it)
+                }
+
+            sqsRegistry.addProducer(producer)
+            container.register(sqsRegistry)
+            container.start()
+
+            container.produceMessage(
+                "wrong-registry",
+                "fifo-test-producer",
+                sqsProducerConfiguration,
+            )
+
+            await.withPollDelay(Duration.ofSeconds(1)).untilAsserted {
+                assertEquals(RegistryNotFound("wrong-registry"), resourceNotFound)
+            }
+            container.stop()
+        }
+
+    @Test
+    @Tag("sqs-producer-test")
+    fun `produce a message with wrong producer key triggers resource not found error`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var resourceNotFound: ProductionResourceNotFound? = null
+            val sqsProducerConfiguration =
+                SqsDataProductionConfiguration(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { error -> resourceNotFound = error },
+                )
+
+            val producer =
+                sqsProducer(URL.of(URI.create(fifoQueueUrl), null), "fifo-test-producer", ::println)
+
+            sqsRegistry.addProducer(producer)
+            container.register(sqsRegistry)
+            container.start()
+
+            container.produceMessage("test-registry", "wrong-producer", sqsProducerConfiguration)
+
+            await.withPollDelay(Duration.ofSeconds(1)).untilAsserted {
+                assertEquals(ProducerNotFound("wrong-producer"), resourceNotFound)
+            }
+
+            container.stop()
+        }
+
+    private suspend fun purgeQueue(url: String) {
+        sqsClient.purgeQueue(PurgeQueueRequest { queueUrl = url })
+    }
 }
