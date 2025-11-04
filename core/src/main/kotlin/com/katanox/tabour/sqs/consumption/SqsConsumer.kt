@@ -33,12 +33,19 @@ internal constructor(
 
     class Configuration internal constructor() : Config {
 
-        /** A lambda function that is used to configure the receive request of the consumer */
+        /**
+         * A function that is used to configure the receive request of the consumer before before
+         * the request is sent to sqs
+         */
         var receiveRequestConfigurationBuilder: (ReceiveMessageRequest.Builder.() -> Unit) = {
             maxNumberOfMessages = 10
         }
 
-        /** The number of parallel workers that will be spawned to fetch messages from the queue */
+        /**
+         * The number of parallel workers that will be spawned to fetch messages from the queue
+         *
+         * @throws IllegalArgumentException when the value is not between the bound 0 and 50
+         */
         var concurrency: Int = 1
             @Throws(IllegalArgumentException::class)
             set(value) {
