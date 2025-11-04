@@ -15,10 +15,14 @@ class TabourConfiguration {
     /** The tabour instance which will be used to start the Tabour container */
     var tabour = tabour { numOfThreads = 1 }
 
-    /** Indicates if the tabour container should be started */
+    /** Indicates if the tabour container should be started. Default value is false */
     var enabled: Boolean = false
 }
 
+/**
+ * A ktor server plugin that starts the tabour instance if [TabourConfiguration.enabled] is true and
+ * stops the instance gracefully when the ktor application shuts down
+ */
 @OptIn(InternalAPI::class)
 val TabourPlugin =
     createApplicationPlugin(name = "TabourPlugin", createConfiguration = ::TabourConfiguration) {

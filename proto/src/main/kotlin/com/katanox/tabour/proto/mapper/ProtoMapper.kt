@@ -9,8 +9,10 @@ private val printer: JsonFormat.Printer = JsonFormat.printer()
 val parser: JsonFormat.Parser = JsonFormat.parser()
 
 /**
- * Deserializes a [message] to a protobuf object. The function can throw an exception if the
- * deserialization fails
+ * Deserializes a [message] to a protobuf object. The function can throw an exception during
+ * deserialization
+ *
+ * @throws Throwable
  */
 @Throws(Throwable::class)
 inline fun <T : ProtobufMessage.Builder, reified K> T.fromSqsMessage(message: Message): K {
@@ -78,5 +80,5 @@ inline fun <T : ProtobufMessage.Builder, reified K, A> T.fromSqsMessageOrNull(
         null
     }
 
-/** Converts a protobuf message to a json which can also be parsed by a protobuf message builder */
+/** Converts a protobuf message to its json protobuf representation */
 fun ProtobufMessage.jsonify(): String = printer.print(this)

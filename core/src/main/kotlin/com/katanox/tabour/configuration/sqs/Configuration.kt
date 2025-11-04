@@ -4,11 +4,9 @@ import aws.sdk.kotlin.services.sqs.model.Message
 import com.katanox.tabour.configuration.core.config
 import com.katanox.tabour.consumption.ConsumptionError
 import com.katanox.tabour.sqs.SqsRegistry
-import com.katanox.tabour.sqs.config.SqsConsumer
-import com.katanox.tabour.sqs.config.SqsConsumerConfiguration
+import com.katanox.tabour.sqs.consumption.SqsConsumer
 import com.katanox.tabour.sqs.production.ProductionError
 import com.katanox.tabour.sqs.production.SqsProducer
-import com.katanox.tabour.sqs.production.SqsProducerConfiguration
 import java.net.URL
 
 /**
@@ -69,10 +67,7 @@ fun <T> sqsProducer(
 fun <T> sqsProducer(url: URL, key: T, onError: (ProductionError) -> Unit): SqsProducer<T> =
     SqsProducer(key, url, onError)
 
-/** Creates a new [SqsConsumerConfiguration] which can be used to configure a [SqsConsumer] */
-fun sqsConsumerConfiguration(init: SqsConsumerConfiguration.() -> Unit): SqsConsumerConfiguration =
-    config(SqsConsumerConfiguration(), init)
-
-/** Creates a new [SqsProducerConfiguration] which can be used to configure a [SqsProducer] */
-fun sqsProducerConfiguration(init: SqsProducerConfiguration.() -> Unit): SqsProducerConfiguration =
-    config(SqsProducerConfiguration(), init)
+/** Creates a new [SqsConsumer.Configuration] which can be used to configure a [SqsConsumer] */
+fun sqsConsumerConfiguration(
+    init: SqsConsumer.Configuration.() -> Unit
+): SqsConsumer.Configuration = config(SqsConsumer.Configuration(), init)

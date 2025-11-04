@@ -1,24 +1,21 @@
 # Tabour
 
-Tabour is a Kotlin library which allows you to produce and consume messages from with messaging systems.
+Tabour is a Kotlin library which allows you to produce and consume messages from SQS.
 
-Instead of manually writing your consumers and producers, Tabour allows you to define functions that handle the message themselves and let Tabour deal with retries, parallelism and error handling.
+Instead of manually writing your consumers and producers, Tabour allows you to define functions that handle the message
+themselves and let Tabour deal with retries, parallelism and error handling.
 
 Currently only the following messaging systems are supported
-
-1. SQS
 
 The library contains the following modules
 
 - [Core](core/README.md)
-- [Proto](proto/README.md)
-- [Spring](spring/README.md)
+- [Proto](proto/README.md): Helpers for protobuf serialization and deserialization when consuming and producing to
+  queues
+- [Spring](spring/README.md): A bean to automatically inject tabour
+- Ktor: A Ktor plugin which can register and unregister a tabour instance
 
-To use Tabour only **core** is required. Proto and Spring packages contain helpers and functionality regarding
-
-- Protobuf
-- Spring Boot
-
+To use Tabour **only core** is required**
 
 ## Contributing
 

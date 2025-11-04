@@ -5,7 +5,7 @@ import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.error.ProducerNotFound
-import com.katanox.tabour.sqs.config.SqsConsumer
+import com.katanox.tabour.sqs.consumption.SqsConsumer
 import com.katanox.tabour.sqs.consumption.SqsPoller
 import com.katanox.tabour.sqs.production.SqsDataProductionConfiguration
 import com.katanox.tabour.sqs.production.SqsProducer
@@ -22,15 +22,16 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
     private val sqsProducerExecutor: SqsProducerExecutor = SqsProducerExecutor()
     private var sqsPoller: SqsPoller? = null
 
-    fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> = consumers.add(consumer).let { this }
+    fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> = apply { consumers.add(consumer) }
 
     /** Adds a collection of consumers to the registry */
     fun addConsumers(consumers: List<SqsConsumer<*>>): SqsRegistry<T> =
         consumers.fold(this) { registry, consumer -> registry.addConsumer(consumer) }
 
     /** Adds a producer to the registry */
-    fun <K> addProducer(producer: SqsProducer<K>): SqsRegistry<T> =
-        producers.add(producer).let { this }
+    fun <K> addProducer(producer: SqsProducer<K>): SqsRegistry<T> = apply {
+        producers.add(producer)
+    }
 
     /** Adds a collection of producers to the registry */
     fun <K> addProducers(producers: List<SqsProducer<K>>): SqsRegistry<T> =

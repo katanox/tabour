@@ -9,7 +9,6 @@ import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
 import aws.sdk.kotlin.services.sqs.model.SqsException
 import aws.smithy.kotlin.runtime.ServiceException
 import com.katanox.tabour.consumption.ConsumptionError
-import com.katanox.tabour.sqs.config.SqsConsumer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
 import kotlin.time.Duration.Companion.seconds
@@ -77,7 +76,6 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                                 .orEmpty()
                                 .forEach { message ->
                                     try {
-
                                         if (consumer.onSuccess(message)) {
                                             send(message)
                                         } else {
