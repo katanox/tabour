@@ -3,11 +3,14 @@ package com.katanox.tabour.consumption
 import aws.sdk.kotlin.runtime.AwsServiceException
 import aws.sdk.kotlin.runtime.ClientException
 import aws.sdk.kotlin.services.sqs.model.Message
+import aws.sdk.kotlin.services.sqs.model.SqsException
 
 sealed interface ConsumptionError {
     data class AwsServiceError(val exception: AwsServiceException) : ConsumptionError
 
     data class AwsClientError(val exception: ClientException) : ConsumptionError
+
+    data class SqsClientError(val exception: SqsException) : ConsumptionError
 
     /**
      * Represents an error is returned when the [Consumer.onSuccess] method does not return true
