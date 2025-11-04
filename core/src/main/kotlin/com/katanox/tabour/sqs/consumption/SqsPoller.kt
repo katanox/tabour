@@ -114,7 +114,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                     receiptHandle = message.receiptHandle
                 }
             )
-        } catch (e: ClientException) {
+        } catch (e: SqsException) {
             logger.error(e) { "Failed to delete message batch" }
         }
     }
