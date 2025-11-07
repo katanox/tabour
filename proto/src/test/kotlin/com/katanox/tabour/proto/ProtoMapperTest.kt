@@ -14,11 +14,11 @@ class ProtoMapperTest {
     fun fromSqsMessage() {
         val body =
             """
-                {
-                    "name": "Wutang",
-                    "id": 1,
-                    "email": "isfor@thechildren.com"
-                }
+            {
+                "name": "Wutang",
+                "id": 1,
+                "email": "isfor@thechildren.com"
+            }
             """
                 .trimIndent()
 
@@ -35,10 +35,10 @@ class ProtoMapperTest {
     fun fromSqsMessageOrNull() {
         val body =
             """
-                {
-                    "name": "Wutang",
-                    "id": 1,
-                }
+            {
+                "name": "Wutang",
+                "id": 1,
+            }
             """
                 .trimIndent()
 
@@ -54,10 +54,10 @@ class ProtoMapperTest {
     fun fromSqsMessageOrNullWithErrorHandler() {
         val body =
             """
-                {
-                    "name": "Wutang",
-                    "id": 1,
-                }
+            {
+                "name": "Wutang",
+                "id": 1,
+            }
             """
                 .trimIndent()
 
@@ -77,10 +77,10 @@ class ProtoMapperTest {
     fun fromSqsMessageOrNullWithErrorHandlerAndMapperWithError() {
         val body =
             """
-                {
-                    "name": "Wutang",
-                    "id": 1,
-                }
+            {
+                "name": "Wutang",
+                "id": 1,
+            }
             """
                 .trimIndent()
 
@@ -104,11 +104,11 @@ class ProtoMapperTest {
     fun fromSqsMessageOrNullWithErrorHandlerAndMapperWithoutError() {
         val body =
             """
-                {
-                    "name": "Wutang",
-                    "id": 1,
-                    "email": "isfor@thechildren.com"
-                }
+            {
+                "name": "Wutang",
+                "id": 1,
+                "email": "isfor@thechildren.com"
+            }
             """
                 .trimIndent()
 
@@ -132,11 +132,11 @@ class ProtoMapperTest {
     fun fromSqsMessageWithMapperOnly() {
         val body =
             """
-                {
-                    "name": "Wutang",
-                    "id": 1,
-                    "email": "isfor@thechildren.com"
-                }
+            {
+                "name": "Wutang",
+                "id": 1,
+                "email": "isfor@thechildren.com"
+            }
             """
                 .trimIndent()
 

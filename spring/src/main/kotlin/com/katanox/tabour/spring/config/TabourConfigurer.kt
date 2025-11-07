@@ -17,15 +17,14 @@ import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.stereotype.Component
 import org.springframework.util.ClassUtils
 
-val scope = CoroutineScope(Dispatchers.IO)
-
-class TabourConfigurer
-
+/** @suppress */
 @Component
 class ContextRefreshedEventListener(
-    @Value("\${tabour.config.num-of-threads:2}") val threadsCount: Int,
+    @Value("\${tabour.config.num-of-threads:4}") val threadsCount: Int,
     @Value("\${tabour.config.enabled:true}") val enabled: Boolean,
 ) : ApplicationListener<ContextRefreshedEvent?> {
+    private val scope = CoroutineScope(Dispatchers.IO)
+
     @Suppress("WRONG_NULLABILITY_FOR_JAVA_OVERRIDE")
     override fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
         if (contextRefreshedEvent?.applicationContext != null) {
@@ -34,6 +33,27 @@ class ContextRefreshedEventListener(
     }
 
     @Bean @Lazy(false) fun tabourBean(): Tabour = tabour { this.numOfThreads = threadsCount }
+
+    private fun launchTabour(
+        mainClass: Class<*>,
+        tabourContainer: Tabour,
+        registriesProvider: () -> List<SqsRegistry<*>>,
+    ) {
+        val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
+
+        if (annotation != null) {
+            val registries = registriesProvider()
+
+            if (registries.isNotEmpty()) {
+                registries
+                    .fold(tabourContainer) { container, registry -> container.register(registry) }
+                    .apply {
+                        val container = this
+                        scope.launch { container.start() }
+                    }
+            }
+        }
+    }
 
     private fun setupTabour(context: ApplicationContext) {
         val annotatedBeans: Map<String, Any> =
@@ -54,34 +74,10 @@ class ContextRefreshedEventListener(
     }
 }
 
+/** @suppress */
 @Component
 class TabourDisposer(private val tabour: Tabour) : DisposableBean {
     override fun destroy() {
         runBlocking { tabour.stop() }
-    }
-}
-
-/**
- * starts the tabour container only if the annotation [AutoconfigureTabour] is present and there are
- * [SqsRegistry] instances available in the spring context
- */
-internal fun launchTabour(
-    mainClass: Class<*>,
-    tabourContainer: Tabour,
-    registriesProvider: () -> List<SqsRegistry<*>>,
-) {
-    val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
-
-    if (annotation != null) {
-        val registries = registriesProvider()
-
-        if (registries.isNotEmpty()) {
-            registries
-                .fold(tabourContainer) { container, registry -> container.register(registry) }
-                .apply {
-                    val container = this
-                    scope.launch { container.start() }
-                }
-        }
     }
 }

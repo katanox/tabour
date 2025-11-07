@@ -6,9 +6,9 @@ import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sqs.model.DeleteMessageRequest
 import aws.sdk.kotlin.services.sqs.model.Message
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import aws.sdk.kotlin.services.sqs.model.SqsException
 import aws.smithy.kotlin.runtime.ServiceException
 import com.katanox.tabour.consumption.ConsumptionError
-import com.katanox.tabour.sqs.config.SqsConsumer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
 import kotlin.time.Duration.Companion.seconds
@@ -69,32 +69,36 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
         channelFlow {
                 repeat(consumer.config.concurrency) {
                     launch {
-                        sqsClient
-                            .receiveMessage(consumer.receiveRequest())
-                            .messages
-                            .orEmpty()
-                            .forEach { message ->
-                                try {
-
-                                    if (consumer.onSuccess(message)) {
-                                        send(message)
-                                    } else {
-                                        consumer.onError(
-                                            ConsumptionError.UnsuccessfulConsumption(message)
-                                        )
-                                    }
-                                } catch (e: Throwable) {
-                                    when (e) {
-                                        is ClientException -> consumer.handleConsumptionException(e)
-                                        is ServiceException ->
-                                            consumer.handleConsumptionException(e)
-                                        else ->
+                        try {
+                            sqsClient
+                                .receiveMessage(consumer.receiveRequest())
+                                .messages
+                                .orEmpty()
+                                .forEach { message ->
+                                    try {
+                                        if (consumer.onSuccess(message)) {
+                                            send(message)
+                                        } else {
                                             consumer.onError(
-                                                ConsumptionError.ThrowableDuringHanding(e)
+                                                ConsumptionError.UnsuccessfulConsumption(message)
                                             )
+                                        }
+                                    } catch (e: Throwable) {
+                                        when (e) {
+                                            is ClientException ->
+                                                consumer.handleConsumptionException(e)
+                                            is ServiceException ->
+                                                consumer.handleConsumptionException(e)
+                                            else ->
+                                                consumer.onError(
+                                                    ConsumptionError.ThrowableDuringHanding(e)
+                                                )
+                                        }
                                     }
                                 }
-                            }
+                        } catch (e: SqsException) {
+                            consumer.handleConsumptionException(e)
+                        }
                     }
                 }
             }
@@ -108,7 +112,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                     receiptHandle = message.receiptHandle
                 }
             )
-        } catch (e: ClientException) {
+        } catch (e: SqsException) {
             logger.error(e) { "Failed to delete message batch" }
         }
     }
@@ -119,6 +123,7 @@ private suspend fun <T> SqsConsumer<T>.handleConsumptionException(exception: Thr
         when (exception) {
             is AwsServiceException -> ConsumptionError.AwsServiceError(exception = exception)
             is ClientException -> ConsumptionError.AwsClientError(exception = exception)
+            is SqsException -> ConsumptionError.SqsClientError(exception = exception)
             else -> ConsumptionError.UnrecognizedError(exception)
         }
 

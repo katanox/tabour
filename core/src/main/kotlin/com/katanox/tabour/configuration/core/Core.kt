@@ -8,7 +8,7 @@ import com.katanox.tabour.error.ProductionResourceNotFound
 fun tabour(init: Tabour.Configuration.() -> Unit): Tabour =
     Tabour(config(Tabour.Configuration(), init))
 
-internal fun <T : Config> config(conf: T, init: T.() -> Unit): T = conf.apply { init() }
+internal fun <T : Config> config(conf: T, init: T.() -> Unit): T = conf.apply(init)
 
 data class DataProductionConfiguration<T>(
     /** The function responsible to return the data that should be produced */
