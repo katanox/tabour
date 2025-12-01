@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.20"
+kotlin = "2.2.21"
 coroutines = "1.10.2"
 testcontainers = "1.21.3"
 awaitility = "4.3.0"
