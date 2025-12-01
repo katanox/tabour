@@ -1,14 +1,14 @@
 [versions]
 kotlin = "2.2.21"
 coroutines = "1.10.2"
-aws = "1.5.89"
+aws = "1.5.92"
 ktfmt = "0.25.0"
 dokka = "2.1.0"
 spring-boot = "4.0.0"
 protobuf-plugin = "0.9.5"
 protobuf-java = "4.33.1"
 klogging = "7.0.13"
-ktor = "3.3.2"
+ktor = "3.3.3"
 jreleaser = "1.21.0"
 
 
