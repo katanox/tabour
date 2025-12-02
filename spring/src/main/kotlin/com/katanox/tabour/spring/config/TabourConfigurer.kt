@@ -17,7 +17,6 @@ import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.stereotype.Component
 import org.springframework.util.ClassUtils
 
-/** @suppress */
 @Component
 class ContextRefreshedEventListener(
     @Value("\${tabour.config.num-of-threads:4}") val threadsCount: Int,
@@ -74,7 +73,6 @@ class ContextRefreshedEventListener(
     }
 }
 
-/** @suppress */
 @Component
 class TabourDisposer(private val tabour: Tabour) : DisposableBean {
     override fun destroy() {
