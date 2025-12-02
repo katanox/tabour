@@ -19,7 +19,7 @@ import org.springframework.util.ClassUtils
 
 /** @suppress */
 @Component
-class ContextRefreshedEventListener(
+class TabourContextRefreshedEventListener(
     @Value("\${tabour.config.num-of-threads:4}") val threadsCount: Int,
     @Value("\${tabour.config.enabled:true}") val enabled: Boolean,
 ) : ApplicationListener<ContextRefreshedEvent?> {

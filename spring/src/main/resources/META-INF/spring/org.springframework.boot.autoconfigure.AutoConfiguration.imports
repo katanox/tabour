@@ -1,1 +1,1 @@
-com.katanox.tabour.spring.config.TabourConfigurer
+com.katanox.tabour.spring.config.TabourContextRefreshedEventListener
