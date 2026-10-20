@@ -22,6 +22,9 @@ class SqsRegistry<T> internal constructor(private val configuration: Configurati
     private val sqsProducerExecutor: SqsProducerExecutor = SqsProducerExecutor()
     private var sqsPoller: SqsPoller? = null
 
+    val isHealthy: Boolean
+        get() = consumers.all { it.isHealthy }
+
     fun addConsumer(consumer: SqsConsumer<*>): SqsRegistry<T> = apply { consumers.add(consumer) }
 
     /** Adds a collection of consumers to the registry */

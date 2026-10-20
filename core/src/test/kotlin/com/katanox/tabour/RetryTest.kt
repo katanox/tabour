@@ -1,11 +1,9 @@
 package com.katanox.tabour
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SqsPollerKtTest {
 
     @Test
@@ -14,7 +12,6 @@ class SqsPollerKtTest {
         var errorCounter = 0
         retry(1, { errorCounter++ }) {
             triesCounter++
-            Unit
         }
 
         assertEquals(1, triesCounter)

@@ -10,7 +10,6 @@ import aws.sdk.kotlin.services.sqs.model.SqsException
 import aws.smithy.kotlin.runtime.ServiceException
 import com.katanox.tabour.consumption.ConsumptionError
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.net.URL
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
@@ -86,7 +85,9 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
             }
         }
     }
-        .collect { message -> acknowledge(consumer.queueUri, message) }
+        .collect { message ->
+            acknowledge(consumer, message)
+        }
 
     context(producerScope: ProducerScope<Message>)
     suspend fun <T> processMessage(consumer: SqsConsumer<*>, message: Message) {
@@ -106,14 +107,16 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
         }
     }
 
-    private suspend fun acknowledge(url: URL, message: Message) {
+    private suspend fun <T> acknowledge(consumer: SqsConsumer<T>, message: Message) {
         try {
             sqsClient.deleteMessage(
                 DeleteMessageRequest {
-                    queueUrl = url.toString()
+                    queueUrl = consumer.queueUri.toString()
                     receiptHandle = message.receiptHandle
                 }
             )
+            consumer.lastPoll = Clock.System.now()
+            println(consumer.lastPoll)
         } catch (e: SqsException) {
             logger.error(e) { "Failed to delete message batch" }
         }

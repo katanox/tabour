@@ -31,6 +31,9 @@ class Tabour internal constructor(val config: Configuration) {
 
     private val scope = CoroutineScope(config.dispatcher + config.coroutineContext)
 
+    val isHealthy: Boolean
+        get() = !consumptionStarted || registries.all { it.isHealthy }
+
     /**
      * Adds a new registry to the Tabour Container. All registries must be registered before
      * starting the tabour container.

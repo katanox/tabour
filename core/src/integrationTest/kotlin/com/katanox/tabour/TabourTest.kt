@@ -24,6 +24,7 @@ import com.katanox.tabour.sqs.production.SqsProductionData
 import java.net.URI
 import java.net.URL
 import java.time.Duration
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -42,7 +43,6 @@ import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.utility.DockerImageName
@@ -217,7 +217,9 @@ class TabourTest {
                     onSuccess = { error("Exception during on success") },
                     onError = { onErrorHandlerCounter++ },
                 ) {
-                    this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
+                    this.config = sqsConsumerConfiguration {
+                        sleepTime = 200.milliseconds
+                    }
                 }
 
             container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()
@@ -429,8 +431,8 @@ class TabourTest {
 
                     assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
                     assertEquals(
-                        receiveMessagesResponse.messages?.first()?.body,
                         "this is a test message",
+                        receiveMessagesResponse.messages?.first()?.body,
                     )
                 }
 
@@ -572,8 +574,8 @@ class TabourTest {
 
                     assertEquals(true, receiveMessagesResponse.messages?.isNotEmpty())
                     assertEquals(
-                        receiveMessagesResponse.messages?.first()?.body,
                         "this is a fifo test message",
+                        receiveMessagesResponse.messages?.first()?.body,
                     )
                 }
             purgeQueue(fifoQueueUrl)
