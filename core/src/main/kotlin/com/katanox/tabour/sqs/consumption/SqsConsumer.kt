@@ -37,7 +37,7 @@ internal constructor(
     var lastPoll: Instant = Clock.System.now()
 
     val isHealthy: Boolean
-        get() = (Clock.System.now() - lastPoll) < config.pollHealthTimeCeiling
+        get() = (Clock.System.now() - lastPoll) <= config.pollHealthTimeCeiling
 
     class Configuration internal constructor() : Config {
 
