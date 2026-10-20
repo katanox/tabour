@@ -76,7 +76,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                         .messages
                         .orEmpty()
                         .forEach { message ->
-                            processMessage<T>(consumer, message)
+                            processMessage(consumer, message)
                         }
                     consumer.lastPoll = Clock.System.now()
                 } catch (e: SqsException) {
@@ -90,7 +90,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
         }
 
     context(producerScope: ProducerScope<Message>)
-    suspend fun <T> processMessage(consumer: SqsConsumer<*>, message: Message) {
+    suspend fun processMessage(consumer: SqsConsumer<*>, message: Message) {
         try {
             if (consumer.onSuccess(message)) {
                 producerScope.send(message)
@@ -116,7 +116,6 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                 }
             )
             consumer.lastPoll = Clock.System.now()
-            println(consumer.lastPoll)
         } catch (e: SqsException) {
             logger.error(e) { "Failed to delete message batch" }
         }
