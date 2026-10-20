@@ -7,8 +7,10 @@ import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.consumption.Consumer
 import com.katanox.tabour.consumption.ConsumptionError
 import java.net.URL
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * Used to create consumers that will be registered to a [com.katanox.tabour.sqs.SqsRegistry] in
@@ -30,6 +32,8 @@ internal constructor(
     override val onError: suspend (ConsumptionError) -> Unit,
 ) : Consumer<Message, ConsumptionError>, Config {
     var config: Configuration = sqsConsumerConfiguration {}
+
+    var lastPoll: Instant = Clock.System.now()
 
     class Configuration internal constructor() : Config {
 

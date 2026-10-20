@@ -11,9 +11,12 @@ import aws.smithy.kotlin.runtime.ServiceException
 import com.katanox.tabour.consumption.ConsumptionError
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URL
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -65,44 +68,43 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
         jobs.forEach { it?.cancelAndJoin() }
     }
 
-    private suspend fun <T> accept(consumer: SqsConsumer<T>) =
-        channelFlow {
-                repeat(consumer.config.concurrency) {
-                    launch {
-                        try {
-                            sqsClient
-                                .receiveMessage(consumer.receiveRequest())
-                                .messages
-                                .orEmpty()
-                                .forEach { message ->
-                                    try {
-                                        if (consumer.onSuccess(message)) {
-                                            send(message)
-                                        } else {
-                                            consumer.onError(
-                                                ConsumptionError.UnsuccessfulConsumption(message)
-                                            )
-                                        }
-                                    } catch (e: Throwable) {
-                                        when (e) {
-                                            is ClientException ->
-                                                consumer.handleConsumptionException(e)
-                                            is ServiceException ->
-                                                consumer.handleConsumptionException(e)
-                                            else ->
-                                                consumer.onError(
-                                                    ConsumptionError.ThrowableDuringHanding(e)
-                                                )
-                                        }
-                                    }
-                                }
-                        } catch (e: SqsException) {
-                            consumer.handleConsumptionException(e)
+    private suspend fun <T> accept(consumer: SqsConsumer<T>) = channelFlow {
+        repeat(consumer.config.concurrency) {
+            launch {
+                try {
+                    sqsClient
+                        .receiveMessage(consumer.receiveRequest())
+                        .messages
+                        .orEmpty()
+                        .forEach { message ->
+                            processMessage<T>(consumer, message)
                         }
-                    }
+                    consumer.lastPoll = Clock.System.now()
+                } catch (e: SqsException) {
+                    consumer.handleConsumptionException(e)
                 }
             }
-            .collect { message -> acknowledge(consumer.queueUri, message) }
+        }
+    }
+        .collect { message -> acknowledge(consumer.queueUri, message) }
+
+    context(producerScope: ProducerScope<Message>)
+    suspend fun <T> processMessage(consumer: SqsConsumer<*>, message: Message) {
+        try {
+            if (consumer.onSuccess(message)) {
+                producerScope.send(message)
+            } else {
+                consumer.onError(ConsumptionError.UnsuccessfulConsumption(message))
+            }
+        } catch (e: Throwable) {
+            when (e) {
+                is CancellationException -> throw e
+                is ClientException -> consumer.handleConsumptionException(e)
+                is ServiceException -> consumer.handleConsumptionException(e)
+                else -> consumer.onError(ConsumptionError.ThrowableDuringHanding(e))
+            }
+        }
+    }
 
     private suspend fun acknowledge(url: URL, message: Message) {
         try {
@@ -121,9 +123,10 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
 private suspend fun <T> SqsConsumer<T>.handleConsumptionException(exception: Throwable) {
     val error =
         when (exception) {
+            is CancellationException -> throw exception
+            is SqsException -> ConsumptionError.SqsClientError(exception = exception)
             is AwsServiceException -> ConsumptionError.AwsServiceError(exception = exception)
             is ClientException -> ConsumptionError.AwsClientError(exception = exception)
-            is SqsException -> ConsumptionError.SqsClientError(exception = exception)
             else -> ConsumptionError.UnrecognizedError(exception)
         }
 
