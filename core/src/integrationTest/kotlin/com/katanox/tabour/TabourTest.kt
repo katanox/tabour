@@ -27,6 +27,7 @@ import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlin.time.Duration.Companion.milliseconds
@@ -813,6 +814,70 @@ class TabourTest {
             }
 
             container.stop()
+        }
+
+    @Test
+    @Tag("sqs-consumer-test")
+    fun `consuming a message updates the last poll field of the consumer`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val container = tabour { numOfThreads = 1 }
+            val config =
+                sqsRegistryConfiguration("test-registry", localstack.region) {
+                    endpointOverride =
+                        localstack.getEndpointOverride(LocalStackContainer.Service.SQS)
+                    credentialsProvider = StaticCredentialsProvider {
+                        accessKeyId = localstack.accessKey
+                        secretAccessKey = localstack.secretKey
+                    }
+                }
+
+            val sqsRegistry = sqsRegistry(config)
+            var counter = 0
+
+            val producer =
+                sqsProducer(URL.of(URI.create(nonFifoQueueUrl), null), "test-producer") {
+                    println("Exception during production $it")
+                }
+            val consumer =
+                sqsConsumer(
+                    URL.of(URI.create(nonFifoQueueUrl), null),
+                    key = "my-consumer",
+                    onSuccess = {
+                        counter++
+                        true
+                    },
+                    onError = { println("Exception during consumption $it") },
+                ) {
+                    this.config = sqsConsumerConfiguration {
+                        sleepTime = 200.milliseconds
+                        concurrency = 5
+                        receiveRequestConfigurationBuilder = { maxNumberOfMessages = 2 }
+                    }
+                }
+
+            val lastPollBeforeConsumption = consumer.lastPoll
+
+            sqsRegistry.addConsumer(consumer).addProducer(producer)
+            container.register(sqsRegistry).start()
+
+            val sqsProducerConfiguration =
+                SqsDataProductionConfiguration(
+                    produceData = {
+                        SqsProductionData.Single {
+                            messageBody = "this is a fifo test message"
+                            messageGroupId = "group_1"
+                        }
+                    },
+                    resourceNotFound = { _ -> println("Resource not found") },
+                )
+
+            container.produceMessage("test-registry", "test-producer", sqsProducerConfiguration)
+
+            await.withPollDelay(Duration.ofSeconds(2)).untilAsserted { assertTrue { counter > 0 } }
+            container.stop()
+            assertNotEquals(lastPollBeforeConsumption, consumer.lastPoll)
+            // the updated timestamp must be higher than the timestamp before we polled
+            assertTrue { consumer.lastPoll > lastPollBeforeConsumption }
         }
 
     private suspend fun purgeQueue(url: String) {
