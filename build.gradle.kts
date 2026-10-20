@@ -77,9 +77,6 @@ subprojects {
     jreleaser {
         signing {
             setActive("ALWAYS")
-            pgp {
-                armored = true
-            }
         }
 
         gitRootSearch = true
