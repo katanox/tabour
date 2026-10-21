@@ -23,7 +23,6 @@ class TabourContextRefreshedEventListener(
     @Value("\${tabour.config.num-of-threads:4}") val threadsCount: Int,
     @Value("\${tabour.config.enabled:true}") val enabled: Boolean,
 ) {
-    private val scope = CoroutineScope(Dispatchers.IO)
 
     @Suppress("WRONG_NULLABILITY_FOR_JAVA_OVERRIDE")
     @EventListener
@@ -34,27 +33,6 @@ class TabourContextRefreshedEventListener(
     }
 
     @Bean @Lazy(false) fun tabourBean(): Tabour = tabour { this.numOfThreads = threadsCount }
-
-    private fun launchTabour(
-        mainClass: Class<*>,
-        tabourContainer: Tabour,
-        registriesProvider: () -> List<SqsRegistry<*>>,
-    ) {
-        val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
-
-        if (annotation != null) {
-            val registries = registriesProvider()
-
-            if (registries.isNotEmpty()) {
-                registries
-                    .fold(tabourContainer) { container, registry -> container.register(registry) }
-                    .apply {
-                        val container = this
-                        scope.launch { container.start() }
-                    }
-            }
-        }
-    }
 
     private fun setupTabour(context: ApplicationContext) {
         val annotatedBeans: Map<String, Any> =
@@ -80,5 +58,28 @@ class TabourContextRefreshedEventListener(
 class TabourDisposer(private val tabour: Tabour) : DisposableBean {
     override fun destroy() {
         runBlocking { tabour.stop() }
+    }
+}
+
+fun launchTabour(
+    mainClass: Class<*>,
+    tabourContainer: Tabour,
+    registriesProvider: () -> List<SqsRegistry<*>>,
+) {
+    val annotation = mainClass.getAnnotation(AutoconfigureTabour::class.java)
+    val scope = CoroutineScope(Dispatchers.IO)
+
+    if (annotation != null) {
+        val registries = registriesProvider()
+
+        if (registries.isNotEmpty()) {
+            registries
+                .fold(tabourContainer) { container, registry -> container.register(registry) }
+                .apply {
+                    val container = this
+
+                    scope.launch { container.start() }
+                }
+        }
     }
 }
