@@ -61,7 +61,7 @@ class TabourDisposer(private val tabour: Tabour) : DisposableBean {
     }
 }
 
-fun launchTabour(
+internal fun launchTabour(
     mainClass: Class<*>,
     tabourContainer: Tabour,
     registriesProvider: () -> List<SqsRegistry<*>>,
