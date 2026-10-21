@@ -10,10 +10,10 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Lazy
 import org.springframework.context.event.ContextRefreshedEvent
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import org.springframework.util.ClassUtils
 
@@ -22,11 +22,12 @@ import org.springframework.util.ClassUtils
 class TabourContextRefreshedEventListener(
     @Value("\${tabour.config.num-of-threads:4}") val threadsCount: Int,
     @Value("\${tabour.config.enabled:true}") val enabled: Boolean,
-) : ApplicationListener<ContextRefreshedEvent?> {
+) {
     private val scope = CoroutineScope(Dispatchers.IO)
 
     @Suppress("WRONG_NULLABILITY_FOR_JAVA_OVERRIDE")
-    override fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
+    @EventListener
+    fun onApplicationEvent(contextRefreshedEvent: ContextRefreshedEvent?) {
         if (contextRefreshedEvent?.applicationContext != null) {
             setupTabour(contextRefreshedEvent.applicationContext)
         }

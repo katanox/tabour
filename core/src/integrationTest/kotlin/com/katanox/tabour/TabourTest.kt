@@ -218,9 +218,7 @@ class TabourTest {
                     onSuccess = { error("Exception during on success") },
                     onError = { onErrorHandlerCounter++ },
                 ) {
-                    this.config = sqsConsumerConfiguration {
-                        sleepTime = 200.milliseconds
-                    }
+                    this.config = sqsConsumerConfiguration { sleepTime = 200.milliseconds }
                 }
 
             container.register(sqsRegistry.addConsumer(consumer).addProducer(producer)).start()

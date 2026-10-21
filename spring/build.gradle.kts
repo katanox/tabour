@@ -16,10 +16,7 @@ description = "Tabour Spring Boot"
 @Suppress("UnstableApiUsage")
 testing {
     suites @Suppress("UnstableApiUsage") {
-        val test =
-            getByName<JvmTestSuite>("test") {
-                useJUnitJupiter()
-            }
+        val test = getByName<JvmTestSuite>("test") { useJUnitJupiter() }
 
         register("integrationTest", JvmTestSuite::class) {
             dependencies {
@@ -45,7 +42,5 @@ kotlin.target.compilations
 tasks.withType<KotlinCompile> {}
 
 kotlin {
-    compilerOptions {
-        freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
-    }
+    compilerOptions { freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property")) }
 }
