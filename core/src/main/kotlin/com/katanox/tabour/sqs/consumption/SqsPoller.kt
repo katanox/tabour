@@ -75,9 +75,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
                         .receiveMessage(consumer.receiveRequest())
                         .messages
                         .orEmpty()
-                        .forEach { message ->
-                            processMessage(consumer, message)
-                        }
+                        .forEach { message -> processMessage(consumer, message) }
                     consumer.lastPoll = Clock.System.now()
                 } catch (e: SqsException) {
                     consumer.handleConsumptionException(e)
@@ -85,9 +83,7 @@ internal class SqsPoller(private val sqsClient: SqsClient) {
             }
         }
     }
-        .collect { message ->
-            acknowledge(consumer, message)
-        }
+        .collect { message -> acknowledge(consumer, message) }
 
     context(producerScope: ProducerScope<Message>)
     suspend fun processMessage(consumer: SqsConsumer<*>, message: Message) {

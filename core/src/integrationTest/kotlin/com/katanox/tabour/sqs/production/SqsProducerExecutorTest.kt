@@ -33,23 +33,19 @@ class SqsProducerExecutorTest {
             .withServices(LocalStackContainer.Service.SQS)
             .withReuse(true)
 
-    private suspend fun sqsClient(): SqsClient =
-        SqsClient.fromEnvironment {
-            region = localstack.region
+    private suspend fun sqsClient(): SqsClient = SqsClient.fromEnvironment {
+        region = localstack.region
 
-            credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localstack.accessKey
-                secretAccessKey = localstack.secretKey
-            }
-
-            endpointUrl =
-                Url.parse(
-                    localstack
-                        .getEndpointOverride(LocalStackContainer.Service.SQS)
-                        .toURL()
-                        .toString()
-                )
+        credentialsProvider = StaticCredentialsProvider {
+            accessKeyId = localstack.accessKey
+            secretAccessKey = localstack.secretKey
         }
+
+        endpointUrl =
+            Url.parse(
+                localstack.getEndpointOverride(LocalStackContainer.Service.SQS).toURL().toString()
+            )
+    }
 
     private lateinit var nonFifoQueueUrl: String
     private lateinit var fifoQueueUrl: String

@@ -35,9 +35,7 @@ class TabourHealthTest {
         val consumer =
             sqsConsumer(consumerUrl, "", { _ -> true }, { _ -> }) {
                 lastPoll = Clock.System.now().minus(15.minutes)
-                config = sqsConsumerConfiguration {
-                    pollHealthTimeCeiling = 10.minutes
-                }
+                config = sqsConsumerConfiguration { pollHealthTimeCeiling = 10.minutes }
             }
 
         val registry = sqsRegistry(sqsRegistryConfiguration("key", "eu-west-1"))
@@ -52,9 +50,7 @@ class TabourHealthTest {
         val consumer =
             sqsConsumer(consumerUrl, "", { _ -> true }, { _ -> }) {
                 lastPoll = Clock.System.now().minus(5.minutes)
-                config = sqsConsumerConfiguration {
-                    pollHealthTimeCeiling = 10.minutes
-                }
+                config = sqsConsumerConfiguration { pollHealthTimeCeiling = 10.minutes }
             }
 
         val registry = sqsRegistry(sqsRegistryConfiguration("key", "eu-west-1"))

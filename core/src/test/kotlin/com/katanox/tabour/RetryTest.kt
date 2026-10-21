@@ -10,9 +10,7 @@ class SqsPollerKtTest {
     fun `test retry with no exceptions runs 1 time`() = runTest {
         var triesCounter = 0
         var errorCounter = 0
-        retry(1, { errorCounter++ }) {
-            triesCounter++
-        }
+        retry(1, { errorCounter++ }) { triesCounter++ }
 
         assertEquals(1, triesCounter)
         assertEquals(0, errorCounter)
