@@ -7,8 +7,11 @@ import com.katanox.tabour.consumption.Config
 import com.katanox.tabour.consumption.Consumer
 import com.katanox.tabour.consumption.ConsumptionError
 import java.net.URL
+import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * Used to create consumers that will be registered to a [com.katanox.tabour.sqs.SqsRegistry] in
@@ -30,6 +33,11 @@ internal constructor(
     override val onError: suspend (ConsumptionError) -> Unit,
 ) : Consumer<Message, ConsumptionError>, Config {
     var config: Configuration = sqsConsumerConfiguration {}
+
+    var lastPoll: Instant = Clock.System.now()
+
+    val isHealthy: Boolean
+        get() = (Clock.System.now() - lastPoll) <= config.pollHealthTimeCeiling
 
     class Configuration internal constructor() : Config {
 
@@ -59,5 +67,11 @@ internal constructor(
          * Default is 10 seconds
          */
         var sleepTime: Duration = 10.seconds
+
+        /**
+         * Used to determine if the consumer is healthy. If the consumer hasnt polled for messages
+         * for more than [pollHealthTimeCeiling] then its considered unhealthy
+         */
+        var pollHealthTimeCeiling: Duration = 5.minutes
     }
 }
